@@ -1,0 +1,18 @@
+simplified_ui true
+pane_frames false
+scroll_buffer_size 100000
+serialize_pane_viewport true
+scrollback_lines_to_serialize 100000
+show_startup_tips false
+show_release_notes false
+
+// Copy/paste: auto-copy selected text to clipboard on mouse release.
+// copy_on_select is the Zellij default, set explicitly for clarity.
+// copy_command is injected by setup_zsh.sh based on the detected clipboard tool.
+__COPY_COMMAND_LINE__
+copy_on_select true
+
+// Mouse: enable drag-resizing of pane borders and Ctrl+ScrollWheel pane resize.
+advanced_mouse_actions true
+
+__SCROLLBACK_EDITOR_LINE__

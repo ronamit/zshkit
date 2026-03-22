@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.tonybtw.com)",
+      "WebFetch(domain:arcolinux.com)",
+      "WebFetch(domain:tao-of-tmux.readthedocs.io)",
+      "WebFetch(domain:tmuxai.dev)",
+      "WebFetch(domain:chadaustin.me)",
+      "WebFetch(domain:hamvocke.com)",
+      "WebFetch(domain:medium.com)",
+      "WebSearch",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:sebastiano.tronto.net)",
+      "WebFetch(domain:www.medo64.com)",
+      "WebFetch(domain:atomicules.co.uk)",
+      "Read(//home/rona/**)",
+      "Bash(bash setup_zsh.sh)",
+      "Bash(tmux source-file:*)",
+      "Bash(echo \"exit: $?\")",
+      "Read(//usr/share/zsh/**)",
+      "Bash($HOME/.local/bin/tmux-status)",
+      "Bash(ls /home/rona/zsh_stuff/*.sh /home/rona/zsh_stuff/*.md)",
+      "Bash(grep -r \"AWS\\\\|aws\" /home/rona/zsh_stuff --include=*.sh --include=*.md)",
+      "Bash(source ~/.zshrc)",
+      "Bash(vm status:*)",
+      "Bash(zsh -ic 'vm status')",
+      "Bash(ghostty +list-fonts)",
+      "WebFetch(domain:ghostty.org)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(gh issue:*)",
+      "Bash(dpkg -l urlview)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(yes)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "additionalDirectories": [
+      "/home/rona/.ssh",
+      "/home/rona/.aws",
+      "/home/rona",
+      "/home/rona/.config/ghostty"
+    ]
+  }
+}
