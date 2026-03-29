@@ -8,8 +8,9 @@ show_release_notes false
 
 // Copy/paste: auto-copy selected text to clipboard on mouse release.
 // copy_on_select is the Zellij default, set explicitly for clarity.
-// copy_command is injected by setup_zsh.sh based on the detected clipboard tool.
-__COPY_COMMAND_LINE__
+// No copy_command is set — Zellij uses OSC 52 by default, which works both
+// locally and over SSH (as long as your local terminal supports OSC 52,
+// e.g. Ghostty, Kitty, WezTerm, Alacritty, iTerm2).
 copy_on_select true
 
 // Mouse: enable drag-resizing of pane borders and Ctrl+ScrollWheel pane resize.

@@ -791,19 +791,9 @@ else
 fi
 # -------------------------------------------------------------
 
-_zellij_copy_command_line=""
-if [ "$IS_MACOS" -eq 1 ]; then
-    _zellij_copy_command_line='copy_command "pbcopy"'
-elif [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy &>/dev/null; then
-    _zellij_copy_command_line='copy_command "wl-copy"'
-elif command -v xclip &>/dev/null; then
-    _zellij_copy_command_line='copy_command "xclip -selection clipboard"'
-fi
-
 render_template_to_file \
     "$ZELLIJ_CONFIG_TEMPLATE" \
     "$ZELLIJ_CONFIG_DIR/config.kdl" \
-    "__COPY_COMMAND_LINE__" "${_zellij_copy_command_line}" \
     "__SCROLLBACK_EDITOR_LINE__" 'scrollback_editor "micro"'
 echo "  ✓ Wrote $ZELLIJ_CONFIG_DIR/config.kdl"
 
