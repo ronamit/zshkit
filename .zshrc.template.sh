@@ -40,11 +40,18 @@ if [[ -o interactive && -t 1 && -z "${COLORTERM:-}" ]]; then
     fi
 fi
 
+# Reset terminal input modes that commonly leak after abrupt app/SSH exits.
+_zshkit_reset_terminal_input_modes() {
+    [[ -o interactive && -t 1 ]] || return 0
+    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l'
+    if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
+        printf '\e[<u'
+    fi
+}
+
 # Disable mouse reporting so scroll in SSH (and plain shells) doesn't dump raw escape codes.
 # Apps like vim/less will re-enable it when they start.
-if [[ -o interactive && -t 1 ]]; then
-    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l'
-fi
+_zshkit_reset_terminal_input_modes
 
 HYPHEN_INSENSITIVE="true"
 zstyle ':omz:update' mode auto
@@ -396,16 +403,16 @@ ssh-fix-colors() {
 # Features:
 #   - Leaves normal `ssh` untouched.
 #   - Adds ConnectTimeout=10 if unset (override with -o ConnectTimeout=…).
-#   - Resets terminal mouse tracking before and after every session.
+#   - Resets terminal mouse tracking and Kitty keyboard mode before and after every session.
 #   - On failure in interactive shells, offers vpn-connect and retries once.
 sshv() {
     if [[ $# -eq 0 ]]; then
         echo "usage: sshv [ssh-options] user@host [command]"
         return 1
     fi
-    # Reset local mouse tracking before connecting so stale terminal state
-    # doesn't leak raw SGR mouse escapes into the remote login sequence.
-    [[ -t 1 ]] && printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l'
+    # Reset local terminal input modes before connecting so stale SSH/app state
+    # doesn't leak raw mouse or Kitty keyboard escape sequences into the shell.
+    _zshkit_reset_terminal_input_modes
 
     local has_timeout=0
     local arg
@@ -418,9 +425,10 @@ sshv() {
 
     command ssh "${ssh_args[@]}"
     local ssh_rc=$?
-    # Reset mouse tracking immediately after SSH exits — the remote session may
-    # have enabled it (e.g. tmux/vim) and an abrupt disconnect won't clean it up.
-    [[ -t 1 ]] && printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l'
+    # Reset terminal input modes immediately after SSH exits — the remote
+    # session may have enabled them (e.g. Zellij/tmux/vim) and an abrupt
+    # disconnect won't clean them up.
+    _zshkit_reset_terminal_input_modes
     (( ssh_rc == 0 )) && return 0
 
     # Non-interactive — just return the exit code.
@@ -785,10 +793,9 @@ zj() {
     else
         zellij attach --create "$session"
         local zj_rc=$?
-        # Zellij enables SGR mouse tracking for its UI but doesn't always clean it
-        # up on exit, which causes raw mouse-event bytes to leak into the shell
-        # prompt. Explicitly disable all mouse tracking modes after Zellij exits.
-        printf '\033[?1000l\033[?1002l\033[?1003l\033[?1006l'
+        # Zellij can leave mouse or Kitty keyboard modes enabled after an abrupt
+        # exit, which causes raw escape sequences to leak into the shell prompt.
+        _zshkit_reset_terminal_input_modes
         return $zj_rc
     fi
 }
@@ -1346,18 +1353,18 @@ _apply_autolist_mode() {
 # Reset history scroll flag at each new prompt so stale state never leaks.
 _reset_history_scroll() { _history_scroll_active=0; }
 
-# Reset mouse tracking before each prompt so an abrupt SSH/Zellij disconnect
-# never leaves the terminal dumping raw SGR mouse escapes into the shell.
-_reset_mouse_tracking() {
-    [[ -o interactive && -t 1 ]] && printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l'
+# Reset terminal input modes before each prompt so an abrupt SSH/Zellij
+# disconnect never leaves the terminal dumping raw escape sequences.
+_reset_terminal_input_modes() {
+    _zshkit_reset_terminal_input_modes
 }
 
 # Keep directory-count cache fresh while avoiding repeated scans in a single edit.
 if (( $+functions[add-zsh-hook] )); then
     add-zsh-hook -D precmd _reset_history_scroll 2>/dev/null
     add-zsh-hook precmd _reset_history_scroll
-    add-zsh-hook -D precmd _reset_mouse_tracking 2>/dev/null
-    add-zsh-hook precmd _reset_mouse_tracking
+    add-zsh-hook -D precmd _reset_terminal_input_modes 2>/dev/null
+    add-zsh-hook precmd _reset_terminal_input_modes
     add-zsh-hook -D chpwd _autolist_invalidate_cd_cache 2>/dev/null
     add-zsh-hook chpwd _autolist_invalidate_cd_cache
 fi

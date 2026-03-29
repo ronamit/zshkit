@@ -28,7 +28,8 @@ After it finishes:
 
 1. Set your terminal font to [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) (recommended by Powerlevel10k) so prompt icons render correctly. _(Not sure how to change your terminal's font? [See the per-terminal instructions here](https://github.com/romkatv/powerlevel10k#terminal-emulator-font-configuration).)_
 2. Open a new terminal.
-3. Run `p10k configure` to pick your prompt style.
+3. zshkit now uses Kitty as the default terminal on both Linux and macOS, installs it from Kitty's official upstream installer so you get current releases, and writes a starter config at `~/.config/kitty/kitty.conf` with the tab bar at the top, a slightly larger default font, larger scrollback, no audio bell, CWD-aware new tabs/windows, and a few sensible quality-of-life defaults. Inside Kitty, press `Ctrl+Shift+F2` to open the config and `Ctrl+Shift+F5` to reload it. Ghostty and iTerm2 are still good alternatives to try if you want a different feel.
+4. Run `p10k configure` to pick your prompt style.
 
 The installer backs up your existing config before making any changes. To roll back:
 
@@ -40,8 +41,10 @@ For full install details, what gets backed up, customization, and troubleshootin
 
 ## What you get
 
-- **SSH helper** — `sshv` adds a connection timeout, resets terminal state, and hints to run `vpn-connect` if the connection fails
+- **SSH helper** — `sshv` adds a connection timeout, resets terminal input modes, and hints to run `vpn-connect` if the connection fails
 - **Persistent remote sessions** — `zj <name>` starts or reconnects to a terminal session that survives disconnects; start a long run, close your laptop, reconnect later
+- **Kitty starter config** — top tab bar, slightly larger default font, quiet bell, deeper scrollback, CWD-aware tab shortcuts, mouse paste shortcuts, and notification-friendly defaults in `~/.config/kitty/kitty.conf`
+- **Other terminal options** — Ghostty and iTerm2 are also solid terminals to try, but Kitty is the one zshkit now sets up by default
 - **Prompt** — [git status](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#what-do-different-symbols-in-git-status-mean), current directory, and whether the last command succeeded
 - **Suggestions** — completions from history as you type; `Tab` to browse options
 - **History search** — `Ctrl+R` fuzzy search; `Ctrl+T` insert file path; `Alt+C` cd
@@ -100,7 +103,7 @@ ncdu /       # drill down from root to find what's using space
 
 ## SSH helpers
 
-`sshv` wraps `ssh` with a 10-second connection timeout, terminal mouse reset, and a hint to run `vpn-connect` if the connection fails.
+`sshv` wraps `ssh` with a 10-second connection timeout, terminal input-mode reset, and a hint to run `vpn-connect` if the connection fails.
 
 ```bash
 sshv user@host
@@ -145,3 +148,5 @@ floating panes, scrollback search, and more.
 git pull
 bash setup_zsh.sh
 ```
+
+Re-running `setup_zsh.sh` also updates Kitty to the latest upstream release.

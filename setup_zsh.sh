@@ -31,10 +31,13 @@ ZSHRC_TEMPLATE="$SCRIPT_DIR/.zshrc.template.sh"
 ZELLIJ_METRICS_TEMPLATE="$SCRIPT_DIR/zellij-metrics.sh"
 ZELLIJ_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/zellij/config.kdl.template"
 ZELLIJ_LAYOUT_TEMPLATE="$SCRIPT_DIR/templates/zellij/layouts/default.kdl"
+KITTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/kitty/kitty.conf.template"
 P10K_TEMPLATE="$SCRIPT_DIR/templates/p10k.zsh.template"
 VPN_SOURCE_DIR="$SCRIPT_DIR/vpn"
 BACKUP_BASE="$HOME/.zsh_backups"
 BACKUP_DIR="$BACKUP_BASE/$(date +%Y%m%d_%H%M%S)"
+# Set when ~/.config/kitty/kitty.conf is replaced and a backup is created
+KITTY_BACKUP_PATH=""
 # Set when ~/.p10k.zsh is replaced and a backup is created
 P10K_BACKUP_PATH=""
 STEP=0
@@ -192,6 +195,65 @@ install_home_p10k_zsh() {
     return 0
 }
 
+# Install ~/.config/kitty/kitty.conf from zshkit's Kitty template.
+# Backs up an existing file to $BACKUP_DIR/kitty.conf. Sets KITTY_BACKUP_PATH when a backup is created.
+install_home_kitty_conf() {
+    local src="$KITTY_CONFIG_TEMPLATE"
+    local kitty_dir="$HOME/.config/kitty"
+    local target="$kitty_dir/kitty.conf"
+    local tmp
+
+    KITTY_BACKUP_PATH=""
+    if [ ! -f "$src" ]; then
+        echo "  ✗ Missing Kitty template: $src"
+        return 1
+    fi
+
+    tmp=$(mktemp)
+    if ! cp "$src" "$tmp"; then
+        rm -f "$tmp"
+        echo "  ✗ Failed to read Kitty template"
+        return 1
+    fi
+
+    mkdir -p "$kitty_dir"
+
+    if [ -f "$target" ]; then
+        if [ -t 0 ]; then
+            printf "  ~/.config/kitty/kitty.conf already exists. Replace with zshkit template? [y/N] "
+            read -r _kitty_reply </dev/tty
+            case "$_kitty_reply" in
+                [Yy]|[Yy][Ee][Ss]) ;;
+                *)
+                    rm -f "$tmp"
+                    echo "  - Keeping existing ~/.config/kitty/kitty.conf"
+                    return 0
+                    ;;
+            esac
+        fi
+        if ! mkdir -p "$BACKUP_DIR"; then
+            rm -f "$tmp"
+            echo "  ✗ Failed to create backup directory: $BACKUP_DIR"
+            return 1
+        fi
+        KITTY_BACKUP_PATH="$BACKUP_DIR/kitty.conf"
+        if ! cp "$target" "$KITTY_BACKUP_PATH"; then
+            rm -f "$tmp"
+            echo "  ✗ Failed to back up ~/.config/kitty/kitty.conf"
+            return 1
+        fi
+        echo "  ✓ Backup → $KITTY_BACKUP_PATH"
+    fi
+
+    if ! mv "$tmp" "$target"; then
+        rm -f "$tmp"
+        echo "  ✗ Failed to install ~/.config/kitty/kitty.conf"
+        return 1
+    fi
+    echo "  ✓ Installed ~/.config/kitty/kitty.conf from zshkit template"
+    return 0
+}
+
 template_must_exist() {
     local path="$1"
     if [ ! -f "$path" ]; then
@@ -252,6 +314,58 @@ download_to_file() {
     fi
 
     return 1
+}
+
+install_or_update_kitty() {
+    local installer_url="https://sw.kovidgoyal.net/kitty/installer.sh"
+    local kitty_bin kitten_bin
+
+    step "Installing Kitty (official upstream release)..."
+    if ! curl -fsSL "$installer_url" | sh /dev/stdin launch=n; then
+        echo "  ✗ Failed to install Kitty from the official installer"
+        exit 1
+    fi
+
+    if [ "$IS_MACOS" -eq 1 ]; then
+        kitty_bin="/Applications/kitty.app/Contents/MacOS/kitty"
+        kitten_bin="/Applications/kitty.app/Contents/MacOS/kitten"
+    else
+        kitty_bin="$HOME/.local/kitty.app/bin/kitty"
+        kitten_bin="$HOME/.local/kitty.app/bin/kitten"
+    fi
+
+    if [ ! -x "$kitty_bin" ] || [ ! -x "$kitten_bin" ]; then
+        echo "  ✗ Kitty installed, but expected binaries were not found"
+        echo "    kitty:  $kitty_bin"
+        echo "    kitten: $kitten_bin"
+        exit 1
+    fi
+
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$kitty_bin" "$HOME/.local/bin/kitty"
+    ln -sf "$kitten_bin" "$HOME/.local/bin/kitten"
+    export PATH="$HOME/.local/bin:$PATH"
+    echo "  ✓ Installed/updated Kitty and refreshed ~/.local/bin symlinks"
+
+    # Mirror the upstream Linux integration so the launcher and icon point at
+    # the current Kitty install instead of an older distro package.
+    if [ "$IS_MACOS" -eq 0 ]; then
+        mkdir -p "$HOME/.local/share/applications" "$HOME/.config"
+        if [ -f "$HOME/.local/kitty.app/share/applications/kitty.desktop" ]; then
+            cp "$HOME/.local/kitty.app/share/applications/kitty.desktop" \
+                "$HOME/.local/share/applications/kitty.desktop"
+        fi
+        if [ -f "$HOME/.local/kitty.app/share/applications/kitty-open.desktop" ]; then
+            cp "$HOME/.local/kitty.app/share/applications/kitty-open.desktop" \
+                "$HOME/.local/share/applications/kitty-open.desktop"
+        fi
+        sed -i "s|Icon=kitty|Icon=$HOME/.local/kitty.app/share/icons/hicolor/256x256/apps/kitty.png|g" \
+            "$HOME/.local/share/applications"/kitty*.desktop 2>/dev/null || true
+        sed -i "s|Exec=kitty|Exec=$HOME/.local/kitty.app/bin/kitty|g" \
+            "$HOME/.local/share/applications"/kitty*.desktop 2>/dev/null || true
+        printf 'kitty.desktop\n' > "$HOME/.config/xdg-terminals.list"
+        echo "  ✓ Installed Linux desktop integration for Kitty"
+    fi
 }
 
 install_brew_formula_if_missing() {
@@ -540,6 +654,7 @@ else
 # Core tools
 add_pkg_if_missing_cmd wget  wget
 add_pkg_if_missing_cmd unzip unzip
+add_pkg_if_missing_cmd curl  curl
 add_pkg_if_missing_cmd fc-cache fontconfig
 add_pkg_if_missing_cmd tic ncurses-bin
 
@@ -613,7 +728,7 @@ add_best_effort_pkg_if_missing_cmd gh gh
 # Interactive GPU process monitor
 add_best_effort_pkg_if_missing_cmd nvtop nvtop
 
-# Clipboard helpers for Zellij copy_command fallback
+# Clipboard helpers (used by micro editor)
 if ! command -v xclip &>/dev/null && ! command -v wl-copy &>/dev/null; then
     add_best_effort_pkg xclip
     add_best_effort_pkg wl-clipboard
@@ -849,6 +964,29 @@ else
     echo "  ✓ Created $SSH_CONFIG"
 fi
 chmod 600 "$SSH_CONFIG" 2>/dev/null || true
+
+# ── Kitty install ────────────────────────────────────────────────────
+
+# Install Kitty from upstream so we get current features even when distro or
+# Homebrew packages lag behind. Skip over SSH because it is a local GUI app.
+if [ -z "${SSH_CONNECTION:-}" ]; then
+    install_or_update_kitty
+else
+    step "Installing Kitty (official upstream release)..."
+    echo "  - Skipping Kitty install in SSH session (GUI app for local machine)"
+fi
+
+# ── Kitty defaults ───────────────────────────────────────────────────
+
+if [ -z "${SSH_CONNECTION:-}" ] && command -v kitty &>/dev/null; then
+    step "Installing Kitty config..."
+    if ! install_home_kitty_conf; then
+        exit 1
+    fi
+else
+    step "Installing Kitty config..."
+    echo "  - Skipping Kitty config (kitty is not installed locally in this session)"
+fi
 
 # ── MesloLGS NF (Powerlevel10k recommended font) ─────────────────────
 
@@ -1130,10 +1268,11 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "  1. Add personal exports/tokens to ~/.zshrc.local"
-if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ]; then
+if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$KITTY_BACKUP_PATH" ]; then
     echo "     Previous file(s) backed up under: $BACKUP_DIR"
     [ -n "$BACKUP_PATH" ] && echo "       - .zshrc → $BACKUP_PATH"
     [ -n "$P10K_BACKUP_PATH" ] && echo "       - .p10k.zsh → $P10K_BACKUP_PATH"
+    [ -n "$KITTY_BACKUP_PATH" ] && echo "       - kitty.conf → $KITTY_BACKUP_PATH"
 fi
 echo "     Optional VPN helper:"
 echo "       - Edit $(vpn_managed_dir)/vpn-credentials.txt"
@@ -1143,11 +1282,25 @@ echo "  2. Start a new terminal (or run: exec zsh)"
 echo ""
 echo "  3. Set your terminal font to 'MesloLGS NF' (recommended by Powerlevel10k — see https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts)"
 echo ""
-echo "  4. Run: p10k configure   (same as the banner above — guided Powerlevel10k wizard;"
+echo "  4. If you're using Kitty, press Ctrl+Shift+F2 to open ~/.config/kitty/kitty.conf"
+echo "     and Ctrl+Shift+F5 to reload it after edits."
+echo ""
+echo "  5. Run: p10k configure   (same as the banner above — guided Powerlevel10k wizard;"
 echo "     saves to ~/.p10k.zsh. Re-run setup_zsh.sh to restore the repo template default.)"
 echo ""
-echo "  5. Zellij permissions are pre-seeded for zjstatus as an unsupported workaround."
+echo "  6. Zellij permissions are pre-seeded for zjstatus as an unsupported workaround."
 echo "     If a permission prompt still appears after a plugin update or cache reset, focus the bar and press 'y'."
+echo ""
+if [ "$IS_MACOS" -eq 1 ]; then
+    echo "  7. Use Kitty (installed above) as your main terminal. Ghostty and iTerm2 are also"
+    echo "     worth trying if you want alternatives with OSC 52 support."
+    echo "     Clipboard copy in Zellij works well in all three."
+else
+    echo "  7. Use Kitty (installed above) as your main terminal. Ghostty and iTerm2 are also"
+    echo "     worth trying if you want alternatives with OSC 52 support."
+    echo "     Clipboard copy in Zellij works well in all three."
+    echo "     With GNOME Terminal or other terminals that lack OSC 52, use Shift+drag then Ctrl+Shift+C instead."
+fi
 echo ""
 echo "Setup details: $SCRIPT_DIR/SETUP_DETAILS.md"
 echo "Usage guide:  $SCRIPT_DIR/USAGE_GUIDE.md"

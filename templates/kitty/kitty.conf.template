@@ -1,0 +1,58 @@
+# kitty.conf — zshkit starter config
+# Open this file from inside Kitty with Ctrl+Shift+F2 (Cmd+, on macOS).
+# Reload changes with Ctrl+Shift+F5.
+
+# Keep the terminal quiet and give long commands more history.
+enable_audio_bell no
+scrollback_lines 10000
+
+# Match the Nerd Font installed by zshkit so prompt icons render cleanly.
+font_family MesloLGS NF
+font_size 14.0
+bold_font auto
+italic_font auto
+bold_italic_font auto
+
+# Keep tabs visible at the top with a clean, easy-to-scan style.
+tab_bar_edge top
+tab_bar_min_tabs 1
+tab_bar_style powerline
+tab_powerline_style round
+
+# Make the window feel less cramped without changing layout behavior.
+window_padding_width 2
+
+# Keep the pointer out of the way once typing begins.
+mouse_hide_wait -3.0
+
+# Keep editing behavior predictable while still allowing ligature fonts.
+disable_ligatures cursor
+cursor_blink_interval 0
+cursor_shape block
+
+# Make mouse paste behavior convenient in terminal workflows.
+mouse_map right release ungrabbed paste_from_clipboard
+mouse_map middle release ungrabbed paste_from_selection
+
+# Notify when a long-running command finishes in a background window.
+notify_on_cmd_finish invisible 10.0
+
+# Slightly dim inactive Kitty panes if you use Kitty splits.
+inactive_text_alpha 0.75
+
+# Open new tabs and windows in the current working directory.
+map ctrl+t new_tab !neighbor
+map cmd+t new_tab !neighbor
+map ctrl+shift+t new_tab_with_cwd
+map cmd+shift+t new_tab_with_cwd
+
+# Optional appearance tweaks:
+# background_opacity 0.92
+# hide_window_decorations yes
+
+# Optional shell override if Kitty should force a specific shell:
+# shell /usr/bin/zsh
+
+# Optional font alternatives if you prefer a coding font:
+# font_family JetBrainsMono Nerd Font
+# font_family FiraCode Nerd Font

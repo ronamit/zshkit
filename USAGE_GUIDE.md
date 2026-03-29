@@ -82,7 +82,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `path` | Print one `PATH` entry per line |
 | `myip` | Public IP (`curl ifconfig.me`) |
 | `localip` | First local IP |
-| `sshv HOST [ARGS...]` | SSH with `ConnectTimeout=10`, mouse reset, and a VPN hint on failure |
+| `sshv HOST [ARGS...]` | SSH with `ConnectTimeout=10`, terminal input reset, and a VPN hint on failure |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
 | `vpn-status` | Show VPN process, interface, and recent log status |
@@ -201,7 +201,7 @@ Normal `ssh` is left untouched. Use `sshv` when you want the optional VPN-aware 
 In interactive shells, `sshv`:
 
 - adds `ConnectTimeout=10` unless you set one explicitly (override with `-o ConnectTimeout=…`)
-- resets terminal mouse tracking before and after — prevents raw escape codes leaking when tmux or vim was running remotely
+- resets terminal input modes before and after — prevents raw mouse and Kitty keyboard escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
 - if the connection fails, prints a hint to run `vpn-connect` and retry manually
 
 The VPN helper commands are installed by `setup_zsh.sh`. They use managed per-user locations instead of `~/vpn/`, and they print setup instructions if your credentials or `.ovpn` config are still missing. For the exact paths and setup steps, see [SETUP_DETAILS.md](SETUP_DETAILS.md).
@@ -350,7 +350,9 @@ Practical use: open a floating pane for a quick reference (`man curl`, a Python 
 | Clipboard — Linux Wayland | `wl-copy` (`wl-clipboard` package, installed by setup) |
 | Clipboard — Linux X11 | `xclip` (installed by setup) |
 
-> On **Linux**, if clipboard copying does not work, check that `wl-clipboard` (Wayland) or `xclip` (X11) is installed. Run `echo $WAYLAND_DISPLAY` — if it prints a value you are on Wayland, otherwise X11.
+> **OSC 52 requirement:** Mouse-drag clipboard copy (both locally and over SSH) requires a terminal that supports OSC 52 — Kitty, iTerm2, Ghostty, WezTerm, or Alacritty. The setup installs Kitty automatically on both Linux and macOS. Ghostty and iTerm2 are still good alternatives to try. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
+>
+> **GNOME Terminal / terminals without OSC 52:** Use `Shift+drag` to select, then `Ctrl+Shift+C` to copy. This bypasses Zellij and uses the terminal's native selection — works locally and over SSH.
 
 ### Status and Restore
 
