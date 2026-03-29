@@ -27,7 +27,7 @@ bash setup_zsh.sh
 | CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |
-| Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/kitty/kitty.conf` from **`templates/kitty/kitty.conf.template`** on local Kitty installs, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |
+| Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/kitty/kitty.conf`, `open-actions.conf`, and `quick-access-terminal.conf` from **`templates/kitty/`** on local Kitty installs, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |
 
 On Linux, CLI tools are installed through apt where possible, with some optional items handled best-effort. `uv` is installed via its official curl installer on Linux (not in apt). On macOS, the same toolchain is installed through Homebrew. **Kitty is installed on both Linux and macOS using Kitty's official upstream installer**, then symlinked into `~/.local/bin` so you get current releases even when distro/Homebrew packages lag behind. The script also creates `fd` / `bat` compatibility symlinks on Linux when the system package names are `fdfind` / `batcat`. `direnv` is activated via a hook added to `~/.zshrc` — create a `.envrc` in any project directory to load environment variables automatically when you enter it.
 
@@ -44,6 +44,8 @@ The setup writes or manages these locations:
 | `~/.zshrc.local` | Personal tokens, exports, and local overrides |
 | `~/.zsh_backups/` | Timestamped backups of replaced shell config |
 | `~/.config/kitty/kitty.conf` | Managed Kitty starter config (installed when Kitty is available locally) |
+| `~/.config/kitty/open-actions.conf` | Managed Kitty open-actions config for editor-friendly file hyperlinks |
+| `~/.config/kitty/quick-access-terminal.conf` | Managed Kitty quick-access-terminal starter config |
 | `~/.config/zellij/config.kdl` | Managed Zellij config |
 | `~/.config/zellij/layouts/default.kdl` | Managed default Zellij layout |
 | `~/.local/bin/zellij-metrics` | Status helper used by the Zellij top bar |
@@ -68,13 +70,18 @@ On local installs where Kitty is available, zshkit also writes a starter `~/.con
 
 - top tab bar (`tab_bar_edge top`)
 - powerline tab styling
+- draggable tabs
 - a slightly larger default font size
+- a subtle hover-only scrollbar
 - no audio bell
 - larger scrollback
 - new tabs and windows open in the current working directory
+- keyboard shortcuts for Kitty's fast file, directory, and hints pickers
 - right-click clipboard paste and middle-click selection paste
 - a small amount of padding
 - background-window command-finish notifications
+- editor-friendly file hyperlink handling via `open-actions.conf`
+- a quick-access-terminal starter config
 
 Inside Kitty, press `Ctrl+Shift+F2` to open `kitty.conf` and `Ctrl+Shift+F5` to reload it after edits.
 
@@ -115,6 +122,8 @@ See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 | `~/.zshrc.local` | Personal tokens, exports, and local overrides |
 | `~/.p10k.zsh` | Powerlevel10k theme; reinstalled from **`templates/p10k.zsh.template`** on each `setup_zsh.sh` run (previous file backed up). Run `p10k configure` or edit the template to customize defaults. |
 | `~/.config/kitty/kitty.conf` | Kitty starter config; edit directly or open it from Kitty with `Ctrl+Shift+F2` |
+| `~/.config/kitty/open-actions.conf` | Kitty file-opening rules; used for clickable rg/file hyperlinks |
+| `~/.config/kitty/quick-access-terminal.conf` | Kitty quick-access-terminal settings |
 
 ```bash
 # Edit tracked defaults (from the repo root)
@@ -125,6 +134,12 @@ nano ~/.zshrc.local
 
 # Edit Kitty settings
 nano ~/.config/kitty/kitty.conf
+
+# Edit Kitty hyperlink actions
+nano ~/.config/kitty/open-actions.conf
+
+# Edit Kitty quick-access terminal settings
+nano ~/.config/kitty/quick-access-terminal.conf
 
 # Optional: disable live auto-list while typing (on by default)
 echo 'export ZSH_AUTOLIST_ON_TYPE=0' >> ~/.zshrc.local

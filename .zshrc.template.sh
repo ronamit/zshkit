@@ -313,6 +313,9 @@ alias mv='mv -iv'
 alias rm='rm -I'         # Prompt only for >3 files or recursive deletes
 alias mkdir='mkdir -pv'
 
+if command -v rg &>/dev/null; then
+    alias rg='rg --hyperlink-format=kitty'
+fi
 alias grep='grep --color=auto'
 
 alias df='df -h'
@@ -331,6 +334,14 @@ localip() {
 }
 alias h='history'
 alias path='echo "$PATH" | tr ":" "\n"'
+
+if command -v kitten &>/dev/null; then
+    alias clipcopy='kitten clipboard'
+    alias clippaste='kitten clipboard --get-clipboard'
+    alias hg='kitten hyperlinked-grep'
+    alias icat='kitten icat'
+    alias kqa='kitten quick-access-terminal --detach'
+fi
 
 # Safety nets for recursive operations (GNU only; macOS BSD chown/chmod lack these)
 if [[ "$(uname -s)" != "Darwin" ]]; then

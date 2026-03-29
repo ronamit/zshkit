@@ -32,12 +32,16 @@ ZELLIJ_METRICS_TEMPLATE="$SCRIPT_DIR/zellij-metrics.sh"
 ZELLIJ_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/zellij/config.kdl.template"
 ZELLIJ_LAYOUT_TEMPLATE="$SCRIPT_DIR/templates/zellij/layouts/default.kdl"
 KITTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/kitty/kitty.conf.template"
+KITTY_OPEN_ACTIONS_TEMPLATE="$SCRIPT_DIR/templates/kitty/open-actions.conf.template"
+KITTY_QUICK_ACCESS_TEMPLATE="$SCRIPT_DIR/templates/kitty/quick-access-terminal.conf.template"
 P10K_TEMPLATE="$SCRIPT_DIR/templates/p10k.zsh.template"
 VPN_SOURCE_DIR="$SCRIPT_DIR/vpn"
 BACKUP_BASE="$HOME/.zsh_backups"
 BACKUP_DIR="$BACKUP_BASE/$(date +%Y%m%d_%H%M%S)"
 # Set when ~/.config/kitty/kitty.conf is replaced and a backup is created
 KITTY_BACKUP_PATH=""
+KITTY_OPEN_ACTIONS_BACKUP_PATH=""
+KITTY_QUICK_ACCESS_BACKUP_PATH=""
 # Set when ~/.p10k.zsh is replaced and a backup is created
 P10K_BACKUP_PATH=""
 STEP=0
@@ -195,15 +199,16 @@ install_home_p10k_zsh() {
     return 0
 }
 
-# Install ~/.config/kitty/kitty.conf from zshkit's Kitty template.
-# Backs up an existing file to $BACKUP_DIR/kitty.conf. Sets KITTY_BACKUP_PATH when a backup is created.
-install_home_kitty_conf() {
-    local src="$KITTY_CONFIG_TEMPLATE"
-    local kitty_dir="$HOME/.config/kitty"
-    local target="$kitty_dir/kitty.conf"
+# Install a Kitty config file from a zshkit template into ~/.config/kitty/.
+# Backs up an existing file into $BACKUP_DIR and records the backup path in
+# KITTY_LAST_BACKUP_PATH for the caller to store.
+install_home_kitty_template() {
+    local src="$1"
+    local target="$2"
+    local display_target="$3"
     local tmp
 
-    KITTY_BACKUP_PATH=""
+    KITTY_LAST_BACKUP_PATH=""
     if [ ! -f "$src" ]; then
         echo "  ✗ Missing Kitty template: $src"
         return 1
@@ -216,17 +221,17 @@ install_home_kitty_conf() {
         return 1
     fi
 
-    mkdir -p "$kitty_dir"
+    mkdir -p "$(dirname "$target")"
 
     if [ -f "$target" ]; then
         if [ -t 0 ]; then
-            printf "  ~/.config/kitty/kitty.conf already exists. Replace with zshkit template? [y/N] "
+            printf "  %s already exists. Replace with zshkit template? [y/N] " "$display_target"
             read -r _kitty_reply </dev/tty
             case "$_kitty_reply" in
                 [Yy]|[Yy][Ee][Ss]) ;;
                 *)
                     rm -f "$tmp"
-                    echo "  - Keeping existing ~/.config/kitty/kitty.conf"
+                    echo "  - Keeping existing $display_target"
                     return 0
                     ;;
             esac
@@ -236,22 +241,55 @@ install_home_kitty_conf() {
             echo "  ✗ Failed to create backup directory: $BACKUP_DIR"
             return 1
         fi
-        KITTY_BACKUP_PATH="$BACKUP_DIR/kitty.conf"
-        if ! cp "$target" "$KITTY_BACKUP_PATH"; then
+        KITTY_LAST_BACKUP_PATH="$BACKUP_DIR/$(basename "$target")"
+        if ! cp "$target" "$KITTY_LAST_BACKUP_PATH"; then
             rm -f "$tmp"
-            echo "  ✗ Failed to back up ~/.config/kitty/kitty.conf"
+            echo "  ✗ Failed to back up $display_target"
             return 1
         fi
-        echo "  ✓ Backup → $KITTY_BACKUP_PATH"
+        echo "  ✓ Backup → $KITTY_LAST_BACKUP_PATH"
     fi
 
     if ! mv "$tmp" "$target"; then
         rm -f "$tmp"
-        echo "  ✗ Failed to install ~/.config/kitty/kitty.conf"
+        echo "  ✗ Failed to install $display_target"
         return 1
     fi
-    echo "  ✓ Installed ~/.config/kitty/kitty.conf from zshkit template"
+    echo "  ✓ Installed $display_target from zshkit template"
     return 0
+}
+
+install_home_kitty_conf() {
+    KITTY_BACKUP_PATH=""
+    if ! install_home_kitty_template \
+        "$KITTY_CONFIG_TEMPLATE" \
+        "$HOME/.config/kitty/kitty.conf" \
+        "~/.config/kitty/kitty.conf"; then
+        return 1
+    fi
+    KITTY_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
+}
+
+install_home_kitty_open_actions() {
+    KITTY_OPEN_ACTIONS_BACKUP_PATH=""
+    if ! install_home_kitty_template \
+        "$KITTY_OPEN_ACTIONS_TEMPLATE" \
+        "$HOME/.config/kitty/open-actions.conf" \
+        "~/.config/kitty/open-actions.conf"; then
+        return 1
+    fi
+    KITTY_OPEN_ACTIONS_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
+}
+
+install_home_kitty_quick_access_conf() {
+    KITTY_QUICK_ACCESS_BACKUP_PATH=""
+    if ! install_home_kitty_template \
+        "$KITTY_QUICK_ACCESS_TEMPLATE" \
+        "$HOME/.config/kitty/quick-access-terminal.conf" \
+        "~/.config/kitty/quick-access-terminal.conf"; then
+        return 1
+    fi
+    KITTY_QUICK_ACCESS_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
 }
 
 template_must_exist() {
@@ -980,7 +1018,9 @@ fi
 
 if [ -z "${SSH_CONNECTION:-}" ] && command -v kitty &>/dev/null; then
     step "Installing Kitty config..."
-    if ! install_home_kitty_conf; then
+    if ! install_home_kitty_conf \
+        || ! install_home_kitty_open_actions \
+        || ! install_home_kitty_quick_access_conf; then
         exit 1
     fi
 else
@@ -1268,11 +1308,14 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "  1. Add personal exports/tokens to ~/.zshrc.local"
-if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$KITTY_BACKUP_PATH" ]; then
+if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$KITTY_BACKUP_PATH" ] \
+    || [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] || [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ]; then
     echo "     Previous file(s) backed up under: $BACKUP_DIR"
     [ -n "$BACKUP_PATH" ] && echo "       - .zshrc → $BACKUP_PATH"
     [ -n "$P10K_BACKUP_PATH" ] && echo "       - .p10k.zsh → $P10K_BACKUP_PATH"
     [ -n "$KITTY_BACKUP_PATH" ] && echo "       - kitty.conf → $KITTY_BACKUP_PATH"
+    [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] && echo "       - open-actions.conf → $KITTY_OPEN_ACTIONS_BACKUP_PATH"
+    [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ] && echo "       - quick-access-terminal.conf → $KITTY_QUICK_ACCESS_BACKUP_PATH"
 fi
 echo "     Optional VPN helper:"
 echo "       - Edit $(vpn_managed_dir)/vpn-credentials.txt"

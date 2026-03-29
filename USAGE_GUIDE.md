@@ -78,10 +78,16 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `rm` | Safer remove (`rm -I`) |
 | `mkdir` | Verbose parent-create (`mkdir -pv`) |
 | `grep` | Colorized grep |
+| `rg PATTERN [PATH]` | Ripgrep with Kitty hyperlinks enabled so file results are clickable in Kitty |
 | `h` | `history` |
 | `path` | Print one `PATH` entry per line |
 | `myip` | Public IP (`curl ifconfig.me`) |
 | `localip` | First local IP |
+| `clipcopy` | Copy stdin to the system clipboard using Kitty's clipboard kitten |
+| `clippaste` | Print current clipboard contents using Kitty's clipboard kitten |
+| `hg` | Run Kitty's hyperlinked grep kitten |
+| `icat [PATH]` | Preview images inline in Kitty |
+| `kqa` | Launch Kitty's quick-access terminal (`kitten quick-access-terminal --detach`) |
 | `sshv HOST [ARGS...]` | SSH with `ConnectTimeout=10`, terminal input reset, and a VPN hint on failure |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
@@ -106,6 +112,45 @@ Practical notes:
 - `yazi` is the better fit when you want to browse files and directories interactively inside the terminal instead of jumping straight to a known location.
 - `ducks` gives a fast top-level size summary for the current directory; `ncdu` is the better choice when you want to drill down through a directory tree and find what is using space.
 - `micro` is configured as the Zellij scrollback editor (the editor that opens when you press `e` in scroll mode). To also use it as your shell `$EDITOR`, add `export EDITOR=micro` to `~/.zshrc.local`.
+
+## Kitty
+
+zshkit treats Kitty as the default terminal and installs a few managed files under `~/.config/kitty/`:
+
+- `kitty.conf` for the main terminal behavior and keybindings
+- `open-actions.conf` so clickable file hyperlinks open in `micro` instead of a generic file browser
+- `quick-access-terminal.conf` for a Quake-style drop-down terminal starter config
+
+Inside Kitty:
+
+| Key | Action |
+|-----|--------|
+| `Ctrl+Shift+F2` | Open `kitty.conf` in your editor |
+| `Ctrl+Shift+F5` | Reload Kitty config |
+| `Ctrl+Shift+F3` | Open Kitty's command palette |
+| `Ctrl+T` / `Cmd+T` | Open a new tab next to the current tab |
+| `Ctrl+Shift+T` / `Cmd+Shift+T` | Open a new tab in the current working directory |
+| `Ctrl+Shift+O` | Open Kitty's fast file picker |
+| `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
+| `Ctrl+Shift+P`, then `f` | Hint-select a visible path and paste it into the prompt |
+| `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
+| `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
+| `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
+
+Shell helpers that pair well with Kitty:
+
+- `rg` emits Kitty hyperlinks, so file results from ripgrep are clickable
+- `hg` runs Kitty's hyperlinked grep kitten for richer interactive grep output
+- `clipcopy` / `clippaste` use Kitty's clipboard kitten, which is handy over SSH
+- `icat image.png` previews an image inline in the terminal
+- `kqa` launches Kitty's quick-access terminal using the managed starter config
+
+Quick-access terminal notes:
+
+- `kqa` is the easiest way to try it immediately
+- on Linux, bind your desktop/window-manager shortcut to `kitten quick-access-terminal --detach`
+- on macOS, first run `kqa` once, then assign the built-in Kitty Quick access service a shortcut in System Settings
+- tweak `~/.config/kitty/quick-access-terminal.conf` if you want a different height, edge, or opacity
 
 ## Disk Usage
 
