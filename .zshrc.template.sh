@@ -823,12 +823,7 @@ zjclean() {
         return 0
     fi
     echo "Sessions to delete:"
-    # Show each session with its age (time since last activity)
-    while IFS= read -r s; do
-        local age
-        age=$(zellij list-sessions --no-formatting 2>/dev/null | awk -v name="$s" '$1 == name {print $2, $3}')
-        printf '  %s  %s\n' "$s" "${age:-(unknown age)}"
-    done <<< "$sessions"
+    zellij list-sessions --no-formatting 2>/dev/null | sed 's/^/  /'
     printf "Delete all sessions and scrollback history? [y/N] "
     read -r _zjclean_confirm
     [[ "$_zjclean_confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; return 0; }
