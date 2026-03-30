@@ -885,6 +885,21 @@ _tab_title_precmd() {
 add-zsh-hook preexec _tab_title_preexec
 add-zsh-hook precmd  _tab_title_precmd
 
+# Auto-fetch git remotes in the background so the p10k prompt ahead/behind
+# counts stay current. Runs at most once per 60 seconds per repo.
+_zshkit_auto_fetch() {
+    local repo
+    repo=$(git rev-parse --show-toplevel 2>/dev/null) || return
+    local marker="$repo/.git/.zshkit_last_fetch"
+    local mtime=0
+    [[ -f "$marker" ]] && mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)
+    if (( EPOCHSECONDS - mtime > 60 )); then
+        touch "$marker"
+        git -C "$repo" fetch -q --all &!
+    fi
+}
+add-zsh-hook precmd _zshkit_auto_fetch
+
 # Show disk usage of directories (top 10)
 ducks() { du -sh * 2>/dev/null | sort -hr | head -11; }
 
