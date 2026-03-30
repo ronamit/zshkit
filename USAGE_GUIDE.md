@@ -313,15 +313,15 @@ Managed defaults:
 
 Main session command:
 
-- `zj` picks an active session with `fzf` when available, or starts `main`
+- `zj` picks an active session with `fzf` when available; if no sessions exist, it starts one named after the current directory
 - Outside Zellij, `zj work` attaches to or creates `work`
 - Inside Zellij, `zj work` creates `work` in the background if needed, then opens the session manager plugin so you can switch to it; if the plugin fails to launch, it prints the manual shortcut (`Ctrl+o, w`)
 
 | Command | Does |
 |---------|------|
-| `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. |
-| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote |
-| `zjclean` | Delete all sessions and their scrollback/resurrection history — next `zj` starts completely fresh |
+| `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. When starting fresh with no name, defaults to current directory name. |
+| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. Sets the terminal tab title immediately to `session @ host`. |
+| `zjclean` | Delete all sessions and their scrollback/resurrection history — lists each session with its age before confirming |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |
 | `zellij delete-all-sessions -f` | Delete every Zellij session, killing running ones first |
@@ -435,6 +435,36 @@ Practical use: open a floating pane for a quick reference (`man curl`, a Python 
 | Permission handling | Installer pre-seeds `zjstatus` permissions cache; if a prompt still appears, focus the bar and press `y` |
 | Session restore | Enabled via Zellij serialization settings |
 | Scrollback | `100000` lines |
+
+### Claude Code Integration
+
+zshkit installs [zellij-attention](https://github.com/KiryuuLight/zellij-attention), a background plugin that adds status icons to Zellij tab names when Claude Code is running:
+
+| Icon | Meaning |
+|------|---------|
+| ⏳ | Claude is waiting for your input |
+| ✅ | Claude finished its task |
+
+The icon clears automatically when you focus the pane. This works alongside the existing `zjstatus` bar — no tab bar changes needed.
+
+Claude Code hooks in `~/.claude/settings.json` wire up the notifications automatically. When Claude finishes, the terminal tab title also updates to show `✅ claude done`.
+
+### Terminal Tab Titles
+
+zshkit sets terminal tab titles via OSC 2 escape sequences, supported by Kitty, Ghostty, WezTerm, iTerm2, and most modern terminals.
+
+Format: `session @ host | ✓ dir`
+
+| State | Title |
+|-------|-------|
+| Command running | `main @ myserver \| ▶ git` |
+| Command succeeded | `main @ myserver \| ✓ zshkit` |
+| Command failed | `main @ myserver \| ✗ zshkit` |
+| Outside Zellij | `hostname \| ✓ dir` |
+
+When using `zjs` to SSH into a remote, the tab title updates immediately to `session @ host` before the remote prompt appears.
+
+Kitty's own automatic tab title updates are disabled (`shell_integration enabled no-title`) since zshkit manages titles directly. To restore Kitty's default behaviour, change this line in `~/.config/kitty/kitty.conf`.
 
 ## References
 

@@ -127,7 +127,7 @@ Start or reconnect to a named workspace — useful for keeping remote SSH work
 alive across disconnects:
 
 ```bash
-zj          # pick from active sessions (or start "main" if none)
+zj          # pick from active sessions (or start one named after current dir)
 zj my-session     # attach to or create a session named "my-session"
 ```
 

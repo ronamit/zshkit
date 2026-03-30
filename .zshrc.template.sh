@@ -314,7 +314,9 @@ alias rm='rm -I'         # Prompt only for >3 files or recursive deletes
 alias mkdir='mkdir -pv'
 
 if command -v rg &>/dev/null; then
-    alias rg='rg --hyperlink-format=kitty'
+    if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
+        alias rg='rg --hyperlink-format=kitty'
+    fi
 fi
 alias grep='grep --color=auto'
 
@@ -850,8 +852,9 @@ zjs() {
     sshv -o ConnectTimeout=30 -t "$host" "~/.local/bin/zellij attach --create $session"
 }
 
-# Show ▶/✓/✗ in the terminal (Kitty) tab title based on command state.
-# Uses OSC 2 escape sequences, which Kitty displays as the tab title.
+# Show ▶/✓/✗ in the terminal tab title based on command state.
+# Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
+# Windows Terminal, and most modern terminals.
 # Format: "session @ host | ✓ dir"  (session omitted if not in Zellij)
 # preexec: fires after Enter, before the command runs — show ▶ + command name.
 # precmd:  fires before each prompt (after command finishes) — show ✓ or ✗ + context.
