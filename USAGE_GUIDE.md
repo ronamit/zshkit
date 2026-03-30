@@ -320,7 +320,7 @@ Main session command:
 | Command | Does |
 |---------|------|
 | `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. |
-| `zjssh host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote |
+| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote |
 | `zjclean` | Delete all sessions and their scrollback/resurrection history — next `zj` starts completely fresh |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |

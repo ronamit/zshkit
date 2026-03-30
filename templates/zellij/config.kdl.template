@@ -17,3 +17,12 @@ copy_on_select true
 advanced_mouse_actions true
 
 __SCROLLBACK_EDITOR_LINE__
+
+// zellij-attention: adds ⏳/✅ icons to tab names when Claude Code needs input or finishes.
+// Icons clear automatically when you focus the pane.
+load_plugins {
+    "file:~/.config/zellij/plugins/zellij-attention.wasm" {
+        waiting_icon "⏳"
+        completed_icon "✅"
+    }
+}

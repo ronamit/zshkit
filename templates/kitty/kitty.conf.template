@@ -87,7 +87,10 @@ detect_urls yes
 url_style curly
 
 # Shell integration enables scroll-to-prompt and last-command-output features.
-shell_integration enabled
+# no-title disables Kitty's automatic tab title updates (last command run),
+# since zshkit sets titles explicitly via OSC 2 in zshrc (▶/✓/✗ indicators).
+# To restore Kitty's default behaviour, change this to: shell_integration enabled
+shell_integration enabled no-title
 
 # Notify when a long-running command finishes in a background window.
 notify_on_cmd_finish invisible 10.0

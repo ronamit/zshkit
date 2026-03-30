@@ -760,8 +760,9 @@ zj() {
         local sessions
         sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
         if [[ -z "$sessions" ]]; then
-            echo "No active Zellij sessions. Starting 'main'..."
-            session="main"
+            # Default new session name to current directory name
+            session="${PWD##*/}"
+            echo "No active Zellij sessions. Starting '$session'..."
         elif command -v fzf &>/dev/null; then
             session=$(printf '%s\n' "$sessions" | fzf --prompt="session > " --height=10 --layout=reverse --border) || return 0
         else
@@ -820,7 +821,12 @@ zjclean() {
         return 0
     fi
     echo "Sessions to delete:"
-    printf '%s\n' "$sessions" | sed 's/^/  /'
+    # Show each session with its age (time since last activity)
+    while IFS= read -r s; do
+        local age
+        age=$(zellij list-sessions --no-formatting 2>/dev/null | awk -v name="$s" '$1 == name {print $2, $3}')
+        printf '  %s  %s\n' "$s" "${age:-(unknown age)}"
+    done <<< "$sessions"
     printf "Delete all sessions and scrollback history? [y/N] "
     read -r _zjclean_confirm
     [[ "$_zjclean_confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; return 0; }
@@ -833,14 +839,45 @@ zjclean() {
 
 # SSH into a host and attach to (or create) a named Zellij session.
 # Requires zshkit (and therefore zellij) installed on the remote.
-# Usage: zjssh host [session]
-#   zjssh myserver          → attach to/create session "main"
-#   zjssh myserver work     → attach to/create session "work"
-zjssh() {
-    local host="${1:?usage: zjssh host [session]}"
+# Usage: zjs host [session]
+#   zjs myserver          → attach to/create session "main"
+#   zjs myserver work     → attach to/create session "work"
+zjs() {
+    local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
+    # Set Kitty tab title immediately so the tab is labelled before the remote prompt appears
+    printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
     sshv -o ConnectTimeout=30 -t "$host" "~/.local/bin/zellij attach --create $session"
 }
+
+# Show ▶/✓/✗ in the terminal (Kitty) tab title based on command state.
+# Uses OSC 2 escape sequences, which Kitty displays as the tab title.
+# Format: "session @ host | ✓ dir"  (session omitted if not in Zellij)
+# preexec: fires after Enter, before the command runs — show ▶ + command name.
+# precmd:  fires before each prompt (after command finishes) — show ✓ or ✗ + context.
+_tab_title_context() {
+    local host="${HOST%%.*}"
+    if [[ -n $ZELLIJ_SESSION_NAME ]]; then
+        echo "${ZELLIJ_SESSION_NAME} @ ${host}"
+    else
+        echo "$host"
+    fi
+}
+_tab_title_preexec() {
+    local cmd="${1%% *}"
+    printf '\e]2;%s | ▶ %s\a' "$(_tab_title_context)" "$cmd"
+}
+_tab_title_precmd() {
+    local result=$?
+    local dir="${PWD##*/}"
+    if (( result == 0 )); then
+        printf '\e]2;%s | ✓ %s\a' "$(_tab_title_context)" "$dir"
+    else
+        printf '\e]2;%s | ✗ %s\a' "$(_tab_title_context)" "$dir"
+    fi
+}
+add-zsh-hook preexec _tab_title_preexec
+add-zsh-hook precmd  _tab_title_precmd
 
 # Show disk usage of directories (top 10)
 ducks() { du -sh * 2>/dev/null | sort -hr | head -11; }

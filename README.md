@@ -7,7 +7,7 @@ zshkit is my personal terminal setup bundled into a single install script. It co
 | To do this... | Run this | Powered by |
 | :--- | :--- | :--- |
 | Keep a remote session alive across disconnects | `zj` | [Zellij](https://zellij.dev/) |
-| SSH into a remote host and attach to a Zellij session | `zjssh host [session]` | [Zellij](https://zellij.dev/) + `sshv` |
+| SSH into a remote host and attach to a Zellij session | `zjs host [session]` | [Zellij](https://zellij.dev/) + `sshv` |
 | Jump instantly to a frequent directory | `z <name>` | [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Fuzzy-search history or insert a file path | `Ctrl+R` / `Ctrl+T` | [fzf](https://github.com/junegunn/fzf) |
 | Interactively browse disk usage | `ncdu` | [ncdu](https://dev.yorhel.nl/ncdu) |
@@ -20,7 +20,8 @@ zshkit is my personal terminal setup bundled into a single install script. It co
 2. Run the installer:
 
 ```bash
-bash setup_zsh.sh
+bash setup_zsh.sh        # interactive (prompts before replacing existing configs)
+bash setup_zsh.sh --yes  # non-interactive (auto-confirm all prompts)
 ```
 
 **Requirements:** Linux (Ubuntu/Debian) or macOS with [Homebrew](https://brew.sh).
@@ -136,11 +137,11 @@ floating panes, scrollback search, and more.
 
 > **Tip:** For this to work, run `bash setup_zsh.sh` on the **remote machine** too — Zellij needs to be installed there for the session to live on the remote side. Your local install gives you the shell setup; the remote install is what keeps your sessions alive across disconnects.
 
-`zjssh` connects to a remote host and drops you straight into a named Zellij session:
+`zjs` connects to a remote host and drops you straight into a named Zellij session:
 
 ```bash
-zjssh myserver          # attach to/create session "main"
-zjssh myserver work     # attach to/create session "work"
+zjs myserver          # attach to/create session "main"
+zjs myserver work     # attach to/create session "work"
 ```
 
 ## Docs

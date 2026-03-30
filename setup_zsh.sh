@@ -32,6 +32,7 @@ fi
 
 ZELLIJ_VERSION="${ZELLIJ_VERSION:-v0.44.0}"
 ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-v0.22.0}"
+ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-v0.3.1}"
 
 SSH_CONFIG="$HOME/.ssh/config"
 SSH_MARKER_BEGIN="# >>> zshkit ssh defaults >>>"
@@ -913,6 +914,7 @@ mkdir -p "$ZELLIJ_LAYOUTS_DIR" "$ZELLIJ_PLUGIN_DIR" "$HOME/.local/bin"
 backup_file_if_exists "$ZELLIJ_CONFIG_DIR/config.kdl" "$BACKUP_DIR/zellij_config.kdl"
 backup_file_if_exists "$ZELLIJ_LAYOUTS_DIR/default.kdl" "$BACKUP_DIR/zellij_default_layout.kdl"
 backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" "$BACKUP_DIR/zjstatus.wasm"
+backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" "$BACKUP_DIR/zellij-attention.wasm"
 
 if [ -f "$ZELLIJ_METRICS_TEMPLATE" ]; then
     cp "$ZELLIJ_METRICS_TEMPLATE" "$HOME/.local/bin/zellij-metrics"
@@ -935,7 +937,7 @@ else
 fi
 
 # --- UNSUPPORTED WORKAROUND: Seed Zellij permissions cache ---
-# This bypasses the interactive 'y' prompt for zjstatus on fresh machines.
+# This bypasses the interactive 'y' prompt for plugins on fresh machines.
 # Note: Zellij may change this cache format or path in future versions.
 ZELLIJ_CACHE_DIR="$HOME/.cache/zellij"
 PERM_FILE="$ZELLIJ_CACHE_DIR/permissions.kdl"
@@ -952,7 +954,27 @@ if [ ! -f "$PERM_FILE" ] || ! grep -qF "$ZJSTATUS_PERM_KEY" "$PERM_FILE"; then
 else
     echo "  ✓ Zellij permissions for zjstatus already seeded"
 fi
+
+_ATTENTION_PERM_KEY="$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
+if [ ! -f "$PERM_FILE" ] || ! grep -qF "$_ATTENTION_PERM_KEY" "$PERM_FILE"; then
+    echo "  ! Seeding Zellij permissions cache for zellij-attention (unsupported workaround)"
+    printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
+        "$_ATTENTION_PERM_KEY" >> "$PERM_FILE"
+else
+    echo "  ✓ Zellij permissions for zellij-attention already seeded"
+fi
 # -------------------------------------------------------------
+
+step "Installing Zellij attention plugin (zellij-attention)..."
+_attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
+
+if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
+    echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
+else
+    echo "  ✗ Failed to download zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
+    rm -f "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
+    exit 1
+fi
 
 render_template_to_file \
     "$ZELLIJ_CONFIG_TEMPLATE" \
