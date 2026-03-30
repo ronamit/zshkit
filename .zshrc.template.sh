@@ -867,16 +867,14 @@ _tab_title_context() {
     fi
 }
 _tab_title_preexec() {
-    local cmd="${1%% *}"
-    printf '\e]2;%s | ▶ %s\a' "$(_tab_title_context)" "$cmd"
+    printf '\e]2;%s ▶\a' "$(_tab_title_context)"
 }
 _tab_title_precmd() {
     local result=$?
-    local dir="${PWD##*/}"
     if (( result == 0 )); then
-        printf '\e]2;%s | ✓ %s\a' "$(_tab_title_context)" "$dir"
+        printf '\e]2;%s ✓\a' "$(_tab_title_context)"
     else
-        printf '\e]2;%s | ✗ %s\a' "$(_tab_title_context)" "$dir"
+        printf '\e]2;%s ✗\a' "$(_tab_title_context)"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
