@@ -53,6 +53,7 @@ tab_bar_min_tabs 1
 tab_bar_drag_threshold 5
 tab_bar_style powerline
 tab_powerline_style round
+tab_title_template {title}
 
 # Make the window feel less cramped without changing layout behavior.
 window_padding_width 2
