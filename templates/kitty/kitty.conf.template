@@ -2,37 +2,37 @@
 # Open this file from inside Kitty with Ctrl+Shift+F2 (Cmd+, on macOS).
 # Reload changes with Ctrl+Shift+F5.
 
-# Tokyo Night color theme.
+# Catppuccin Macchiato color theme.
 # To use a different theme, replace these color lines or run: kitten themes
-background             #1a1b26
-foreground             #c0caf5
-cursor                 #c0caf5
-cursor_text_color      #1a1b26
-selection_background   #364a82
-selection_foreground   #c0caf5
-url_color              #73daca
-color0                 #15161e
-color1                 #f7768e
-color2                 #9ece6a
-color3                 #e0af68
-color4                 #7aa2f7
-color5                 #bb9af7
-color6                 #7dcfff
-color7                 #a9b1d6
-color8                 #414868
-color9                 #f7768e
-color10                #9ece6a
-color11                #e0af68
-color12                #7aa2f7
-color13                #bb9af7
-color14                #7dcfff
-color15                #c0caf5
-active_tab_foreground   #16161e
-active_tab_background   #7aa2f7
-inactive_tab_foreground #545c7e
-inactive_tab_background #1a1b26
-active_border_color    #7aa2f7
-inactive_border_color  #414868
+background             #24273a
+foreground             #cad3f5
+cursor                 #f4dbd6
+cursor_text_color      #24273a
+selection_background   #5b6078
+selection_foreground   #cad3f5
+url_color              #8aadf4
+color0                 #494d64
+color1                 #ed8796
+color2                 #a6da95
+color3                 #eed49f
+color4                 #8aadf4
+color5                 #f5bde6
+color6                 #8bd5ca
+color7                 #b8c0e0
+color8                 #5b6078
+color9                 #ed8796
+color10                #a6da95
+color11                #eed49f
+color12                #8aadf4
+color13                #f5bde6
+color14                #8bd5ca
+color15                #a5adcb
+active_tab_foreground   #24273a
+active_tab_background   #8aadf4
+inactive_tab_foreground #6e738d
+inactive_tab_background #1e2030
+active_border_color    #8aadf4
+inactive_border_color  #494d64
 
 # Keep the terminal quiet and give long commands more history.
 enable_audio_bell no
