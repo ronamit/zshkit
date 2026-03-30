@@ -98,6 +98,12 @@ inactive_text_alpha 0.75
 # Skip the "close window?" confirmation dialog.
 confirm_os_window_close 0
 
+# Allow the zjssh shell function to open tabs programmatically via the socket.
+# socket-only restricts control to the local socket — nothing inside the terminal
+# can send remote-control commands.
+allow_remote_control socket-only
+listen_on unix:/tmp/kitty
+
 # Open new tabs and windows in the current working directory.
 map ctrl+shift+t new_tab_with_cwd
 map cmd+shift+t new_tab_with_cwd

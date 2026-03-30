@@ -135,6 +135,23 @@ floating panes, scrollback search, and more.
 
 > **Tip:** For this to work, run `bash setup_zsh.sh` on the **remote machine** too — Zellij needs to be installed there for the session to live on the remote side. Your local install gives you the shell setup; the remote install is what keeps your sessions alive across disconnects.
 
+### Opening multiple remote sessions at once
+
+`zjssh` opens one Kitty tab per Zellij session on a remote host in a single command:
+
+```bash
+zjssh myserver                   # one tab → session "main"
+zjssh myserver work infra logs   # three tabs, one per named session
+```
+
+For a fixed daily layout (e.g. the same three tabs every morning), create a Kitty session file at `~/.config/kitty/sessions/work.conf` and alias it:
+
+```bash
+alias work='kitty --session ~/.config/kitty/sessions/work.conf'
+```
+
+See [USAGE_GUIDE.md](USAGE_GUIDE.md#remote-zellij-sessions-in-kitty-tabs) for the full session file format.
+
 ## Docs
 
 - [SETUP_DETAILS.md](SETUP_DETAILS.md) — install details, customization,

@@ -128,7 +128,6 @@ Inside Kitty:
 | `Ctrl+Shift+F2` | Open `kitty.conf` in your editor |
 | `Ctrl+Shift+F5` | Reload Kitty config |
 | `Ctrl+Shift+F3` | Open Kitty's command palette |
-| `Ctrl+T` / `Cmd+T` | Open a new tab next to the current tab |
 | `Ctrl+Shift+T` / `Cmd+Shift+T` | Open a new tab in the current working directory |
 | `Ctrl+Shift+O` | Open Kitty's fast file picker |
 | `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
@@ -148,6 +147,49 @@ Shell helpers that pair well with Kitty:
 - `clipcopy` / `clippaste` use Kitty's clipboard kitten, which is handy over SSH
 - `icat image.png` previews an image inline in the terminal
 - `kqa` launches Kitty's quick-access terminal using the managed starter config
+
+### Remote Zellij sessions in Kitty tabs
+
+Two ways to open multiple Zellij sessions on a remote machine, each in its own Kitty tab.
+
+**`zjssh` — dynamic, one command**
+
+```bash
+zjssh myserver                   # one tab → zellij session "main"
+zjssh myserver work infra logs   # three tabs, one per named session
+```
+
+Each tab SSHs into the host and runs `zellij attach -c -s <session>` (creates the session if it doesn't exist yet). Powered by `kitty @ launch`, which is enabled by the `allow_remote_control socket-only` setting in `kitty.conf`.
+
+#### Kitty session files — fixed daily layout, one alias
+
+Create `~/.config/kitty/sessions/work.conf` (copy and edit as needed):
+
+```conf
+new_tab work
+launch ssh myserver -t "zellij attach -c -s work"
+
+new_tab infra
+launch ssh myserver -t "zellij attach -c -s infra"
+
+new_tab logs
+launch ssh myserver -t "zellij attach -c -s logs"
+```
+
+Open the whole layout with:
+
+```bash
+kitty --session ~/.config/kitty/sessions/work.conf
+```
+
+Add an alias for instant access:
+
+```bash
+# in ~/.zshrc.local
+alias work='kitty --session ~/.config/kitty/sessions/work.conf'
+```
+
+The two approaches compose: use a session file to open your standard layout at the start of the day, then use `zjssh` to add extra tabs on the fly.
 
 Quick-access terminal notes:
 
