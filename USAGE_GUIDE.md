@@ -132,6 +132,10 @@ Inside Kitty:
 | `Ctrl+Shift+T` / `Cmd+Shift+T` | Open a new tab in the current working directory |
 | `Ctrl+Shift+O` | Open Kitty's fast file picker |
 | `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
+| `Ctrl+Shift+Z` | Scroll back to the previous shell prompt |
+| `Ctrl+Shift+X` | Scroll forward to the next shell prompt |
+| `Ctrl+Shift+G` | Show the output of the last command in a scrollable overlay |
+| `Alt+1` – `Alt+9` | Jump directly to tab 1–9 |
 | `Ctrl+Shift+P`, then `f` | Hint-select a visible path and paste it into the prompt |
 | `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
 | `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |

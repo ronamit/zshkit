@@ -2,9 +2,43 @@
 # Open this file from inside Kitty with Ctrl+Shift+F2 (Cmd+, on macOS).
 # Reload changes with Ctrl+Shift+F5.
 
+# Tokyo Night color theme.
+# To use a different theme, replace these color lines or run: kitten themes
+background             #1a1b26
+foreground             #c0caf5
+cursor                 #c0caf5
+cursor_text_color      #1a1b26
+selection_background   #364a82
+selection_foreground   #c0caf5
+url_color              #73daca
+color0                 #15161e
+color1                 #f7768e
+color2                 #9ece6a
+color3                 #e0af68
+color4                 #7aa2f7
+color5                 #bb9af7
+color6                 #7dcfff
+color7                 #a9b1d6
+color8                 #414868
+color9                 #f7768e
+color10                #9ece6a
+color11                #e0af68
+color12                #7aa2f7
+color13                #bb9af7
+color14                #7dcfff
+color15                #c0caf5
+active_tab_foreground   #16161e
+active_tab_background   #7aa2f7
+inactive_tab_foreground #545c7e
+inactive_tab_background #1a1b26
+active_border_color    #7aa2f7
+inactive_border_color  #414868
+
 # Keep the terminal quiet and give long commands more history.
 enable_audio_bell no
+bell_on_tab yes
 scrollback_lines 10000
+wheel_scroll_multiplier 3.0
 
 # Match the Nerd Font installed by zshkit so prompt icons render cleanly.
 font_family MesloLGS NF
@@ -42,17 +76,51 @@ cursor_shape block
 mouse_map right release ungrabbed paste_from_clipboard
 mouse_map middle release ungrabbed paste_from_selection
 
+# Copy selected text to clipboard automatically (standard X11 behavior).
+copy_on_select yes
+
+# Confirm before pasting large blocks; quote URLs pasted at a prompt.
+paste_actions quote-urls-at-prompt,confirm-if-large
+
+# Detect and underline URLs so you can open them with Ctrl+Click.
+detect_urls yes
+url_style curly
+
+# Shell integration enables scroll-to-prompt and last-command-output features.
+shell_integration enabled
+
 # Notify when a long-running command finishes in a background window.
 notify_on_cmd_finish invisible 10.0
 
 # Slightly dim inactive Kitty panes if you use Kitty splits.
 inactive_text_alpha 0.75
 
+# Skip the "close window?" confirmation dialog.
+confirm_os_window_close 0
+
 # Open new tabs and windows in the current working directory.
 map ctrl+t new_tab !neighbor
 map cmd+t new_tab !neighbor
 map ctrl+shift+t new_tab_with_cwd
 map cmd+shift+t new_tab_with_cwd
+
+# Jump directly to a tab by number.
+map alt+1 goto_tab 1
+map alt+2 goto_tab 2
+map alt+3 goto_tab 3
+map alt+4 goto_tab 4
+map alt+5 goto_tab 5
+map alt+6 goto_tab 6
+map alt+7 goto_tab 7
+map alt+8 goto_tab 8
+map alt+9 goto_tab 9
+
+# Scroll between shell prompts (requires shell_integration enabled above).
+map ctrl+shift+z scroll_to_prompt -1
+map ctrl+shift+x scroll_to_prompt 1
+
+# Show the output of the last command in a scrollable overlay.
+map ctrl+shift+g show_last_command_output
 
 # Expose Kitty's fast file/directory picker from the keyboard.
 map ctrl+shift+o kitten choose-files
