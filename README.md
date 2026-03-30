@@ -7,6 +7,7 @@ zshkit is my personal terminal setup bundled into a single install script. It co
 | To do this... | Run this | Powered by |
 | :--- | :--- | :--- |
 | Keep a remote session alive across disconnects | `zj` | [Zellij](https://zellij.dev/) |
+| SSH into a remote host and attach to a Zellij session | `zjssh host [session]` | [Zellij](https://zellij.dev/) + `sshv` |
 | Jump instantly to a frequent directory | `z <name>` | [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Fuzzy-search history or insert a file path | `Ctrl+R` / `Ctrl+T` | [fzf](https://github.com/junegunn/fzf) |
 | Interactively browse disk usage | `ncdu` | [ncdu](https://dev.yorhel.nl/ncdu) |
@@ -135,22 +136,12 @@ floating panes, scrollback search, and more.
 
 > **Tip:** For this to work, run `bash setup_zsh.sh` on the **remote machine** too — Zellij needs to be installed there for the session to live on the remote side. Your local install gives you the shell setup; the remote install is what keeps your sessions alive across disconnects.
 
-### Opening multiple remote sessions at once
-
-`zjssh` opens one Kitty tab per Zellij session on a remote host in a single command:
+`zjssh` connects to a remote host and drops you straight into a named Zellij session:
 
 ```bash
-zjssh myserver                   # one tab → session "main"
-zjssh myserver work infra logs   # three tabs, one per named session
+zjssh myserver          # attach to/create session "main"
+zjssh myserver work     # attach to/create session "work"
 ```
-
-For a fixed daily layout (e.g. the same three tabs every morning), create a Kitty session file at `~/.config/kitty/sessions/work.conf` and alias it:
-
-```bash
-alias work='kitty --session ~/.config/kitty/sessions/work.conf'
-```
-
-See [USAGE_GUIDE.md](USAGE_GUIDE.md#remote-zellij-sessions-in-kitty-tabs) for the full session file format.
 
 ## Docs
 

@@ -4,7 +4,7 @@
 
 # Catppuccin Macchiato color theme.
 # To use a different theme, replace these color lines or run: kitten themes
-background             #24273a
+background             #1e2030
 foreground             #cad3f5
 cursor                 #f4dbd6
 cursor_text_color      #24273a
@@ -95,14 +95,12 @@ notify_on_cmd_finish invisible 10.0
 # Slightly dim inactive Kitty panes if you use Kitty splits.
 inactive_text_alpha 0.75
 
+# Restore the previous tab layout and working directories when Kitty restarts.
+# Saves tab titles and CWDs on exit; does not restore scrollback content.
+restore_session after_restart
+
 # Skip the "close window?" confirmation dialog.
 confirm_os_window_close 0
-
-# Allow the zjssh shell function to open tabs programmatically via the socket.
-# socket-only restricts control to the local socket — nothing inside the terminal
-# can send remote-control commands.
-allow_remote_control socket-only
-listen_on unix:/tmp/kitty
 
 # Open new tabs and windows in the current working directory.
 map ctrl+shift+t new_tab_with_cwd

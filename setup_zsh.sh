@@ -7,11 +7,21 @@
 # - Linux (Debian/Ubuntu): uses apt.
 # - macOS: uses Homebrew (install from https://brew.sh if missing).
 #
-# Usage:  bash setup_zsh.sh
+# Usage:  bash setup_zsh.sh [--yes|-y]
+#   --yes / -y   auto-confirm all prompts (replace existing configs without asking)
 # ======================================================================
 
 # Fail on undefined variables and pipe errors.
 set -uo pipefail
+
+ZSHKIT_YES=0
+for _arg in "$@"; do
+    case "$_arg" in
+        --yes|-y) ZSHKIT_YES=1 ;;
+        *) echo "Unknown argument: $_arg"; exit 1 ;;
+    esac
+done
+unset _arg
 
 # Apple Silicon Homebrew is not in default PATH on fresh macOS; ensure brew is available.
 if [[ "$(uname -s)" == "Darwin" && -x /opt/homebrew/bin/brew ]]; then
@@ -164,7 +174,7 @@ install_home_p10k_zsh() {
     fi
 
     if [ -f "$target" ]; then
-        if [ -t 0 ]; then
+        if [ "$ZSHKIT_YES" -eq 0 ] && [ -t 0 ]; then
             printf "  ~/.p10k.zsh already exists. Replace with zshkit template? [y/N] "
             read -r _p10k_reply </dev/tty
             case "$_p10k_reply" in
@@ -224,7 +234,7 @@ install_home_kitty_template() {
     mkdir -p "$(dirname "$target")"
 
     if [ -f "$target" ]; then
-        if [ -t 0 ]; then
+        if [ "$ZSHKIT_YES" -eq 0 ] && [ -t 0 ]; then
             printf "  %s already exists. Replace with zshkit template? [y/N] " "$display_target"
             read -r _kitty_reply </dev/tty
             case "$_kitty_reply" in

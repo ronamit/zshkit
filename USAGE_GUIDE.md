@@ -140,6 +140,10 @@ Inside Kitty:
 | `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
 | `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
 
+### Session restore
+
+Kitty saves the current tab layout and working directories on exit and restores them on next launch (`restore_session after_restart` in `kitty.conf`). Tab titles and CWDs are preserved; scrollback content is not.
+
 Shell helpers that pair well with Kitty:
 
 - `rg` emits Kitty hyperlinks, so file results from ripgrep are clickable
@@ -148,22 +152,9 @@ Shell helpers that pair well with Kitty:
 - `icat image.png` previews an image inline in the terminal
 - `kqa` launches Kitty's quick-access terminal using the managed starter config
 
-### Remote Zellij sessions in Kitty tabs
+### Kitty session files — fixed daily layout
 
-Two ways to open multiple Zellij sessions on a remote machine, each in its own Kitty tab.
-
-**`zjssh` — dynamic, one command**
-
-```bash
-zjssh myserver                   # one tab → zellij session "main"
-zjssh myserver work infra logs   # three tabs, one per named session
-```
-
-Each tab SSHs into the host and runs `zellij attach -c -s <session>` (creates the session if it doesn't exist yet). Powered by `kitty @ launch`, which is enabled by the `allow_remote_control socket-only` setting in `kitty.conf`.
-
-#### Kitty session files — fixed daily layout, one alias
-
-Create `~/.config/kitty/sessions/work.conf` (copy and edit as needed):
+To open a fixed set of tabs automatically (e.g. your daily SSH layout), create `~/.config/kitty/sessions/work.conf`:
 
 ```conf
 new_tab work
@@ -171,25 +162,13 @@ launch ssh myserver -t "zellij attach -c -s work"
 
 new_tab infra
 launch ssh myserver -t "zellij attach -c -s infra"
-
-new_tab logs
-launch ssh myserver -t "zellij attach -c -s logs"
 ```
 
-Open the whole layout with:
+Open it with `kitty --session ~/.config/kitty/sessions/work.conf`, or add an alias in `~/.zshrc.local`:
 
 ```bash
-kitty --session ~/.config/kitty/sessions/work.conf
-```
-
-Add an alias for instant access:
-
-```bash
-# in ~/.zshrc.local
 alias work='kitty --session ~/.config/kitty/sessions/work.conf'
 ```
-
-The two approaches compose: use a session file to open your standard layout at the start of the day, then use `zjssh` to add extra tabs on the fly.
 
 Quick-access terminal notes:
 
@@ -341,6 +320,7 @@ Main session command:
 | Command | Does |
 |---------|------|
 | `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. |
+| `zjssh host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote |
 | `zjclean` | Delete all sessions and their scrollback/resurrection history — next `zj` starts completely fresh |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |

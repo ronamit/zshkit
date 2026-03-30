@@ -831,24 +831,15 @@ zjclean() {
     done
 }
 
-# Open one Kitty tab per Zellij session on a remote host.
-# Requires allow_remote_control socket-only + listen_on in kitty.conf (set by zshkit).
-#
-# Usage: zjssh host [session…]
-#   zjssh myserver                  → one tab, attaches to/creates "main"
-#   zjssh myserver work infra logs  → three tabs, one per session
+# SSH into a host and attach to (or create) a named Zellij session.
+# Requires zshkit (and therefore zellij) installed on the remote.
+# Usage: zjssh host [session]
+#   zjssh myserver          → attach to/create session "main"
+#   zjssh myserver work     → attach to/create session "work"
 zjssh() {
-    if [[ -z "${KITTY_WINDOW_ID:-}" ]]; then
-        echo "zjssh: must be run inside Kitty"
-        return 1
-    fi
-    local host="${1:?usage: zjssh host [session…]}"
-    shift
-    local sessions=("${@:-main}")
-    for s in "${sessions[@]}"; do
-        kitty @ launch --type=tab --tab-title "$host:$s" \
-            -- zsh -c "sshv $host -t 'zj $s'"
-    done
+    local host="${1:?usage: zjssh host [session]}"
+    local session="${2:-main}"
+    sshv -o ConnectTimeout=30 -t "$host" "~/.local/bin/zellij attach --create $session"
 }
 
 # Show disk usage of directories (top 10)
