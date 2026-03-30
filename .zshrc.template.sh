@@ -866,15 +866,23 @@ _tab_title_context() {
         echo "$host"
     fi
 }
+_tab_title_set() {
+    local title="$1"
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        command zellij action rename-tab "$title" 2>/dev/null || true
+    else
+        printf '\e]2;%s\a' "$title"
+    fi
+}
 _tab_title_preexec() {
-    printf '\e]2;%s ▶\a' "$(_tab_title_context)"
+    _tab_title_set "$(_tab_title_context) ▶"
 }
 _tab_title_precmd() {
     local result=$?
     if (( result == 0 )); then
-        printf '\e]2;%s ✓\a' "$(_tab_title_context)"
+        _tab_title_set "$(_tab_title_context) ✓"
     else
-        printf '\e]2;%s ✗\a' "$(_tab_title_context)"
+        _tab_title_set "$(_tab_title_context) ✗"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec

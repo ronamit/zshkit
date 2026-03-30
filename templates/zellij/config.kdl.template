@@ -1,5 +1,4 @@
 simplified_ui true
-propagate_window_title true
 pane_frames false
 scroll_buffer_size 100000
 serialize_pane_viewport true
