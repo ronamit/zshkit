@@ -860,29 +860,26 @@ zjs() {
 # precmd:  fires before each prompt (after command finishes) — show ✓ or ✗ + context.
 _tab_title_context() {
     local host="${HOST%%.*}"
-    if [[ -n $ZELLIJ_SESSION_NAME ]]; then
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        # Inside Zellij: omit session name — Zellij prepends "{session} | " to the
+        # outer window title automatically, so we avoid duplicating it.
+        # Kitty's tab_title_template rewrites "session | host ✓" → "session @ host ✓".
+        echo "$host"
+    elif [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
         echo "${ZELLIJ_SESSION_NAME} @ ${host}"
     else
         echo "$host"
     fi
 }
-_tab_title_set() {
-    local title="$1"
-    if [[ -n "${ZELLIJ:-}" ]]; then
-        command zellij action rename-tab "$title" 2>/dev/null || true
-    else
-        printf '\e]2;%s\a' "$title"
-    fi
-}
 _tab_title_preexec() {
-    _tab_title_set "$(_tab_title_context) ▶"
+    printf '\e]2;%s ▶\a' "$(_tab_title_context)"
 }
 _tab_title_precmd() {
     local result=$?
     if (( result == 0 )); then
-        _tab_title_set "$(_tab_title_context) ✓"
+        printf '\e]2;%s ✓\a' "$(_tab_title_context)"
     else
-        _tab_title_set "$(_tab_title_context) ✗"
+        printf '\e]2;%s ✗\a' "$(_tab_title_context)"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
