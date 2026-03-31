@@ -798,16 +798,25 @@ fi
 
 # Use OSC 52 clipboard so copy works inside Zellij/SSH (wl-copy loses clipboard when micro exits)
 # micro settings: use external clipboard (xclip shim routes to wl-copy on Wayland)
+# keymenu shows a key binding bar at the bottom of the editor.
 _micro_settings="$HOME/.config/micro/settings.json"
 mkdir -p "$(dirname "$_micro_settings")"
 if [ ! -f "$_micro_settings" ]; then
-    printf '{\n    "clipboard": "external"\n}\n' > "$_micro_settings"
-    echo "  ✓ Wrote micro settings (clipboard: external)"
-elif ! grep -q '"clipboard"' "$_micro_settings"; then
-    jq '. + {"clipboard": "external"}' "$_micro_settings" > "${_micro_settings}.tmp" \
-        && mv "${_micro_settings}.tmp" "$_micro_settings" \
-        && echo "  ✓ Updated micro settings (clipboard: external)" \
-        || echo "  ✗ Failed to update micro settings"
+    printf '{\n    "clipboard": "external",\n    "keymenu": true\n}\n' > "$_micro_settings"
+    echo "  ✓ Wrote micro settings (clipboard: external, keymenu: true)"
+else
+    _micro_updated=0
+    if ! grep -q '"clipboard"' "$_micro_settings"; then
+        jq '. + {"clipboard": "external"}' "$_micro_settings" > "${_micro_settings}.tmp" \
+            && mv "${_micro_settings}.tmp" "$_micro_settings" \
+            && _micro_updated=1
+    fi
+    if ! grep -q '"keymenu"' "$_micro_settings"; then
+        jq '. + {"keymenu": true}' "$_micro_settings" > "${_micro_settings}.tmp" \
+            && mv "${_micro_settings}.tmp" "$_micro_settings" \
+            && _micro_updated=1
+    fi
+    (( _micro_updated )) && echo "  ✓ Updated micro settings" || echo "  ✓ micro settings already up to date"
 fi
 
 # xclip shim: on Wayland, xclip only reaches the X11 clipboard; Wayland apps can't see it.
