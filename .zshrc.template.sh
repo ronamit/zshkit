@@ -870,7 +870,7 @@ zjss() {
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
 
     local _pane() {
-        printf 'pane command="sshv" { args "-o" "ConnectTimeout=30" "-t" "%s" "~/.local/bin/zellij attach --create %s" }\n' "$host" "$1"
+        printf 'pane { command "sshv"; args "-o" "ConnectTimeout=30" "-t" "%s" "~/.local/bin/zellij attach --create %s"; }\n' "$host" "$1"
     }
 
     if [[ $n -eq 2 ]]; then
