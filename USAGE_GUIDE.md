@@ -139,6 +139,17 @@ Inside Kitty:
 | `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
 | `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
 | `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
+| `Ctrl+Shift+P`, then `u` | Hint-select a visible URL and open it in the browser |
+
+### Opening URLs inside Zellij
+
+Zellij captures all mouse events, so Kitty's normal `Ctrl+click` on a URL does not reach Kitty when a Zellij session is running. Three ways to open links:
+
+| Method | How |
+|--------|-----|
+| Hint picker | `Ctrl+Shift+P`, then `u` — overlays letter hints on every URL in the visible screen; press the hint letters to open |
+| Bypass Zellij | `Ctrl+Shift+click` — forces Kitty to handle the click directly, bypassing Zellij's mouse capture |
+| Outside Zellij | `Ctrl+click` works normally when Zellij is not running |
 
 ### Session restore
 
