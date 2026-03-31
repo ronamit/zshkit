@@ -909,15 +909,24 @@ _tab_title_context() {
         echo "$host"
     fi
 }
+_tab_title_set() {
+    # When inside Zellij, OSC 2 is intercepted and never reaches the outer terminal.
+    # Wrap in a DCS tmux passthrough so Zellij forwards it to Kitty.
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        printf '\ePtmux;\e\e]2;%s\a\e\\' "$1"
+    else
+        printf '\e]2;%s\a' "$1"
+    fi
+}
 _tab_title_preexec() {
-    printf '\e]2;◌ %s\a' "$(_tab_title_context)"
+    _tab_title_set "◌ $(_tab_title_context)"
 }
 _tab_title_precmd() {
     local result=$?
     if (( result == 0 )); then
-        printf '\e]2;● %s\a' "$(_tab_title_context)"
+        _tab_title_set "● $(_tab_title_context)"
     else
-        printf '\e]2;⚠ %s\a' "$(_tab_title_context)"
+        _tab_title_set "⚠ $(_tab_title_context)"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
