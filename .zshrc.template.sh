@@ -215,6 +215,9 @@ unset _ssh_hosts _ssh_cache_file _refresh_ssh_hosts_cache
 # ── Environment ──────────────────────────────────────────────────────
 
 export EDITOR='micro'
+if command -v micro &>/dev/null; then
+    alias edit='micro'
+fi
 
 # Keep PATH unique while prepending user bins and snap (yazi and other snaps live in /snap/bin).
 typeset -U path PATH
