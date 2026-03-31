@@ -894,14 +894,14 @@ zjss() {
 # Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
 # Windows Terminal, and most modern terminals.
 # Format: "session @ host | ✓ dir"  (session omitted if not in Zellij)
-# preexec: fires after Enter, before the command runs — show ▶ + command name.
-# precmd:  fires before each prompt (after command finishes) — show ✓ or ✗ + context.
+# preexec: fires after Enter, before the command runs — show ◌ (in progress).
+# precmd:  fires before each prompt (after command finishes) — show ● (success) or ⚠ (failure).
 _tab_title_context() {
     local host="${HOST%%.*}"
     if [[ -n "${ZELLIJ:-}" ]]; then
         # Inside Zellij: omit session name — Zellij prepends "{session} | " to the
         # outer window title automatically, so we avoid duplicating it.
-        # Kitty's tab_title_template rewrites "session | host ✓" → "session @ host ✓".
+        # Kitty's tab_title_template rewrites "session | host ●" → "session @ host ●".
         echo "$host"
     elif [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
         echo "${ZELLIJ_SESSION_NAME} @ ${host}"
@@ -910,14 +910,14 @@ _tab_title_context() {
     fi
 }
 _tab_title_preexec() {
-    printf '\e]2;%s ▶\a' "$(_tab_title_context)"
+    printf '\e]2;◌ %s\a' "$(_tab_title_context)"
 }
 _tab_title_precmd() {
     local result=$?
     if (( result == 0 )); then
-        printf '\e]2;%s ✓\a' "$(_tab_title_context)"
+        printf '\e]2;● %s\a' "$(_tab_title_context)"
     else
-        printf '\e]2;%s ✗\a' "$(_tab_title_context)"
+        printf '\e]2;⚠ %s\a' "$(_tab_title_context)"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
