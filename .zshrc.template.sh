@@ -882,8 +882,8 @@ zjss() {
             "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
     fi
 
-    printf '\e]2;%s @ %s\a' "${sessions[*]}" "${host%%.*}"
-    zellij --layout "$layout"
+    printf '\e]2;%s @ %s\a' "${sessions[1]}" "${host%%.*}"
+    zellij --layout "$layout" --session "${sessions[1]}@${host%%.*}"
     local rc=$?
     rm -f "$layout"
     _zshkit_reset_terminal_input_modes

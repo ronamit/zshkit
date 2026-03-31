@@ -6,12 +6,13 @@ scrollback_lines_to_serialize 100000
 show_startup_tips false
 show_release_notes false
 
-// Copy/paste: auto-copy selected text to clipboard on mouse release.
-// copy_on_select is the Zellij default, set explicitly for clarity.
+// Copy/paste: keep selection visible after mouse release; copy explicitly with Enter or y.
+// copy_on_select true would auto-copy and immediately clear the selection, which causes
+// "select all" (e.g. in VSCode terminal) to flash and disappear.
 // No copy_command is set — Zellij uses OSC 52 by default, which works both
 // locally and over SSH (as long as your local terminal supports OSC 52,
 // e.g. Ghostty, Kitty, WezTerm, Alacritty, iTerm2).
-copy_on_select true
+copy_on_select false
 
 // Mouse: enable drag-resizing of pane borders and Ctrl+ScrollWheel pane resize.
 advanced_mouse_actions true
