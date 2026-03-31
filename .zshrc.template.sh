@@ -847,6 +847,49 @@ zjs() {
     sshv -o ConnectTimeout=30 -t "$host" "~/.local/bin/zellij attach --create $session"
 }
 
+# SSH into a host and open multiple Zellij sessions in a split Zellij layout.
+# Usage:
+#   zjss host                    → 2x2 split, sessions: 0 1 2 3
+#   zjss host a b                → side-by-side split, sessions: a b
+#   zjss host a b c d            → 2x2 split, sessions: a b c d
+zjss() {
+    local host="${1:?usage: zjss host [session1 session2 ...] (2 or 4 sessions)}"
+    shift
+    local sessions=("${@:-0 1 2 3}")
+    if [[ ${#sessions[@]} -eq 1 ]]; then
+        # Handle space-separated default "0 1 2 3" passed as single string
+        sessions=(${=sessions[1]})
+    fi
+    local n=${#sessions[@]}
+    if [[ $n -ne 2 && $n -ne 4 ]]; then
+        echo "zjss: provide 2 or 4 session names (got $n)"
+        return 1
+    fi
+
+    local layout
+    layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
+
+    local _pane() {
+        printf 'pane command="sshv" { args "-o" "ConnectTimeout=30" "-t" "%s" "~/.local/bin/zellij attach --create %s" }\n' "$host" "$1"
+    }
+
+    if [[ $n -eq 2 ]]; then
+        printf 'layout {\n    pane split_direction="vertical" {\n        %s\n        %s\n    }\n}\n' \
+            "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" > "$layout"
+    else
+        printf 'layout {\n    pane split_direction="vertical" {\n        pane split_direction="horizontal" {\n            %s\n            %s\n        }\n        pane split_direction="horizontal" {\n            %s\n            %s\n        }\n    }\n}\n' \
+            "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" \
+            "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
+    fi
+
+    printf '\e]2;%s @ %s\a' "${sessions[*]}" "${host%%.*}"
+    zellij --layout "$layout"
+    local rc=$?
+    rm -f "$layout"
+    _zshkit_reset_terminal_input_modes
+    return $rc
+}
+
 # Show ▶/✓/✗ in the terminal tab title based on command state.
 # Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
 # Windows Terminal, and most modern terminals.
