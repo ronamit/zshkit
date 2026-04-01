@@ -1564,6 +1564,8 @@ if [[ -o interactive ]]; then
     bindkey -M menuselect '^[OD'  backward-char
 
     # Right arrow: partial-accept one char from suggestion (forward-char in ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS)
+    # Ctrl+Right / Alt+F: partial-accept one word from suggestion (forward-word)
+    # Tab: accept the full autosuggestion (see _tab_accept_or_complete)
     # End: accept the full suggestion and move to end of line
     bindkey '^[[C' forward-char
     bindkey '^[OC' forward-char
@@ -1623,7 +1625,8 @@ fi
 # ── Load fzf-tab, syntax-highlighting, autosuggestions (order matters) ──
 # fzf-tab first, then syntax-highlighting, then autosuggestions last so it
 # wraps the final widget set and avoids conflicts with fzf-tab ghost text.
-# Tab, Ctrl+Space, and End accept full suggestions; Right Arrow partial-accepts one char.
+# Tab / Ctrl+Space / End: accept the full autosuggestion.
+# Right Arrow: partial-accept one char. Ctrl+Right / Alt+F: partial-accept one word.
 if (( _fzf_tab_loaded )); then
     source "$_fzf_tab_plugin"
     zstyle ':fzf-tab:*' fzf-flags '--height=40% --layout=reverse --border'

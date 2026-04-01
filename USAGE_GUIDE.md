@@ -25,16 +25,16 @@ Behavior summary:
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Accept ghost suggestion if present; if a directory was accepted, show its contents. Otherwise open completion. |
+| `Tab` | Accept the full autosuggestion if one is showing (if the accepted path is a directory, automatically appends `/` and opens its contents). Otherwise open completion. |
 | `Shift+Tab` | Reverse completion / previous menu item |
-| `Up` | Sticky prefix history search (older match) |
-| `Down` | In `cd` / path context: open the completion menu. Otherwise: continue prefix history search (newer match). |
-| `Ctrl+P` | Sticky prefix history search (older match) |
-| `Ctrl+N` | In `cd` / path context: open the completion menu. Otherwise: continue prefix history search (newer match). |
-| `Right Arrow` | Accept one character from autosuggestion |
-| `Ctrl+Right` / `Alt+F` | Accept one word from autosuggestion |
+| `→` (Right Arrow) | Partial-accept one character from the autosuggestion |
+| `Ctrl+→` / `Alt+F` | Partial-accept one word from the autosuggestion |
 | `Ctrl+Space` | Accept full autosuggestion |
-| `End` | Accept full autosuggestion (moves to end of line) |
+| `End` | Accept full autosuggestion (move to end of line) |
+| `Up` | Start (or continue) prefix history search — older match |
+| `Down` | In `cd` / path context: open the directory completion menu. After `Up` (history scroll active): go to newer history match. |
+| `Ctrl+P` | Same as `Up` |
+| `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |
 
 ### Inside The Completion Menu

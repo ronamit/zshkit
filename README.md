@@ -44,7 +44,7 @@ Git-aware prompt: branch, dirty status, and command duration at a glance.
 
 ## Autocomplete and suggestions
 
-Gray suggestion appears as you type — `→` to accept, `↓` to cycle through older matches. `Ctrl+R` for fuzzy history search.
+Gray suggestion appears as you type. `Tab` accepts the full suggestion. `→` accepts one character at a time. `↑` searches older history matches.
 
 ![Autosuggestions and history cycling](assets/autosuggest.gif)
 
@@ -52,23 +52,27 @@ Gray suggestion appears as you type — `→` to accept, `↓` to cycle through 
 
 | Key | Action |
 |-----|--------|
-| `→` | Accept suggestion |
-| `↓` | Cycle to older history match |
+| `Tab` | Accept full autosuggestion |
+| `→` | Accept one character of the suggestion |
+| `Ctrl+→` / `Alt+F` | Accept one word of the suggestion |
+| `↑` / `↓` | Prefix history search (older / newer) |
 | `Ctrl+R` | Fuzzy search full history |
 | `Ctrl+T` | Insert a file path at the cursor |
 | `Alt+C` | Fuzzy change directory |
 
 ## Navigation
 
-`Tab` completes paths. `z` jumps to recently visited directories by keyword. `cd -` goes back.
+`↓` after `cd` opens a directory completion menu. Press `↑` first to start history search — then `↓` moves forward through matches. `..` goes up. `z` jumps anywhere by keyword.
 
 ![Directory navigation](assets/navigation.gif)
 
 ```bash
-cd ~/.con<Tab>   # complete to ~/.config/
-z zsh            # jump to ~/repos/zshkit (or wherever you use it most)
-z kitty          # jump to ~/.config/kitty
-cd -             # go back to previous directory
+cd ~/.config/<↓>   # open directory completion menu, navigate with arrow keys
+cd ~/.c<↑>         # start history search (older match)
+cd ~/.c<↑><↓>      # go back to newer match
+..                 # go up one directory
+z zsh              # jump to ~/repos/zshkit by keyword
+z kitty            # jump to ~/.config/kitty
 ```
 
 ## VPN
