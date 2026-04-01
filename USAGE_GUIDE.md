@@ -465,14 +465,14 @@ Claude Code hooks in `~/.claude/settings.json` wire up the notifications automat
 
 zshkit sets terminal tab titles via OSC 2 escape sequences, supported by Kitty, Ghostty, WezTerm, iTerm2, and most modern terminals.
 
-Format: `session @ host | ✓ dir`
+Format: `● session @ host` (icon on left)
 
 | State | Title |
 |-------|-------|
-| Command running | `main @ myserver \| ▶ git` |
-| Command succeeded | `main @ myserver \| ✓ zshkit` |
-| Command failed | `main @ myserver \| ✗ zshkit` |
-| Outside Zellij | `hostname \| ✓ dir` |
+| Command running | `◌ main @ myserver` |
+| Command succeeded | `● main @ myserver` |
+| Command failed | `⚠ main @ myserver` |
+| Outside Zellij | `● hostname` |
 
 When using `zjs` to SSH into a remote, the tab title updates immediately to `session @ host` before the remote prompt appears.
 
