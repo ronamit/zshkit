@@ -931,9 +931,9 @@ zjss() {
 _tab_title_context() {
     local host="${HOST%%.*}"
     if [[ -n "${ZELLIJ:-}" ]]; then
-        # Inside Zellij: omit session name — Zellij prepends "{session} | " to the
-        # outer window title automatically, so we avoid duplicating it.
-        # Kitty's tab_title_template rewrites "session | host ●" → "session @ host ●".
+        # Inside Zellij: Zellij prepends "{tab_index} | " to the outer window title
+        # automatically, so we send just the hostname. The tab label ends up as
+        # "{index} | ● hostname" — the status icon after the index is a Zellij limitation.
         echo "$host"
     elif [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
         echo "${ZELLIJ_SESSION_NAME} @ ${host}"
