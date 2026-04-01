@@ -21,7 +21,9 @@ Behavior summary:
 
 **Autosuggestions** appear as ghost text as you type. The strategy tries `match_prev_cmd` first (prefers history that followed the same previous command), then plain `history`, then falls back to the `completion` engine for files and commands not yet in history. Dangerous commands (`rm -rf *`, `sudo rm *`, fork bombs) are excluded from suggestions.
 
-**Completion menus** are grouped by type (directory, file, alias, etc.) with option descriptions shown. Matching prefers exact case first, then case-insensitive, then partial. `fzf-tab` powers fuzzy completion for most commands; `cd` / path contexts use the native navigable menu with live previews controlled by `ZSH_AUTOLIST_ON_TYPE` and `ZSH_AUTOLIST_CD_EMPTY_MAX`. Auto-`cd` is enabled — type a directory name to enter it, and use `cd -1`, `cd -2` etc. to jump back.
+**History search:** press `↑` to find older commands that start with what you've typed so far. Keep pressing `↑` to go further back; once in history search mode, `↓` moves forward to newer matches.
+
+**Directory completion:** in a `cd` context, press `↓` to open a browsable menu of matching subdirectories — navigate with arrow keys, `Enter` to select. `fzf-tab` powers fuzzy completion for most other commands. Completion menus are grouped by type with descriptions, and matching is case-insensitive. Auto-`cd` is enabled — type a directory name and press `Enter` to enter it.
 
 | Key | Action |
 |-----|--------|
@@ -31,8 +33,8 @@ Behavior summary:
 | `Ctrl+→` / `Alt+F` | Partial-accept one word from the autosuggestion |
 | `Ctrl+Space` | Accept full autosuggestion |
 | `End` | Accept full autosuggestion (move to end of line) |
-| `Up` | Start (or continue) prefix history search — older match |
-| `Down` | In `cd` / path context: open the directory completion menu. After `Up` (history scroll active): go to newer history match. |
+| `Up` | History search: search older commands that start with what you've typed so far |
+| `Down` | **In `cd` / path context:** open a browsable directory completion menu. **After pressing `Up` (history scroll active):** go to the newer history match. |
 | `Ctrl+P` | Same as `Up` |
 | `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |

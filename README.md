@@ -55,24 +55,26 @@ Gray suggestion appears as you type. `Tab` accepts the full suggestion. `→` ac
 | `Tab` | Accept full autosuggestion |
 | `→` | Accept one character of the suggestion |
 | `Ctrl+→` / `Alt+F` | Accept one word of the suggestion |
-| `↑` / `↓` | Prefix history search (older / newer) |
+| `↑` | Prefix history search — older match |
+| `↓` | Newer history match (or directory menu when after `cd`) |
 | `Ctrl+R` | Fuzzy search full history |
 | `Ctrl+T` | Insert a file path at the cursor |
 | `Alt+C` | Fuzzy change directory |
 
 ## Navigation
 
-`↓` after `cd` opens a directory completion menu. Press `↑` first to start history search — then `↓` moves forward through matches. `..` goes up. `z` jumps anywhere by keyword.
+**Directory menu:** `↓` after `cd` opens a browsable list of subdirectories.
+**History search:** `↑` searches older commands matching what you've typed so far; `↓` then moves forward through matches.
+`..` goes up a directory. `z` jumps anywhere by keyword.
 
 ![Directory navigation](assets/navigation.gif)
 
 ```bash
-cd ~/.config/<↓>   # open directory completion menu, navigate with arrow keys
-cd ~/.c<↑>         # start history search (older match)
-cd ~/.c<↑><↓>      # go back to newer match
-..                 # go up one directory
-z zsh              # jump to ~/repos/zshkit by keyword
-z kitty            # jump to ~/.config/kitty
+cd ~/.config/  # then press ↓ — opens directory menu, arrow keys to select
+cd ~/.c        # then press ↑ — history search for older matches; ↓ for newer
+..             # go up one directory
+z zsh          # jump to ~/repos/zshkit by keyword
+z kitty        # jump to ~/.config/kitty
 ```
 
 ## VPN
@@ -87,7 +89,7 @@ Optional — requires an OpenVPN `.ovpn` config file and your credentials. The i
 
 ## EC2 VM (AWS)
 
-`vm` connects to a dev VM. Set `EC2_SSH_HOST` in `~/.zshrc.local` to SSH directly with no AWS involved. Add `EC2_INSTANCE_ID` too for full AWS integration (auto-start, stop, status).
+`vm` connects to a remote machine. Set `EC2_SSH_HOST` in `~/.zshrc.local` to SSH directly with no AWS involved. Add `EC2_INSTANCE_ID` too for full AWS integration (auto-start, stop, status).
 
 ```bash
 vm              # SSH in (direct if EC2_SSH_HOST set; via AWS otherwise)
