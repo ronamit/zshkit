@@ -68,6 +68,9 @@ scrollbar_handle_opacity 0.6
 # Keep the pointer out of the way once typing begins.
 mouse_hide_wait -3.0
 
+# Scroll into scrollback when dragging a selection to the top/bottom edge.
+drag_scroll_multiplier 5.0
+
 # Keep editing behavior predictable while still allowing ligature fonts.
 disable_ligatures cursor
 cursor_blink_interval 0
@@ -79,6 +82,17 @@ mouse_map middle release ungrabbed paste_from_selection
 
 # Copy selected text to clipboard automatically (standard X11 behavior).
 copy_on_select yes
+
+# Treat these characters as part of a word so double-click selects whole
+# paths, URLs, and git refs instead of stopping at punctuation.
+select_by_word_characters @:-./_~?&=%+#
+
+# Show a text-insertion cursor while drag-selecting so it's clear you're
+# in selection mode (not just hovering).
+pointer_shape_when_dragging beam
+
+# Focus whichever kitty split the pointer is over without clicking.
+focus_follows_mouse yes
 
 # Confirm before pasting large blocks; quote URLs pasted at a prompt.
 paste_actions quote-urls-at-prompt,confirm-if-large
@@ -151,3 +165,8 @@ map ctrl+shift+p>u kitten hints --type url --program default
 # Optional font alternatives if you prefer a coding font:
 # font_family JetBrainsMono Nerd Font
 # font_family FiraCode Nerd Font
+
+# BEGIN_KITTY_THEME
+# VSCode_Dark
+include current-theme.conf
+# END_KITTY_THEME

@@ -45,6 +45,7 @@ ZELLIJ_LAYOUT_TEMPLATE="$SCRIPT_DIR/templates/zellij/layouts/default.kdl"
 KITTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/kitty/kitty.conf.template"
 KITTY_OPEN_ACTIONS_TEMPLATE="$SCRIPT_DIR/templates/kitty/open-actions.conf.template"
 KITTY_QUICK_ACCESS_TEMPLATE="$SCRIPT_DIR/templates/kitty/quick-access-terminal.conf.template"
+KITTY_THEME_TEMPLATE="$SCRIPT_DIR/templates/kitty/current-theme.conf.template"
 P10K_TEMPLATE="$SCRIPT_DIR/templates/p10k.zsh.template"
 VPN_SOURCE_DIR="$SCRIPT_DIR/vpn"
 BACKUP_BASE="$HOME/.zsh_backups"
@@ -53,6 +54,7 @@ BACKUP_DIR="$BACKUP_BASE/$(date +%Y%m%d_%H%M%S)"
 KITTY_BACKUP_PATH=""
 KITTY_OPEN_ACTIONS_BACKUP_PATH=""
 KITTY_QUICK_ACCESS_BACKUP_PATH=""
+KITTY_THEME_BACKUP_PATH=""
 # Set when ~/.p10k.zsh is replaced and a backup is created
 P10K_BACKUP_PATH=""
 STEP=0
@@ -301,6 +303,17 @@ install_home_kitty_quick_access_conf() {
         return 1
     fi
     KITTY_QUICK_ACCESS_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
+}
+
+install_home_kitty_theme() {
+    KITTY_THEME_BACKUP_PATH=""
+    if ! install_home_kitty_template \
+        "$KITTY_THEME_TEMPLATE" \
+        "$HOME/.config/kitty/current-theme.conf" \
+        "~/.config/kitty/current-theme.conf"; then
+        return 1
+    fi
+    KITTY_THEME_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
 }
 
 template_must_exist() {
@@ -1062,7 +1075,8 @@ if [ -z "${SSH_CONNECTION:-}" ] && command -v kitty &>/dev/null; then
     step "Installing Kitty config..."
     if ! install_home_kitty_conf \
         || ! install_home_kitty_open_actions \
-        || ! install_home_kitty_quick_access_conf; then
+        || ! install_home_kitty_quick_access_conf \
+        || ! install_home_kitty_theme; then
         exit 1
     fi
 else
@@ -1351,13 +1365,15 @@ echo "Next steps:"
 echo ""
 echo "  1. Add personal exports/tokens to ~/.zshrc.local"
 if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$KITTY_BACKUP_PATH" ] \
-    || [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] || [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ]; then
+    || [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] || [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ] \
+    || [ -n "$KITTY_THEME_BACKUP_PATH" ]; then
     echo "     Previous file(s) backed up under: $BACKUP_DIR"
     [ -n "$BACKUP_PATH" ] && echo "       - .zshrc → $BACKUP_PATH"
     [ -n "$P10K_BACKUP_PATH" ] && echo "       - .p10k.zsh → $P10K_BACKUP_PATH"
     [ -n "$KITTY_BACKUP_PATH" ] && echo "       - kitty.conf → $KITTY_BACKUP_PATH"
     [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] && echo "       - open-actions.conf → $KITTY_OPEN_ACTIONS_BACKUP_PATH"
     [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ] && echo "       - quick-access-terminal.conf → $KITTY_QUICK_ACCESS_BACKUP_PATH"
+    [ -n "$KITTY_THEME_BACKUP_PATH" ] && echo "       - current-theme.conf → $KITTY_THEME_BACKUP_PATH"
 fi
 echo "     Optional VPN helper:"
 echo "       - Edit $(vpn_managed_dir)/vpn-credentials.txt"
