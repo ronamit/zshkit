@@ -116,10 +116,22 @@ See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 
 ## Where To Customize
 
+`~/.zshrc` is a **managed file** — `setup_zsh.sh` overwrites it on every run. Do not edit it directly; your changes will be lost on the next update.
+
+Put personal settings in **`~/.zshrc.local`** instead. This file is sourced at the end of `~/.zshrc` and is never touched by the installer. It is the right place for:
+
+- API keys and tokens (`GITHUB_TOKEN`, `OPENAI_API_KEY`, etc.)
+- VM / cloud configuration (`EC2_SSH_HOST`, `EC2_INSTANCE_ID`, etc.)
+- VPN path overrides (`ZSHKIT_VPN_CONFIG_FILE`, etc.)
+- Behaviour tweaks (`ZSH_AUTOLIST_ON_TYPE`, `EDITOR`, etc.)
+- Anything machine-specific that should not be committed to the repo
+
+The installer creates `~/.zshrc.local` with a commented template on first run, so the file and its available options will already be there after `setup_zsh.sh` completes.
+
 | File | Purpose |
 |------|---------|
-| `.zshrc.template.sh` (repo root) | Tracked project defaults |
-| `~/.zshrc.local` | Personal tokens, exports, and local overrides |
+| `.zshrc.template.sh` (repo root) | Tracked project defaults — edit to change shared behaviour |
+| `~/.zshrc.local` | **Your** personal settings — never overwritten by the installer |
 | `~/.p10k.zsh` | Powerlevel10k theme; reinstalled from **`templates/p10k.zsh.template`** on each `setup_zsh.sh` run (previous file backed up). Run `p10k configure` or edit the template to customize defaults. |
 | `~/.config/kitty/kitty.conf` | Kitty starter config; edit directly or open it from Kitty with `Ctrl+Shift+F2` |
 | `~/.config/kitty/open-actions.conf` | Kitty file-opening rules; used for clickable rg/file hyperlinks |
@@ -166,17 +178,20 @@ For actual day-to-day command usage after install, use [USAGE_GUIDE.md](USAGE_GU
 
 ## Optional EC2 VM Setup
 
-The `vm` helper gives one-command access to an AWS EC2 development instance: refresh AWS auth, start or stop the instance, and SSH in.
+The `vm` helper gives one-command SSH access to a dev VM. It has two modes:
 
-Requirements:
-
-- AWS CLI installed
-- `aws configure sso` completed if your organization uses AWS SSO
-- EC2 configuration added to `~/.zshrc.local`
-
-Add something like this to `~/.zshrc.local`:
+**Direct SSH mode** — no AWS required. Just set a host:
 
 ```bash
+export EC2_SSH_HOST="myserver"         # hostname or IP
+export EC2_SSH_USER="ubuntu"
+export EC2_SSH_KEY="$HOME/.ssh/my-key.pem"
+```
+
+**Full AWS mode** — also manages instance state (start/stop/status/auto-IP lookup). Additional requirements: AWS CLI installed, `aws configure sso` completed if your org uses SSO.
+
+```bash
+export EC2_SSH_HOST="myserver"         # optional but recommended — skips AWS for plain connect
 export EC2_INSTANCE_ID="i-0abc123..."
 export EC2_REGION="us-east-2"
 export EC2_SSH_USER="ubuntu"
@@ -188,7 +203,8 @@ Then reload and test:
 
 ```bash
 source ~/.zshrc
-vm status
+vm           # connect
+vm status    # requires AWS mode
 ```
 
 If `vm` is used without configuration, it prints the setup steps. For the command table and daily usage, see [USAGE_GUIDE.md](USAGE_GUIDE.md).

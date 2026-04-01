@@ -458,15 +458,19 @@ sshv() {
 }
 
 # ── EC2 VM helper ────────────────────────────────────────────────────
-# One-command access to an AWS EC2 dev instance.
-# Configure in ~/.zshrc.local:
-#   export EC2_INSTANCE_ID="i-0abc123..."
-#   export EC2_REGION="us-east-2"
+# One-command access to a dev VM. Two modes:
+#
+# Direct SSH (no AWS required) — configure in ~/.zshrc.local:
+#   export EC2_SSH_HOST="myserver"              # hostname or IP; vm connect uses this directly
 #   export EC2_SSH_USER="ubuntu"
 #   export EC2_SSH_KEY="$HOME/.ssh/my-key.pem"
-#   export EC2_AWS_PROFILE="my-profile"      # optional, defaults to $AWS_PROFILE
-if command -v aws &>/dev/null; then
+#
+# Full AWS mode (start/stop/status/auto-IP) — also add:
+#   export EC2_INSTANCE_ID="i-0abc123..."
+#   export EC2_REGION="us-east-2"
+#   export EC2_AWS_PROFILE="my-profile"         # optional, defaults to $AWS_PROFILE
 vm() {
+    local ssh_host="${EC2_SSH_HOST:-}"
     local instance_id="${EC2_INSTANCE_ID:-}"
     local region="${EC2_REGION:-us-east-2}"
     local ssh_user="${EC2_SSH_USER:-ubuntu}"
@@ -474,30 +478,45 @@ vm() {
     local profile="${EC2_AWS_PROFILE:-${AWS_PROFILE:-default}}"
     local subcmd="${1:-connect}"
 
-    if [[ -z "$instance_id" ]]; then
-        echo "vm: EC2 instance not configured."
-        echo ""
-        echo "Add these to ~/.zshrc.local:"
-        echo "  export EC2_INSTANCE_ID=\"i-0abc123...\"   # your instance ID"
-        echo "  export EC2_REGION=\"us-east-2\"            # AWS region"
-        echo "  export EC2_SSH_USER=\"ubuntu\"              # SSH username"
-        echo "  export EC2_SSH_KEY=\"\$HOME/.ssh/key.pem\"  # path to SSH key"
-        echo "  export EC2_AWS_PROFILE=\"my-profile\"       # AWS CLI profile (optional)"
-        echo ""
-        echo "Then set up AWS SSO (if your org uses it):"
-        echo "  aws configure sso"
-        echo ""
-        echo "Reload with: source ~/.zshrc"
-        return 1
-    fi
-
     if [[ -z "$ssh_key" ]]; then
         echo "vm: EC2_SSH_KEY not set. Add to ~/.zshrc.local:"
         echo "  export EC2_SSH_KEY=\"\$HOME/.ssh/your-key.pem\""
         return 1
     fi
 
+    if [[ -z "$ssh_host" && -z "$instance_id" ]]; then
+        echo "vm: not configured. Add to ~/.zshrc.local:"
+        echo ""
+        echo "  # Direct SSH (no AWS required):"
+        echo "  export EC2_SSH_HOST=\"myserver\"             # hostname or IP"
+        echo ""
+        echo "  # Or full AWS integration (start/stop/status):"
+        echo "  export EC2_INSTANCE_ID=\"i-0abc123...\"     # your instance ID"
+        echo "  export EC2_REGION=\"us-east-2\"              # AWS region"
+        echo "  export EC2_AWS_PROFILE=\"my-profile\"         # AWS CLI profile (optional)"
+        echo ""
+        echo "  # Required for either mode:"
+        echo "  export EC2_SSH_USER=\"ubuntu\"               # SSH username"
+        echo "  export EC2_SSH_KEY=\"\$HOME/.ssh/key.pem\"   # path to SSH key"
+        echo ""
+        echo "Reload with: source ~/.zshrc"
+        return 1
+    fi
+
+    _vm_require_aws() {
+        if ! command -v aws &>/dev/null; then
+            echo "vm: aws CLI not installed. Required for $1."
+            return 1
+        fi
+        if [[ -z "$instance_id" ]]; then
+            echo "vm: EC2_INSTANCE_ID not set. Required for $1. Add to ~/.zshrc.local:"
+            echo "  export EC2_INSTANCE_ID=\"i-0abc123...\""
+            return 1
+        fi
+    }
+
     _vm_ensure_aws() {
+        _vm_require_aws "$1" || return 1
         if aws sts get-caller-identity --profile "$profile" &>/dev/null; then
             return 0
         fi
@@ -523,7 +542,7 @@ vm() {
 
     case "$subcmd" in
         status)
-            _vm_ensure_aws || return 1
+            _vm_ensure_aws status || return 1
             local state=$(_vm_state)
             local ip=$(_vm_ip)
             echo "Instance: $instance_id ($region)"
@@ -531,7 +550,7 @@ vm() {
             [[ "$ip" != "None" && -n "$ip" ]] && echo "IP:       $ip"
             ;;
         start)
-            _vm_ensure_aws || return 1
+            _vm_ensure_aws start || return 1
             local state=$(_vm_state)
             if [[ "$state" == "running" ]]; then
                 echo "Already running. IP: $(_vm_ip)"
@@ -546,18 +565,24 @@ vm() {
             echo "Running. IP: $(_vm_ip)"
             ;;
         stop)
-            _vm_ensure_aws || return 1
+            _vm_ensure_aws stop || return 1
             echo "Stopping instance..."
             aws ec2 stop-instances --instance-ids "$instance_id" \
                 --profile "$profile" --region "$region" >/dev/null
             echo "Stop initiated."
             ;;
         ip)
-            _vm_ensure_aws || return 1
+            _vm_ensure_aws ip || return 1
             _vm_ip
             ;;
         connect|ssh)
-            _vm_ensure_aws || return 1
+            if [[ -n "$ssh_host" ]]; then
+                echo "Connecting to $ssh_host..."
+                command ssh -i "$ssh_key" -o ConnectTimeout=10 "$ssh_user@$ssh_host"
+                return
+            fi
+            # No EC2_SSH_HOST — use AWS to look up IP and manage instance state
+            _vm_ensure_aws connect || return 1
             local state=$(_vm_state)
             if [[ "$state" == "stopped" ]]; then
                 echo "Instance is stopped. Starting it..."
@@ -574,21 +599,25 @@ vm() {
                 return 1
             fi
             local ip=$(_vm_ip)
+            if [[ -z "$ip" || "$ip" == "None" ]]; then
+                echo "vm: instance has no public IP. Does it have an Elastic IP or auto-assign enabled?"
+                return 1
+            fi
             echo "Connecting to $ip..."
             command ssh -i "$ssh_key" -o ConnectTimeout=10 "$ssh_user@$ip"
             ;;
         *)
             echo "Usage: vm [connect|status|start|stop|ip]"
             echo ""
-            echo "  connect  Connect via SSH (default). Starts instance if stopped."
-            echo "  status   Show instance state and IP."
-            echo "  start    Start the instance."
-            echo "  stop     Stop the instance."
-            echo "  ip       Print the public IP."
+            echo "  connect  Connect via SSH (default). Uses EC2_SSH_HOST directly if set;"
+            echo "           otherwise uses AWS to find the IP (starts instance if stopped)."
+            echo "  status   Show instance state and IP.  (AWS)"
+            echo "  start    Start the instance.          (AWS)"
+            echo "  stop     Stop the instance.           (AWS)"
+            echo "  ip       Print the public IP.         (AWS)"
             ;;
     esac
 }
-fi
 
 # ── Aliases: Git (extras beyond Oh My Zsh git plugin) ────────────────
 

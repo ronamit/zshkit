@@ -32,6 +32,8 @@ After it finishes:
 
 The installer backs up your existing config. To roll back: `bash rollback.sh`
 
+**Personal settings go in `~/.zshrc.local`** — the installer creates this file with a commented template. It is sourced at shell startup and never overwritten by updates. Do not edit `~/.zshrc` directly; it is managed and will be overwritten on the next `setup_zsh.sh` run.
+
 See [SETUP_DETAILS.md](SETUP_DETAILS.md) for full install details and customization.
 
 ## Prompt
@@ -40,45 +42,64 @@ Git-aware prompt: branch, dirty status, and command duration at a glance.
 
 ![Prompt with git status](assets/prompt.gif)
 
-## Suggestions
+## Autocomplete and suggestions
 
-Gray suggestion appears as you type — `→` to accept, `↓` to cycle through older matches.
+Gray suggestion appears as you type — `→` to accept, `↓` to cycle through older matches. `Ctrl+R` for fuzzy history search.
 
 ![Autosuggestions and history cycling](assets/autosuggest.gif)
-
-## History search
-
-`Ctrl+R` opens a fuzzy search over your full command history.
 
 ![Fuzzy history search with fzf](assets/history-search.gif)
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+R` | Fuzzy search history |
+| `→` | Accept suggestion |
+| `↓` | Cycle to older history match |
+| `Ctrl+R` | Fuzzy search full history |
 | `Ctrl+T` | Insert a file path at the cursor |
 | `Alt+C` | Fuzzy change directory |
 
-## Directory jumping
+## Navigation
 
-`z` jumps to a recently visited directory by partial keyword — no full path needed.
+`Tab` completes paths. `z` jumps to recently visited directories by keyword. `cd -` goes back.
 
-![Directory jumping with zoxide](assets/zoxide.gif)
+![Directory navigation](assets/navigation.gif)
 
 ```bash
-z proj       # jump to the most frequent match for "proj"
-z ml exp     # narrow by multiple terms
-zi           # interactive picker
+cd ~/.con<Tab>   # complete to ~/.config/
+z zsh            # jump to ~/repos/zshkit (or wherever you use it most)
+z kitty          # jump to ~/.config/kitty
+cd -             # go back to previous directory
 ```
 
-## Disk usage
-
-`ducks` shows top-level sizes sorted by largest first.
-
-![Disk usage with ducks](assets/ducks.gif)
+## VPN
 
 ```bash
-ducks        # quick summary of current directory
-ncdu         # interactive drill-down
+vpn-connect      # connect in a detached background session
+vpn-disconnect   # disconnect
+vpn-status       # show current status
+```
+
+Optional — requires an OpenVPN `.ovpn` config file and your credentials. The installer sets up the helper scripts; you fill in the credentials file it creates. See [SETUP_DETAILS.md](SETUP_DETAILS.md) for the exact paths and steps.
+
+## EC2 VM (AWS)
+
+`vm` connects to a dev VM. Set `EC2_SSH_HOST` in `~/.zshrc.local` to SSH directly with no AWS involved. Add `EC2_INSTANCE_ID` too for full AWS integration (auto-start, stop, status).
+
+```bash
+vm              # SSH in (direct if EC2_SSH_HOST set; via AWS otherwise)
+vm status       # show instance state and IP  (AWS)
+vm start        # start the instance          (AWS)
+vm stop         # stop the instance           (AWS)
+```
+
+Optional — see [SETUP_DETAILS.md](SETUP_DETAILS.md) for configuration.
+
+## SSH
+
+`sshv` wraps `ssh` with a 10-second connection timeout and terminal mode reset.
+
+```bash
+sshv user@host
 ```
 
 ## Persistent sessions with Zellij
@@ -96,12 +117,25 @@ zjs myserver work   # specify the session name
 
 > **Remote sessions:** run `bash setup_zsh.sh` on the remote machine too — Zellij needs to be installed there for sessions to live on the remote side.
 
-## SSH
+`zjss` opens a split Zellij layout with each pane SSH-ed into the same host under its own session — useful for monitoring a GPU training run from multiple angles at once.
 
-`sshv` wraps `ssh` with a 10-second connection timeout and terminal mode reset.
+![zjss 2x2 split layout](assets/zjss.gif)
 
 ```bash
-sshv user@host
+zjss myserver               # 2x2 split, sessions 0 1 2 3
+zjss myserver train eval    # side-by-side, 2 sessions
+zjss myserver a b c d       # 2x2, custom session names
+```
+
+## Disk usage
+
+`ducks` shows top-level sizes sorted by largest first.
+
+![Disk usage with ducks](assets/ducks.gif)
+
+```bash
+ducks        # quick summary of current directory
+ncdu         # interactive drill-down
 ```
 
 ## Docs

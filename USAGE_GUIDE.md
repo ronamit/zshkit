@@ -295,20 +295,27 @@ If SSH still misbehaves, run [`diagnose_ssh.sh`](diagnose_ssh.sh) from the repo 
 bash diagnose_ssh.sh
 ```
 
-## EC2 VM Helper (`vm`)
+## AWS: EC2 VM Helper (`vm`)
 
-Useful for connecting to a cloud GPU instance for training jobs or experiments. Requires AWS CLI and the `EC2_*` variables in `~/.zshrc.local`. For setup steps, see [SETUP_DETAILS.md](SETUP_DETAILS.md).
+Useful for connecting to a cloud GPU instance for training jobs or experiments. Configure in `~/.zshrc.local`. For setup steps, see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 
-| Command | Action |
-|---------|--------|
-| `vm` | Refresh AWS credentials, start the instance if stopped, then SSH in |
-| `vm connect` | SSH in explicitly; same behavior as plain `vm` |
-| `vm status` | Show instance state and IP |
-| `vm start` | Start the instance |
-| `vm stop` | Stop the instance |
-| `vm ip` | Print public IP |
+`vm` knows which machine to connect to via env vars in `~/.zshrc.local`:
 
-`ssh` itself does not route through `vm`; the helper is separate and only for the explicit EC2 workflow above. If `vm` is used without configuration, it prints the setup steps.
+- **Direct SSH mode** — set `EC2_SSH_HOST` to a hostname or IP. `vm connect` SSHes straight in, no AWS involved.
+- **Full AWS mode** — set `EC2_INSTANCE_ID` (+ `EC2_REGION`, `EC2_AWS_PROFILE`). `vm connect` looks up the IP via AWS and can auto-start a stopped instance.
+
+Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `vm` prints the setup steps.
+
+| Command | Action | Requires |
+|---------|--------|----------|
+| `vm` | SSH in (direct or via AWS) | either mode |
+| `vm connect` | Same as plain `vm` | either mode |
+| `vm status` | Show instance state and IP | AWS |
+| `vm start` | Start the instance | AWS |
+| `vm stop` | Stop the instance | AWS |
+| `vm ip` | Print public IP | AWS |
+
+`ssh` itself does not route through `vm`; the helper is separate and only for this explicit workflow.
 
 ## Zellij Usage and Shortcuts
 

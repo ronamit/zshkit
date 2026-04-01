@@ -92,6 +92,8 @@ TAPES=(
     zoxide.tape
     ducks.tape
     zj-session.tape
+    zjss.tape
+    navigation.tape
 )
 
 echo ""

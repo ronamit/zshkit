@@ -504,10 +504,11 @@ create_zshrc_local_template() {
 # export ZSHKIT_VPN_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/zshkit/vpn"
 
 # ── EC2 VM helper (type `vm` for usage) ──
-# export EC2_INSTANCE_ID="i-0abc123..."
-# export EC2_REGION="us-east-2"
+# export EC2_SSH_HOST="myserver"           # hostname/IP — set this to SSH directly, no AWS needed
 # export EC2_SSH_USER="ubuntu"
 # export EC2_SSH_KEY="$HOME/.ssh/my-key.pem"
+# export EC2_INSTANCE_ID="i-0abc123..."   # add for start/stop/status via AWS
+# export EC2_REGION="us-east-2"
 # export EC2_AWS_PROFILE="my-profile"
 EOF
     echo "  ✓ Created ~/.zshrc.local template"
