@@ -934,23 +934,36 @@ zjss() {
     local_session="zjss-${host%%.*}-$RANDOM"
     rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    # Wrap the entire SSH command in a local bash execution.
-    # If ssh fails, it sleeps for 60 seconds so the user can read the error before Zellij closes the pane.
-    # No double-quotes are used inside the variables to guarantee perfectly valid KDL output.
-    local cmd1="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}' || { echo '--- SSH FAILED ---'; sleep 60; }"
-    local cmd2="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}' || { echo '--- SSH FAILED ---'; sleep 60; }"
-    local cmd3="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}' || { echo '--- SSH FAILED ---'; sleep 60; }"
-    local cmd4="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}' || { echo '--- SSH FAILED ---'; sleep 60; }"
+    # The trap script receives the remote payload cleanly via $1 (positional arg).
+    # This avoids all nested-quote ambiguity in the KDL file.
+    local bash_script="ssh -o ConnectTimeout=5 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -t '$host' \"\$1\" || { echo '--- SSH FAILED ---'; sleep 60; }"
+    # Pre-escape double quotes so KDL parses them safely
+    bash_script="${bash_script//\"/\\\"}"
 
+    # The remote payloads — no double quotes in these strings.
+    local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
+    local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
+    local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
+    local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
+
+    # Escape just in case, guaranteeing strict KDL compliance
+    cmd1="${cmd1//\"/\\\"}"
+    cmd2="${cmd2//\"/\\\"}"
+    cmd3="${cmd3//\"/\\\"}"
+    cmd4="${cmd4//\"/\\\"}"
+
+    # Write the layout using classic child-node command syntax
     if [[ $n -eq 2 ]]; then
         cat <<EOF > "$layout"
 layout {
     pane split_direction="vertical" {
-        pane command="bash" {
-            args "-c" "$cmd1"
+        pane {
+            command "bash"
+            args "-c" "$bash_script" "--" "$cmd1"
         }
-        pane command="bash" {
-            args "-c" "$cmd2"
+        pane {
+            command "bash"
+            args "-c" "$bash_script" "--" "$cmd2"
         }
     }
 }
@@ -960,19 +973,23 @@ EOF
 layout {
     pane split_direction="vertical" {
         pane split_direction="horizontal" {
-            pane command="bash" {
-                args "-c" "$cmd1"
+            pane {
+                command "bash"
+                args "-c" "$bash_script" "--" "$cmd1"
             }
-            pane command="bash" {
-                args "-c" "$cmd2"
+            pane {
+                command "bash"
+                args "-c" "$bash_script" "--" "$cmd2"
             }
         }
         pane split_direction="horizontal" {
-            pane command="bash" {
-                args "-c" "$cmd3"
+            pane {
+                command "bash"
+                args "-c" "$bash_script" "--" "$cmd3"
             }
-            pane command="bash" {
-                args "-c" "$cmd4"
+            pane {
+                command "bash"
+                args "-c" "$bash_script" "--" "$cmd4"
             }
         }
     }
@@ -984,7 +1001,7 @@ EOF
 
     local rc=0
     if [[ -n "${ZELLIJ:-}" ]]; then
-        zellij action new-tab --layout-path "$layout" --name "zjss: ${host%%.*}"
+        zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
         zellij --session "$local_session" --layout "$layout"
