@@ -987,7 +987,7 @@ EOF
         zellij action new-tab --layout-path "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
-        zellij --session "$local_session" --layout "$layout"
+        zellij --layout "$layout"
         rc=$?
     fi
 
