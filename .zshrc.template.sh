@@ -931,33 +931,22 @@ zjss() {
 
     local layout local_session rows cols
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
-    # Simplified session name to prevent potential length issues
+    # Simplified session name to prevent race conditions
     local_session="zjss-${host%%.*}-$RANDOM"
     rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    # Prepare commands clearly, protecting $HOME and $PATH so they evaluate on the remote
-    local cmd1="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}'"
-    local cmd2="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}'"
-    local cmd3="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}'"
-    local cmd4="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}'"
-
-    # Generate standard, multi-line KDL to prevent parser panic
+    # Generate standard, native KDL without complex tab templates
     if [[ $n -eq 2 ]]; then
         cat <<EOF > "$layout"
 layout {
-    default_tab_template {
-        children
-    }
-    tab {
-        pane split_direction="vertical" {
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
-            }
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
-            }
+    pane split_direction="vertical" {
+        pane {
+            command "ssh"
+            args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}'"
+        }
+        pane {
+            command "ssh"
+            args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}'"
         }
     }
 }
@@ -965,30 +954,25 @@ EOF
     else
         cat <<EOF > "$layout"
 layout {
-    default_tab_template {
-        children
-    }
-    tab {
-        pane split_direction="vertical" {
-            pane split_direction="horizontal" {
-                pane {
-                    command "ssh"
-                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
-                }
-                pane {
-                    command "ssh"
-                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
-                }
+    pane split_direction="vertical" {
+        pane split_direction="horizontal" {
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}'"
             }
-            pane split_direction="horizontal" {
-                pane {
-                    command "ssh"
-                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd3"
-                }
-                pane {
-                    command "ssh"
-                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd4"
-                }
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}'"
+            }
+        }
+        pane split_direction="horizontal" {
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}'"
+            }
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}'"
             }
         }
     }
@@ -999,11 +983,6 @@ EOF
     _tab_title_set "${(j:,:)sessions} @ ${host%%.*}"
 
     local rc=0
-    # Temporarily print the layout to the screen so we can debug it if it fails again
-    echo "--- Generated Layout: $layout ---" >&2
-    cat "$layout" >&2
-    echo "---------------------------------" >&2
-
     if [[ -n "${ZELLIJ:-}" ]]; then
         zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
         rc=$?
@@ -1012,8 +991,7 @@ EOF
         rc=$?
     fi
 
-    # Temporarily commented out so the layout file is preserved on disk for manual testing
-    # rm -f "$layout"
+    rm -f "$layout"
     _zshkit_reset_terminal_input_modes
     return $rc
 }
