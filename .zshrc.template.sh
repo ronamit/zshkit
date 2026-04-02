@@ -943,10 +943,21 @@ zjss() {
             "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
     fi
 
-    printf '\e]2;%s\a' "${(j:,:)sessions} @ ${host%%.*}"
-    zellij delete-session --force "$local_session" 2>/dev/null
-    zellij --session "$local_session" --layout "$layout"
-    local rc=$?
+    # Set terminal tab title gracefully using the bypass wrapper
+    _tab_title_set "${(j:,:)sessions} @ ${host%%.*}"
+
+    local rc=0
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        # Already inside Zellij: open the layout as a new tab in the current session
+        zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
+        rc=$?
+    else
+        # Outside Zellij: create a dedicated session
+        zellij delete-session --force "$local_session" &>/dev/null
+        zellij --session "$local_session" --layout "$layout"
+        rc=$?
+    fi
+
     rm -f "$layout"
     _zshkit_reset_terminal_input_modes
     return $rc
