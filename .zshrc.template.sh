@@ -847,7 +847,6 @@ zj() {
 }
 
 # Delete all Zellij sessions and their scrollback/resurrection data.
-# Also kills any orphaned zjss-pane-* remote processes left over from zjss runs.
 zjclean() {
     local sessions
     sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
@@ -865,7 +864,6 @@ zjclean() {
             && echo "  ✓ $s" \
             || echo "  ✗ $s (failed)"
     done
-    pkill -f "zjss-pane-" 2>/dev/null && echo "  ✓ killed orphaned zjss-pane-* processes"
 }
 
 # SSH into a host and attach to (or create) a named Zellij session.
@@ -880,7 +878,7 @@ zjs() {
     printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
     # Kill stale zjss pane clients (small-terminal) so the session resizes to full screen.
     # TODO: replace with `zellij action disconnect-other-clients` once exposed as CLI (issue #2690).
-    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; sleep 0.2; ~/.local/bin/zellij attach --create $session"
+    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; ~/.local/bin/zellij attach --create $session"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     return $zjs_rc
@@ -912,10 +910,8 @@ zjss() {
 
     local _pane() {
         # stty overrides the SSH PTY size to full-terminal dimensions before Zellij
-        # attaches, so the remote session thinks it has a full-size client even though
-        # the local pane is physically smaller. The pane doesn't resize after this
-        # (no SIGWINCH), so the illusion holds — zjs can attach at full size without
-        # needing to kill the zjss clients first.
+        # attaches, so the remote session sees a full-size client even though the local
+        # pane is physically smaller. No SIGWINCH fires after, so the illusion holds.
         printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; exec -a zjss-pane-%s ~/.local/bin/zellij attach --create %s'"'"'"; }\n' \
             "$host" "$rows" "$cols" "$1" "$1"
     }
