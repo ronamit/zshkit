@@ -945,10 +945,10 @@ zjss() {
     # Define the remote commands. No nested double quotes are needed.
     local H='$HOME'
     local P='$PATH'
-    local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
-    local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
-    local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
-    local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
+    local cmd1="PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
+    local cmd2="PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
+    local cmd3="PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
+    local cmd4="PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
 
     # Generate pure, basic KDL.
     if [[ $n -eq 2 ]]; then
@@ -996,16 +996,48 @@ EOF
         cat "$layout" >&2
     fi
 
-    local rc=0
-    if [[ -n "${ZELLIJ:-}" ]]; then
+    local rc=0 has_active_zellij=0 launch_mode=""
+    if zellij action current-tab-info >/dev/null 2>&1; then
+        has_active_zellij=1
+        launch_mode="active-zellij-session"
+    else
+        launch_mode="standalone-session"
+    fi
+
+    if [[ -n "${ZJSS_DEBUG:-}" ]]; then
+        echo "zjss: ZELLIJ=${ZELLIJ:-<unset>}" >&2
+        echo "zjss: ZELLIJ_SESSION_NAME=${ZELLIJ_SESSION_NAME:-<unset>}" >&2
+        echo "zjss: launch_mode=$launch_mode" >&2
+        echo "zjss: local_session=$local_session" >&2
+        if (( has_active_zellij )); then
+            echo "zjss: launch_cmd=zellij action new-tab --layout \"$layout\" --name \"zjss: ${host%%.*}\"" >&2
+        else
+            echo "zjss: launch_cmd=zellij --session \"$local_session\" --new-session-with-layout \"$layout\"" >&2
+        fi
+    fi
+
+    if (( has_active_zellij )); then
         zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
-        zellij --session "$local_session" --layout "$layout"
+        zellij --session "$local_session" --new-session-with-layout "$layout"
         rc=$?
     fi
 
-    rm -f "$layout"
+    if (( rc != 0 )); then
+        echo "zjss: zellij launch failed (mode=$launch_mode, rc=$rc)" >&2
+        echo "zjss: host=$host sessions=${(j:,:)sessions}" >&2
+        echo "zjss: layout file was $layout" >&2
+        if [[ -z "${ZJSS_DEBUG:-}" ]]; then
+            echo "zjss: rerun with ZJSS_DEBUG=1 to print the generated layout and session detection details." >&2
+        fi
+    fi
+
+    if (( rc == 0 )) || [[ -z "${ZJSS_DEBUG:-}" ]]; then
+        rm -f "$layout"
+    else
+        echo "zjss: preserving layout file for debugging." >&2
+    fi
     _zshkit_reset_terminal_input_modes
     return $rc
 }
