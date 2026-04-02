@@ -987,7 +987,7 @@ EOF
         zellij action new-tab --layout-path "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
-        zellij --layout "$layout"
+        zellij --session "$local_session" --layout "$layout"
         rc=$?
     fi
 
@@ -999,7 +999,7 @@ EOF
 # Show ▶/✓/✗ in the terminal tab title based on command state.
 # Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
 # Windows Terminal, and most modern terminals.
-# Format: "session @ host | ✓ dir"  (session omitted if not in Zellij)
+# Format: "host ●"  (Zellij prepends "session | tab_index | " automatically)
 # preexec: fires after Enter, before the command runs — show ◌ (in progress).
 # precmd:  fires before each prompt (after command finishes) — show ● (success) or ⚠ (failure).
 _tab_title_context() {
@@ -1007,7 +1007,7 @@ _tab_title_context() {
     if [[ -n "${ZELLIJ:-}" ]]; then
         # Inside Zellij: Zellij prepends "{tab_index} | " to the outer window title
         # automatically, so we send just the hostname. The tab label ends up as
-        # "{index} | ● hostname" — the status icon after the index is a Zellij limitation.
+        # "{index} | hostname ●" with the icon consistently on the right.
         echo "$host"
     elif [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
         echo "${ZELLIJ_SESSION_NAME} @ ${host}"
@@ -1025,14 +1025,14 @@ _tab_title_set() {
     fi
 }
 _tab_title_preexec() {
-    _tab_title_set "◌ $(_tab_title_context)"
+    _tab_title_set "$(_tab_title_context) ◌"
 }
 _tab_title_precmd() {
     local result=$?
     if (( result == 0 )); then
-        _tab_title_set "● $(_tab_title_context)"
+        _tab_title_set "$(_tab_title_context) ●"
     else
-        _tab_title_set "⚠ $(_tab_title_context)"
+        _tab_title_set "$(_tab_title_context) ⚠"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
