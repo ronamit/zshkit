@@ -834,7 +834,7 @@ zj() {
             else
                 echo "zj: created session '$session'."
             fi
-            echo "zj: inside Zellij, press Ctrl+o, then w, and select '$session' to switch sessions."
+            echo "zj: inside Zellij, press Ctrl+o, then w, and select '$session' to switch sessions. (Ctrl+x in session-manager disconnects other clients if the screen size looks wrong.)"
         fi
     else
         zellij attach --create "$session"
@@ -847,6 +847,7 @@ zj() {
 }
 
 # Delete all Zellij sessions and their scrollback/resurrection data.
+# Also kills any orphaned zjss-pane-* remote processes left over from zjss runs.
 zjclean() {
     local sessions
     sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
@@ -864,6 +865,7 @@ zjclean() {
             && echo "  ✓ $s" \
             || echo "  ✗ $s (failed)"
     done
+    pkill -f "zjss-pane-" 2>/dev/null && echo "  ✓ killed orphaned zjss-pane-* processes"
 }
 
 # SSH into a host and attach to (or create) a named Zellij session.
@@ -876,7 +878,9 @@ zjs() {
     local session="${2:-main}"
     # Set Kitty tab title immediately so the tab is labelled before the remote prompt appears
     printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
-    sshv -o ConnectTimeout=5 -t "$host" "~/.local/bin/zellij attach --create $session"
+    # Kill stale zjss pane clients (small-terminal) so the session resizes to full screen.
+    # TODO: replace with `zellij action disconnect-other-clients` once exposed as CLI (issue #2690).
+    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; sleep 0.2; ~/.local/bin/zellij attach --create $session"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     return $zjs_rc
@@ -905,7 +909,7 @@ zjss() {
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
 
     local _pane() {
-        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-t" "%s" "bash -lc '"'"'~/.local/bin/zellij attach --create %s'"'"'"; }\n' "$host" "$1"
+        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'exec -a zjss-pane-%s ~/.local/bin/zellij attach --create %s'"'"'"; }\n' "$host" "$1" "$1"
     }
 
     if [[ $n -eq 2 ]]; then
