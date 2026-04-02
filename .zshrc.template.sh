@@ -877,6 +877,9 @@ zjs() {
     # Set Kitty tab title immediately so the tab is labelled before the remote prompt appears
     printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
     sshv -o ConnectTimeout=30 -t "$host" "~/.local/bin/zellij attach --create $session"
+    local zjs_rc=$?
+    _zshkit_reset_terminal_input_modes
+    return $zjs_rc
 }
 
 # SSH into a host and open multiple Zellij sessions in a split Zellij layout.
@@ -902,7 +905,7 @@ zjss() {
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
 
     local _pane() {
-        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=30" "-t" "%s" "bash -lc '"'"'zellij attach --create %s'"'"'"; }\n' "$host" "$1"
+        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=30" "-t" "%s" "bash -lc '"'"'~/.local/bin/zellij attach --create %s'"'"'"; }\n' "$host" "$1"
     }
 
     if [[ $n -eq 2 ]]; then
