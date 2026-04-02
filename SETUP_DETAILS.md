@@ -23,7 +23,7 @@ bash setup_zsh.sh
 | Category | Items |
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
-| Plugins | zsh-autosuggestions, zsh-history-substring-search, zsh-syntax-highlighting, fzf-tab |
+| Plugins | zsh-autosuggestions, zsh-history-substring-search, zsh-syntax-highlighting |
 | CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |
@@ -297,15 +297,6 @@ Set the terminal font to [MesloLGS NF](https://github.com/romkatv/powerlevel10k/
 rm -f ~/.zcompdump && autoload -Uz compinit && compinit
 ```
 
-### Completion feels slow in a large repo
-
-Temporarily disable `fzf-tab` to compare behavior:
-
-```bash
-mv ~/.oh-my-zsh/custom/plugins/fzf-tab ~/.oh-my-zsh/custom/plugins/fzf-tab.disabled
-exec zsh
-```
-
 ### Key bindings differ from your terminal
 
 Check what your terminal sends:
@@ -358,5 +349,4 @@ fi
 - [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
 - [gitstatus](https://github.com/romkatv/powerlevel10k/blob/master/gitstatus/README.md)
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-- [fzf-tab](https://github.com/Aloxaf/fzf-tab)
 - [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
