@@ -212,9 +212,14 @@ unset _ssh_hosts _ssh_cache_file _refresh_ssh_hosts_cache
 
 # ── Environment ──────────────────────────────────────────────────────
 
-export EDITOR='micro'
+# Editor: prefer micro if installed, fallback to nano or vim
 if command -v micro &>/dev/null; then
+    export EDITOR='micro'
     alias edit='micro'
+elif command -v nano &>/dev/null; then
+    export EDITOR='nano'
+else
+    export EDITOR='vim'
 fi
 
 # Keep PATH unique while prepending user bins and snap (yazi and other snaps live in /snap/bin).
@@ -687,19 +692,22 @@ alias pyserver='python -m http.server'
 
 # Auto-activate/deactivate virtualenvs on cd
 _venv_auto_activate() {
-    if [[ -z "$VIRTUAL_ENV" ]]; then
-        if [[ -d .venv ]]; then
-            source .venv/bin/activate 2>/dev/null
-        elif [[ -d venv ]]; then
-            source venv/bin/activate 2>/dev/null
-        fi
-    else
-        # Deactivate if we've left the project directory
+    # 1. Deactivate if we've left the current virtualenv's project directory
+    if [[ -n "$VIRTUAL_ENV" ]]; then
         local project_dir="$VIRTUAL_ENV"
         [[ "$project_dir" == */.venv ]] && project_dir="${project_dir%/.venv}"
         [[ "$project_dir" == */venv ]] && project_dir="${project_dir%/venv}"
         if [[ "$PWD" != "$project_dir" && "$PWD" != "$project_dir"/* ]]; then
             deactivate 2>/dev/null
+        fi
+    fi
+
+    # 2. Activate if we are in a directory with a virtualenv (and not already in one)
+    if [[ -z "$VIRTUAL_ENV" ]]; then
+        if [[ -d .venv ]]; then
+            source .venv/bin/activate 2>/dev/null
+        elif [[ -d venv ]]; then
+            source venv/bin/activate 2>/dev/null
         fi
     fi
 }
@@ -889,7 +897,7 @@ zjs() {
     printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
     # Kill stale zjss pane clients (small-terminal) so the session resizes to full screen.
     # TODO: replace with `zellij action disconnect-other-clients` once exposed as CLI (issue #2690).
-    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; ~/.local/bin/zellij attach --create $session"
+    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec zellij attach --create $session"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     return $zjs_rc
@@ -923,7 +931,7 @@ zjss() {
         # stty overrides the SSH PTY size to full-terminal dimensions before Zellij
         # attaches, so the remote session sees a full-size client even though the local
         # pane is physically smaller. No SIGWINCH fires after, so the illusion holds.
-        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; exec -a zjss-pane-%s ~/.local/bin/zellij attach --create %s'"'"'"; }\n' \
+        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-%s zellij attach --create %s'"'"'"; }\n' \
             "$host" "$rows" "$cols" "$1" "$1"
     }
 
