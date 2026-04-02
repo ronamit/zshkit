@@ -903,8 +903,10 @@ zjs() {
     # Set Kitty tab title immediately, bypassing Zellij interception if nested
     _tab_title_set "$session @ ${host%%.*}"
 
-    # Kill stale zjss pane clients so the session resizes to full screen.
-    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec zellij attach --create \"$session\""
+    # Kill stale zjs/zjss clients for this session so Zellij resizes to our terminal.
+    # Zellij constrains a session to the smallest attached client; lingering SSH
+    # processes from a previous connection hold the session at the old (smaller) size.
+    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-\"$session\" 2>/dev/null; pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     return $zjs_rc
@@ -953,8 +955,12 @@ zjss() {
         cat <<EOF > "$layout"
 layout {
     pane split_direction="vertical" {
-        pane command="$wrapper" { args "$host" "$cmd1"; }
-        pane command="$wrapper" { args "$host" "$cmd2"; }
+        pane command="$wrapper" {
+            args "$host" "$cmd1"
+        }
+        pane command="$wrapper" {
+            args "$host" "$cmd2"
+        }
     }
 }
 EOF
@@ -963,12 +969,20 @@ EOF
 layout {
     pane split_direction="vertical" {
         pane split_direction="horizontal" {
-            pane command="$wrapper" { args "$host" "$cmd1"; }
-            pane command="$wrapper" { args "$host" "$cmd2"; }
+            pane command="$wrapper" {
+                args "$host" "$cmd1"
+            }
+            pane command="$wrapper" {
+                args "$host" "$cmd2"
+            }
         }
         pane split_direction="horizontal" {
-            pane command="$wrapper" { args "$host" "$cmd3"; }
-            pane command="$wrapper" { args "$host" "$cmd4"; }
+            pane command="$wrapper" {
+                args "$host" "$cmd3"
+            }
+            pane command="$wrapper" {
+                args "$host" "$cmd4"
+            }
         }
     }
 }
@@ -976,6 +990,11 @@ EOF
     fi
 
     _tab_title_set "${(j:,:)sessions} @ ${host%%.*}"
+
+    if [[ -n "${ZJSS_DEBUG:-}" ]]; then
+        echo "zjss: generated layout at $layout" >&2
+        cat "$layout" >&2
+    fi
 
     local rc=0
     if [[ -n "${ZELLIJ:-}" ]]; then
