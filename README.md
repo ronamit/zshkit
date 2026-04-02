@@ -115,8 +115,6 @@ zjs myserver work   # specify the session name
 
 `zjss` opens a split Zellij layout with each pane SSH-ed into the same host under its own session — useful for monitoring a GPU training run from multiple angles at once.
 
-![zjss 2x2 split layout](assets/zjss.gif)
-
 ```bash
 zjss myserver               # 2x2 split, sessions 0 1 2 3
 zjss myserver train eval    # side-by-side, 2 sessions
