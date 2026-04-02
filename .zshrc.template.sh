@@ -905,11 +905,19 @@ zjss() {
         return 1
     fi
 
-    local layout
+    local layout local_session rows cols
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
+    local_session="${(j:,:)sessions}@${host%%.*}"
+    rows=$LINES cols=$COLUMNS
 
     local _pane() {
-        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'exec -a zjss-pane-%s ~/.local/bin/zellij attach --create %s'"'"'"; }\n' "$host" "$1" "$1"
+        # stty overrides the SSH PTY size to full-terminal dimensions before Zellij
+        # attaches, so the remote session thinks it has a full-size client even though
+        # the local pane is physically smaller. The pane doesn't resize after this
+        # (no SIGWINCH), so the illusion holds — zjs can attach at full size without
+        # needing to kill the zjss clients first.
+        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; exec -a zjss-pane-%s ~/.local/bin/zellij attach --create %s'"'"'"; }\n' \
+            "$host" "$rows" "$cols" "$1" "$1"
     }
 
     if [[ $n -eq 2 ]]; then
@@ -921,10 +929,8 @@ zjss() {
             "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
     fi
 
-    local local_session="${(j:,:)sessions}@${host%%.*}"
     printf '\e]2;%s\a' "$local_session"
-    rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/zellij/sessions/$local_session" 2>/dev/null
-    zellij --layout "$layout" --session "$local_session"
+    zellij --layout "$layout"
     local rc=$?
     rm -f "$layout"
     _zshkit_reset_terminal_input_modes
