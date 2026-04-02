@@ -934,24 +934,23 @@ zjss() {
     local_session="zjss-${host%%.*}-$RANDOM"
     rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    # Pass the command directly to the remote shell without fragile bash -lc wrappers.
-    # Silence stty so it doesn't trigger 'set -e' aborts if the PTY isn't perfectly ready.
-    local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
-    local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
-    local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
-    local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
+    # Wrap the entire SSH command in a local bash execution.
+    # If ssh fails, it sleeps for 60 seconds so the user can read the error before Zellij closes the pane.
+    # No double-quotes are used inside the variables to guarantee perfectly valid KDL output.
+    local cmd1="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}' || { echo '--- SSH FAILED ---'; sleep 60; }"
+    local cmd2="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}' || { echo '--- SSH FAILED ---'; sleep 60; }"
+    local cmd3="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}' || { echo '--- SSH FAILED ---'; sleep 60; }"
+    local cmd4="ssh -o ConnectTimeout=5 -t '$host' 'stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}' || { echo '--- SSH FAILED ---'; sleep 60; }"
 
     if [[ $n -eq 2 ]]; then
         cat <<EOF > "$layout"
 layout {
     pane split_direction="vertical" {
-        pane {
-            command "ssh"
-            args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
+        pane command="bash" {
+            args "-c" "$cmd1"
         }
-        pane {
-            command "ssh"
-            args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
+        pane command="bash" {
+            args "-c" "$cmd2"
         }
     }
 }
@@ -961,23 +960,19 @@ EOF
 layout {
     pane split_direction="vertical" {
         pane split_direction="horizontal" {
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
+            pane command="bash" {
+                args "-c" "$cmd1"
             }
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
+            pane command="bash" {
+                args "-c" "$cmd2"
             }
         }
         pane split_direction="horizontal" {
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd3"
+            pane command="bash" {
+                args "-c" "$cmd3"
             }
-            pane {
-                command "ssh"
-                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd4"
+            pane command="bash" {
+                args "-c" "$cmd4"
             }
         }
     }
@@ -989,7 +984,7 @@ EOF
 
     local rc=0
     if [[ -n "${ZELLIJ:-}" ]]; then
-        zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
+        zellij action new-tab --layout-path "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
         zellij --session "$local_session" --layout "$layout"

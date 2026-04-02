@@ -12,36 +12,8 @@ Set Shell "zsh"
 Hide
 Type "export POWERLEVEL9K_INSTANT_PROMPT=quiet && source ~/.zshrc 2>/dev/null"
 Enter
-# Movie magic: create a fake layout that mimics the remote SSH panes
-Type "cat << 'EOF' > /tmp/fake-zjss.kdl"
-Enter
-Type "layout {"
-Enter
-Type "    default_tab_template { children; }"
-Enter
-Type "    tab {"
-Enter
-Type "        pane split_direction=\"vertical\" {"
-Enter
-Type "            pane split_direction=\"horizontal\" { command \"zsh\"; args \"-c\" \"echo 'gpu-server | Session 0'; sleep infinity\"; }"
-Enter
-Type "            pane split_direction=\"horizontal\" { command \"zsh\"; args \"-c\" \"echo 'gpu-server | Session 2'; sleep infinity\"; }"
-Enter
-Type "        }"
-Enter
-Type "        pane split_direction=\"vertical\" {"
-Enter
-Type "            pane split_direction=\"horizontal\" { command \"zsh\"; args \"-c\" \"echo 'gpu-server | Session 1'; sleep infinity\"; }"
-Enter
-Type "            pane split_direction=\"horizontal\" { command \"zsh\"; args \"-c\" \"echo 'gpu-server | Session 3'; sleep infinity\"; }"
-Enter
-Type "        }"
-Enter
-Type "    }"
-Enter
-Type "}"
-Enter
-Type "EOF"
+# Movie magic: copy pre-written layout that mimics the remote SSH panes
+Type "cp tools/fake-zjss.kdl /tmp/fake-zjss.kdl"
 Enter
 Type "clear"
 Enter
