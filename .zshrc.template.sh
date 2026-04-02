@@ -865,8 +865,10 @@ zj() {
 
 # Delete all Zellij sessions and their scrollback/resurrection data.
 zjclean() {
-    local sessions
+    local sessions active_session
     sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
+    active_session="${ZELLIJ_SESSION_NAME:-}"
+
     if [[ -z "$sessions" ]]; then
         echo "No Zellij sessions to delete."
         return 0
@@ -879,6 +881,10 @@ zjclean() {
     fi
     echo ""
     printf '%s\n' "$sessions" | while IFS= read -r s; do
+        if [[ "$s" == "$active_session" ]]; then
+            echo "  ~ $s (skipped: cannot delete active session, detach first)"
+            continue
+        fi
         zellij delete-session --force "$s" 2>/dev/null \
             && echo "  ✓ $s" \
             || echo "  ✗ $s (failed)"
@@ -893,11 +899,12 @@ zjclean() {
 zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
-    # Set Kitty tab title immediately so the tab is labelled before the remote prompt appears
-    printf '\e]2;%s @ %s\a' "$session" "${host%%.*}"
-    # Kill stale zjss pane clients (small-terminal) so the session resizes to full screen.
-    # TODO: replace with `zellij action disconnect-other-clients` once exposed as CLI (issue #2690).
-    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-$session 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec zellij attach --create $session"
+
+    # Set Kitty tab title immediately, bypassing Zellij interception if nested
+    _tab_title_set "$session @ ${host%%.*}"
+
+    # Kill stale zjss pane clients so the session resizes to full screen.
+    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjss-pane-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec zellij attach --create \"$session\""
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     return $zjs_rc
@@ -924,41 +931,89 @@ zjss() {
 
     local layout local_session rows cols
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
-    # Zellij session names cannot contain commas or @. Use dashes.
-    local_session="zjss-${(j:-:)sessions}-${host%%.*}"
-    rows=$LINES cols=$COLUMNS
+    # Simplified session name to prevent potential length issues
+    local_session="zjss-${host%%.*}-$RANDOM"
+    rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    local _pane() {
-        printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-%s zellij attach --create %s'"'"'"; }\n' \
-            "$host" "$rows" "$cols" "$1" "$1"
-    }
+    # Prepare commands clearly, protecting $HOME and $PATH so they evaluate on the remote
+    local cmd1="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}'"
+    local cmd2="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}'"
+    local cmd3="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}'"
+    local cmd4="bash -lc 'stty rows $rows cols $cols; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}'"
 
-    # Use default_tab_template { children; } to suppress the redundant local status bar
+    # Generate standard, multi-line KDL to prevent parser panic
     if [[ $n -eq 2 ]]; then
-        printf 'layout {\n    default_tab_template {\n        children\n    }\n    tab hide_floating_panes=true {\n        pane split_direction="vertical" {\n            %s\n            %s\n        }\n    }\n}\n' \
-            "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" > "$layout"
+        cat <<EOF > "$layout"
+layout {
+    default_tab_template {
+        children
+    }
+    tab {
+        pane split_direction="vertical" {
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
+            }
+            pane {
+                command "ssh"
+                args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
+            }
+        }
+    }
+}
+EOF
     else
-        printf 'layout {\n    default_tab_template {\n        children\n    }\n    tab hide_floating_panes=true {\n        pane split_direction="vertical" {\n            pane split_direction="horizontal" {\n                %s\n                %s\n            }\n            pane split_direction="horizontal" {\n                %s\n                %s\n            }\n        }\n    }\n}\n' \
-            "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" \
-            "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
+        cat <<EOF > "$layout"
+layout {
+    default_tab_template {
+        children
+    }
+    tab {
+        pane split_direction="vertical" {
+            pane split_direction="horizontal" {
+                pane {
+                    command "ssh"
+                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd1"
+                }
+                pane {
+                    command "ssh"
+                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd2"
+                }
+            }
+            pane split_direction="horizontal" {
+                pane {
+                    command "ssh"
+                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd3"
+                }
+                pane {
+                    command "ssh"
+                    args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "$host" "$cmd4"
+                }
+            }
+        }
+    }
+}
+EOF
     fi
 
-    # Set terminal tab title gracefully using the bypass wrapper
     _tab_title_set "${(j:,:)sessions} @ ${host%%.*}"
 
     local rc=0
+    # Temporarily print the layout to the screen so we can debug it if it fails again
+    echo "--- Generated Layout: $layout ---" >&2
+    cat "$layout" >&2
+    echo "---------------------------------" >&2
+
     if [[ -n "${ZELLIJ:-}" ]]; then
-        # Already inside Zellij: open the layout as a new tab in the current session
         zellij action new-tab --layout "$layout" --name "zjss: ${host%%.*}"
         rc=$?
     else
-        # Outside Zellij: create a dedicated session
-        zellij delete-session --force "$local_session" &>/dev/null
         zellij --session "$local_session" --layout "$layout"
         rc=$?
     fi
 
-    rm -f "$layout"
+    # Temporarily commented out so the layout file is preserved on disk for manual testing
+    # rm -f "$layout"
     _zshkit_reset_terminal_input_modes
     return $rc
 }
