@@ -930,36 +930,25 @@ zjss() {
     fi
 
     local layout local_session rows cols wrapper
-    layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
+    layout=$(mktemp "${XDG_RUNTIME_DIR:-/tmp}/zjss-layout-XXXXXX.kdl")
     local_session="zjss-${host%%.*}-$RANDOM"
     rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    # 1. Create a persistent wrapper script. This completely bypasses all KDL
-    # string-escaping bugs and Bash heredoc expansion nightmares.
-    wrapper="/tmp/zjss-wrapper-${USER}.sh"
-    cat << 'WRAPPER_EOF' > "$wrapper"
-#!/bin/bash
-_host="$1"
-_cmd="$2"
-ssh -o ConnectTimeout=5 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -t "$_host" "$_cmd"
-rc=$?
-if [ $rc -ne 0 ]; then
-    echo -e "\n\n--- SSH FAILED (Exit code $rc) ---"
-    echo "Command: ssh -t $_host \"$_cmd\""
-    echo "Holding pane open for 60 seconds so you can read the error..."
-    sleep 60
-fi
-exit $rc
-WRAPPER_EOF
-    chmod +x "$wrapper"
+    wrapper="${ZSHKIT_DIR:-$HOME/repos/zshkit}/zjss-wrapper.sh"
+    if [[ ! -x "$wrapper" ]]; then
+        echo "zjss: wrapper not found at $wrapper (set ZSHKIT_DIR in ~/.zshrc.local if your clone is elsewhere)" >&2
+        return 1
+    fi
 
-    # 2. Define the remote commands. No nested double quotes are needed.
-    local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
-    local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
-    local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
-    local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
+    # Define the remote commands. No nested double quotes are needed.
+    local H='$HOME'
+    local P='$PATH'
+    local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
+    local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
+    local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
+    local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=${H}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${P} exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
 
-    # 3. Generate pure, dead-simple KDL.
+    # Generate pure, basic KDL.
     if [[ $n -eq 2 ]]; then
         cat <<EOF > "$layout"
 layout {
