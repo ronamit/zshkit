@@ -113,14 +113,6 @@ zjs myserver work   # specify the session name
 
 > **Remote sessions:** run `bash setup_zsh.sh` on the remote machine too — Zellij needs to be installed there for sessions to live on the remote side.
 
-`zjss` opens a split Zellij layout with each pane SSH-ed into the same host under its own session — useful for monitoring a GPU training run from multiple angles at once.
-
-```bash
-zjss myserver               # 2x2 split, sessions 0 1 2 3
-zjss myserver train eval    # side-by-side, 2 sessions
-zjss myserver a b c d       # 2x2, custom session names
-```
-
 ## Disk usage
 
 ```bash

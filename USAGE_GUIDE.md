@@ -348,7 +348,6 @@ Main session command:
 |---------|------|
 | `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. When starting fresh with no name, defaults to current directory name. |
 | `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. Sets the terminal tab title immediately to `session @ host`. |
-| `zjss host [s1 s2 ...]` | Open a split Zellij layout locally, each pane SSHing into the remote and attaching to a named session. 2 names = side-by-side, 4 names = 2x2. Defaults to sessions `0 1 2 3` in a 2x2 layout. |
 | `zjclean` | Delete all sessions and their scrollback/resurrection history — lists each session with its age before confirming |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |

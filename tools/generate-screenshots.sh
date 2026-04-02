@@ -87,7 +87,6 @@ mkdir -p "$ASSETS_DIR"
 
 TAPES=(
     hero.tape
-    zjss.tape
     zoxide.tape
 )
 
