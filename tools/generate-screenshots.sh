@@ -86,14 +86,9 @@ ASSETS_DIR="assets"
 mkdir -p "$ASSETS_DIR"
 
 TAPES=(
-    prompt.tape
-    autosuggest.tape
-    history-search.tape
-    zoxide.tape
-    ducks.tape
-    zj-session.tape
+    hero.tape
     zjss.tape
-    navigation.tape
+    zoxide.tape
 )
 
 echo ""

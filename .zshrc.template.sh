@@ -924,28 +924,28 @@ zjss() {
 
     local layout local_session rows cols
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
-    local_session="${(j:,:)sessions}@${host%%.*}"
+    # Zellij session names cannot contain commas or @. Use dashes.
+    local_session="zjss-${(j:-:)sessions}-${host%%.*}"
     rows=$LINES cols=$COLUMNS
 
     local _pane() {
-        # stty overrides the SSH PTY size to full-terminal dimensions before Zellij
-        # attaches, so the remote session sees a full-size client even though the local
-        # pane is physically smaller. No SIGWINCH fires after, so the illusion holds.
         printf 'pane { command "ssh"; args "-o" "ConnectTimeout=5" "-o" "ServerAliveInterval=30" "-o" "ServerAliveCountMax=3" "-t" "%s" "bash -lc '"'"'stty rows %d cols %d; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-%s zellij attach --create %s'"'"'"; }\n' \
             "$host" "$rows" "$cols" "$1" "$1"
     }
 
+    # Use default_tab_template { children; } to suppress the redundant local status bar
     if [[ $n -eq 2 ]]; then
-        printf 'layout {\n    pane split_direction="vertical" {\n        %s\n        %s\n    }\n}\n' \
+        printf 'layout {\n    default_tab_template {\n        children\n    }\n    tab hide_floating_panes=true {\n        pane split_direction="vertical" {\n            %s\n            %s\n        }\n    }\n}\n' \
             "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" > "$layout"
     else
-        printf 'layout {\n    pane split_direction="vertical" {\n        pane split_direction="horizontal" {\n            %s\n            %s\n        }\n        pane split_direction="horizontal" {\n            %s\n            %s\n        }\n    }\n}\n' \
+        printf 'layout {\n    default_tab_template {\n        children\n    }\n    tab hide_floating_panes=true {\n        pane split_direction="vertical" {\n            pane split_direction="horizontal" {\n                %s\n                %s\n            }\n            pane split_direction="horizontal" {\n                %s\n                %s\n            }\n        }\n    }\n}\n' \
             "$(_pane "${sessions[1]}")" "$(_pane "${sessions[2]}")" \
             "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
     fi
 
-    printf '\e]2;%s\a' "$local_session"
-    zellij --layout "$layout"
+    printf '\e]2;%s\a' "${(j:,:)sessions} @ ${host%%.*}"
+    zellij delete-session --force "$local_session" 2>/dev/null
+    zellij --session "$local_session" --layout "$layout"
     local rc=$?
     rm -f "$layout"
     _zshkit_reset_terminal_input_modes

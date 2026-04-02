@@ -4,7 +4,7 @@ Set Theme { "name": "VSCode Dark", "background": "#1e1e1e", "foreground": "#cccc
 Set FontSize 16
 Set FontFamily "MesloLGS NF"
 Set Width 1100
-Set Height 420
+Set Height 300
 Set Framerate 10
 Set Padding 20
 Set Shell "zsh"
@@ -18,24 +18,14 @@ Enter
 Sleep 0.5s
 Show
 
-# Demo: jump to directories by fuzzy keyword — no full path needed
 Type@150ms "z zsh"
 Enter
-Sleep 0.8s
-Type "pwd"
-Enter
-Sleep 1s
+Sleep 1.5s
 
 Type@150ms "z kitty"
 Enter
-Sleep 0.8s
-Type "pwd"
-Enter
-Sleep 1s
+Sleep 1.5s
 
 Type@150ms "z cloud"
 Enter
-Sleep 0.8s
-Type "pwd"
-Enter
-Sleep 1.5s
+Sleep 2s

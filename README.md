@@ -36,19 +36,11 @@ The installer backs up your existing config. To roll back: `bash rollback.sh`
 
 See [SETUP_DETAILS.md](SETUP_DETAILS.md) for full install details and customization.
 
-## Prompt
-
-Git-aware prompt: branch, dirty status, and command duration at a glance.
-
-![Prompt with git status](assets/prompt.gif)
+![Hero demo](assets/hero.gif)
 
 ## Autocomplete and suggestions
 
 Gray suggestion appears as you type. `Tab` accepts the full ghost text instantly, or opens the completion grid if none is showing. Options appear automatically below the prompt as you type — press `↓` to enter the grid.
-
-![Autosuggestions and history cycling](assets/autosuggest.gif)
-
-![Fuzzy history search with fzf](assets/history-search.gif)
 
 | Key | Action |
 |-----|--------|
@@ -67,8 +59,6 @@ Gray suggestion appears as you type. `Tab` accepts the full ghost text instantly
 **History search:** `↑` searches older commands matching what you've typed so far; `↓` then moves forward through matches.
 `..` goes up a directory. `z` jumps anywhere by keyword.
 
-![Directory navigation](assets/navigation.gif)
-
 ```bash
 cd ~/.config/  # then press ↓ — opens directory menu, arrow keys to select
 cd ~/.c        # then press ↑ — history search for older matches; ↓ for newer
@@ -76,6 +66,8 @@ cd ~/.c        # then press ↑ — history search for older matches; ↓ for ne
 z zsh          # jump to ~/repos/zshkit by keyword
 z kitty        # jump to ~/.config/kitty
 ```
+
+![zoxide jump by keyword](assets/zoxide.gif)
 
 ## VPN
 
@@ -112,8 +104,6 @@ sshv user@host
 
 Sessions survive disconnects — close your laptop mid-run and reconnect later.
 
-![Zellij session commands](assets/zj-session.gif)
-
 ```bash
 zj                  # pick from active sessions (or start one named after current dir)
 zj my-session       # attach to or create a named session
@@ -134,10 +124,6 @@ zjss myserver a b c d       # 2x2, custom session names
 ```
 
 ## Disk usage
-
-`ducks` shows top-level sizes sorted by largest first.
-
-![Disk usage with ducks](assets/ducks.gif)
 
 ```bash
 ducks        # quick summary of current directory
