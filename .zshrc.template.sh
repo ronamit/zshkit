@@ -929,42 +929,43 @@ zjss() {
         return 1
     fi
 
-    local layout local_session rows cols
+    local layout local_session rows cols wrapper
     layout=$(mktemp /tmp/zjss-layout-XXXXXX.kdl)
     local_session="zjss-${host%%.*}-$RANDOM"
     rows=${LINES:-24} cols=${COLUMNS:-80}
 
-    # The trap script receives the remote payload cleanly via $1 (positional arg).
-    # This avoids all nested-quote ambiguity in the KDL file.
-    local bash_script="ssh -o ConnectTimeout=5 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -t '$host' \"\$1\" || { echo '--- SSH FAILED ---'; sleep 60; }"
-    # Pre-escape double quotes so KDL parses them safely
-    bash_script="${bash_script//\"/\\\"}"
+    # 1. Create a persistent wrapper script. This completely bypasses all KDL
+    # string-escaping bugs and Bash heredoc expansion nightmares.
+    wrapper="/tmp/zjss-wrapper-${USER}.sh"
+    cat << 'WRAPPER_EOF' > "$wrapper"
+#!/bin/bash
+_host="$1"
+_cmd="$2"
+ssh -o ConnectTimeout=5 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -t "$_host" "$_cmd"
+rc=$?
+if [ $rc -ne 0 ]; then
+    echo -e "\n\n--- SSH FAILED (Exit code $rc) ---"
+    echo "Command: ssh -t $_host \"$_cmd\""
+    echo "Holding pane open for 60 seconds so you can read the error..."
+    sleep 60
+fi
+exit $rc
+WRAPPER_EOF
+    chmod +x "$wrapper"
 
-    # The remote payloads — no double quotes in these strings.
+    # 2. Define the remote commands. No nested double quotes are needed.
     local cmd1="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[1]} zellij attach --create ${sessions[1]}"
     local cmd2="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[2]} zellij attach --create ${sessions[2]}"
     local cmd3="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[3]:-2} zellij attach --create ${sessions[3]:-2}"
     local cmd4="stty rows $rows cols $cols 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjss-pane-${sessions[4]:-3} zellij attach --create ${sessions[4]:-3}"
 
-    # Escape just in case, guaranteeing strict KDL compliance
-    cmd1="${cmd1//\"/\\\"}"
-    cmd2="${cmd2//\"/\\\"}"
-    cmd3="${cmd3//\"/\\\"}"
-    cmd4="${cmd4//\"/\\\"}"
-
-    # Write the layout using classic child-node command syntax
+    # 3. Generate pure, dead-simple KDL.
     if [[ $n -eq 2 ]]; then
         cat <<EOF > "$layout"
 layout {
     pane split_direction="vertical" {
-        pane {
-            command "bash"
-            args "-c" "$bash_script" "--" "$cmd1"
-        }
-        pane {
-            command "bash"
-            args "-c" "$bash_script" "--" "$cmd2"
-        }
+        pane command="$wrapper" { args "$host" "$cmd1"; }
+        pane command="$wrapper" { args "$host" "$cmd2"; }
     }
 }
 EOF
@@ -973,24 +974,12 @@ EOF
 layout {
     pane split_direction="vertical" {
         pane split_direction="horizontal" {
-            pane {
-                command "bash"
-                args "-c" "$bash_script" "--" "$cmd1"
-            }
-            pane {
-                command "bash"
-                args "-c" "$bash_script" "--" "$cmd2"
-            }
+            pane command="$wrapper" { args "$host" "$cmd1"; }
+            pane command="$wrapper" { args "$host" "$cmd2"; }
         }
         pane split_direction="horizontal" {
-            pane {
-                command "bash"
-                args "-c" "$bash_script" "--" "$cmd3"
-            }
-            pane {
-                command "bash"
-                args "-c" "$bash_script" "--" "$cmd4"
-            }
+            pane command="$wrapper" { args "$host" "$cmd3"; }
+            pane command="$wrapper" { args "$host" "$cmd4"; }
         }
     }
 }
