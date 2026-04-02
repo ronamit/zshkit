@@ -23,18 +23,25 @@ Behavior summary:
 
 **History search:** press `↑` to find older commands that start with what you've typed so far. Keep pressing `↑` to go further back; once in history search mode, `↓` moves forward to newer matches.
 
-**Directory completion:** in a `cd` context, press `↓` to open a browsable menu of matching subdirectories — navigate with arrow keys, `Enter` to select. `fzf-tab` powers fuzzy completion for most other commands. Completion menus are grouped by type with descriptions, and matching is case-insensitive. Auto-`cd` is enabled — type a directory name and press `Enter` to enter it.
+**Completion menu:** options appear automatically below the prompt as you type (powered by the built-in auto-list engine and [carapace](https://carapace.sh) for rich flag/arg descriptions). Completion menus are grouped by type with headers, and matching is case-insensitive. Auto-`cd` is enabled — type a directory name and press `Enter` to enter it.
+
+**Workflow:**
+
+1. Type `git` + space — a grid of subcommands with descriptions appears below the prompt immediately.
+2. Press `Tab` — if ghost text is showing, it accepts it instantly. Otherwise, `Tab` enters the completion grid.
+3. Press `↓` — if the auto-list grid is showing, `↓` enters it directly. After `↑` history search, `↓` returns to newer matches.
+4. Navigate the grid with arrow keys, press `Enter` to insert the selection.
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Accept the full autosuggestion if one is showing (if the accepted path is a directory, automatically appends `/` and opens its contents). Otherwise open completion. |
-| `Shift+Tab` | Reverse completion / previous menu item |
+| `Tab` | **If ghost text is showing:** accept it fully. **Otherwise:** enter the completion menu. |
+| `↓` | **If auto-list is showing:** enter the completion grid. **After `↑` history search:** go to newer history match. |
+| `Shift+Tab` | Previous item in completion menu |
 | `→` (Right Arrow) | Partial-accept one character from the autosuggestion |
 | `Ctrl+→` / `Alt+F` | Partial-accept one word from the autosuggestion |
 | `Ctrl+Space` | Accept full autosuggestion |
 | `End` | Accept full autosuggestion (move to end of line) |
 | `Up` | History search: search older commands that start with what you've typed so far |
-| `Down` | **In `cd` / path context:** open a browsable directory completion menu. **After pressing `Up` (history scroll active):** go to the newer history match. |
 | `Ctrl+P` | Same as `Up` |
 | `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |
@@ -45,7 +52,7 @@ Behavior summary:
 |-----|--------|
 | `Up` / `Down` | Move through menu items and between rows |
 | `Tab` / `Shift+Tab` | Next / previous item |
-| `Enter` | Accept the current selection and run |
+| `Enter` | Accept the current selection |
 | `Left` / `Right` | Move between columns in grid-style menus |
 | `Escape` | Cancel the menu and return to editing |
 
@@ -496,7 +503,7 @@ Kitty's own automatic tab title updates are disabled (`shell_integration enabled
 - [gitstatus](https://github.com/romkatv/powerlevel10k/blob/master/gitstatus/README.md)
 - [Git status symbols explained](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#what-do-different-symbols-in-git-status-mean)
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-- [fzf-tab](https://github.com/Aloxaf/fzf-tab)
+- [carapace](https://carapace.sh)
 - [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
 - [Zellij screencasts](https://zellij.dev/screencasts/)
 - [Zellij cheat sheet](https://zellijcheatsheet.dev/)

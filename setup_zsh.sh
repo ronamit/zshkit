@@ -33,6 +33,7 @@ fi
 ZELLIJ_VERSION="${ZELLIJ_VERSION:-v0.44.0}"
 ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-v0.22.0}"
 ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-v0.3.1}"
+CARAPACE_VERSION="${CARAPACE_VERSION:-v1.6.4}"
 
 SSH_CONFIG="$HOME/.ssh/config"
 SSH_MARKER_BEGIN="# >>> zshkit ssh defaults >>>"
@@ -383,6 +384,17 @@ install_or_update_kitty() {
     local kitty_bin kitten_bin
 
     step "Installing Kitty (official upstream release)..."
+
+    # Skip download if the installed version is already the latest.
+    local _latest_ver _installed_ver
+    _latest_ver=$(curl -fsSLI "https://github.com/kovidgoyal/kitty/releases/latest" \
+        2>/dev/null | grep -i '^location:' | sed 's|.*/tag/v||' | tr -d '[:space:]\r')
+    _installed_ver=$(kitty --version 2>/dev/null | awk '{print $2}')
+    if [ -n "$_latest_ver" ] && [ "$_installed_ver" = "$_latest_ver" ]; then
+        echo "  ✓ Kitty $_installed_ver is already the latest version — skipping download"
+        return 0
+    fi
+
     if ! curl -fsSL "$installer_url" | sh /dev/stdin launch=n; then
         echo "  ✗ Failed to install Kitty from the official installer"
         exit 1
@@ -671,10 +683,6 @@ clone_if_missing "zsh-history-substring-search" \
     "https://github.com/zsh-users/zsh-history-substring-search.git" \
     "$ZSH_CUSTOM/plugins/zsh-history-substring-search" "zsh-history-substring-search"
 
-clone_if_missing "fzf-tab" \
-    "https://github.com/Aloxaf/fzf-tab.git" \
-    "$ZSH_CUSTOM/plugins/fzf-tab" "fzf-tab"
-
 clone_if_missing "zsh-defer" \
     "https://github.com/romkatv/zsh-defer.git" \
     "$ZSH_CUSTOM/plugins/zsh-defer" "zsh-defer"
@@ -878,6 +886,42 @@ if ! command -v uv &>/dev/null; then
     fi
 else
     echo "  ✓ uv already installed"
+fi
+
+_carapace_installed_version="$(carapace --version 2>/dev/null | awk '{print $2}')"
+if [ "$_carapace_installed_version" != "${CARAPACE_VERSION#v}" ]; then
+    step "Installing carapace-bin ${CARAPACE_VERSION}..."
+    mkdir -p "$HOME/.local/bin"
+
+    if [ "$IS_MACOS" -eq 1 ]; then
+        install_brew_formula_if_missing carapace carapace-sh/carapace/carapace
+    else
+        case "$(uname -m)" in
+            x86_64|amd64) _carapace_arch="amd64" ;;
+            aarch64|arm64) _carapace_arch="arm64" ;;
+            *)
+                echo "  ✗ Unsupported architecture for carapace auto-install: $(uname -m)"
+                exit 1
+                ;;
+        esac
+
+        _carapace_tar="${TMPDIR:-/tmp}/carapace.tar.gz"
+        _carapace_url="https://github.com/carapace-sh/carapace-bin/releases/download/${CARAPACE_VERSION}/carapace-bin_${CARAPACE_VERSION#v}_linux_${_carapace_arch}.tar.gz"
+        if download_to_file "$_carapace_url" "$_carapace_tar" \
+            && tar -xzf "$_carapace_tar" -C "$HOME/.local/bin" carapace \
+            && chmod +x "$HOME/.local/bin/carapace" \
+            && [ -x "$HOME/.local/bin/carapace" ]; then
+            echo "  ✓ Installed carapace-bin ${CARAPACE_VERSION}"
+        else
+            echo "  ✗ Failed to download carapace-bin ${CARAPACE_VERSION} for ${_carapace_arch}"
+            rm -f "$_carapace_tar"
+            rm -f "$HOME/.local/bin/carapace"
+            exit 1
+        fi
+        rm -f "$_carapace_tar"
+    fi
+else
+    echo "  ✓ carapace-bin ${CARAPACE_VERSION} already installed"
 fi
 
 _zellij_installed_version="$(zellij --version 2>/dev/null | awk '{print $2}')"

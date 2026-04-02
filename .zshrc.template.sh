@@ -1,14 +1,15 @@
-# Fastfetch: show system info before instant prompt (local sessions only).
-# Must run before the p10k instant prompt block to avoid console-output warnings.
-if [[ -z "${SSH_CONNECTION:-}" && -o interactive ]] && command -v fastfetch &>/dev/null; then
-    fastfetch
-fi
-
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Fastfetch: show system info on interactive local sessions only.
+# Placed after instant prompt so P10k can render the prompt frame immediately
+# while fastfetch output scrolls above it.
+if [[ -z "${SSH_CONNECTION:-}" && -o interactive ]] && command -v fastfetch &>/dev/null; then
+    fastfetch
 fi
 
 # ── Oh My Zsh core ───────────────────────────────────────────────────
@@ -60,12 +61,9 @@ HIST_STAMPS="yyyy-mm-dd"
 
 # ── Plugin detection & compatibility ─────────────────────────────────
 
-_fzf_tab_plugin="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab/fzf-tab.plugin.zsh"
 _zsh_autosuggest_plugin="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 _zsh_highlight_plugin="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
 _zsh_defer_plugin="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-defer/zsh-defer.plugin.zsh"
-typeset -gi _fzf_tab_loaded=0
-[[ -r "$_fzf_tab_plugin" ]] && _fzf_tab_loaded=1
 typeset -gi _zsh_autosuggest_loaded=0
 [[ -r "$_zsh_autosuggest_plugin" ]] && _zsh_autosuggest_loaded=1
 typeset -gi _zsh_highlight_loaded=0
@@ -123,8 +121,8 @@ function compinit() {
 }
 [[ -r "$ZSH/oh-my-zsh.sh" ]] && source "$ZSH/oh-my-zsh.sh"
 
-# fzf-tab, syntax-highlighting, and autosuggestions are sourced at the very end
-# of this file so that autosuggestions wraps the final widget set (avoids race with fzf-tab).
+# syntax-highlighting and autosuggestions are sourced at the very end of this file
+# so that autosuggestions wraps the final widget set.
 
 # ══════════════════════════════════════════════════════════════════════
 # Everything below runs AFTER oh-my-zsh so our settings are not
@@ -157,7 +155,7 @@ zstyle ':completion:*:*:*:*:default' list-colors "${(s.:.)LS_COLORS}"
 
 # Group completions by type with subtle headers (directory, file, alias, etc.)
 zstyle ':completion:*' group-name ''
-# Keep native completion headers styled, while still enabling group support for fzf-tab.
+# Keep native completion headers styled.
 zstyle ':completion:*:descriptions' format '%F{8}── %d ──%f'
 zstyle ':completion:*:warnings'     format '%F{red}no matches%f'
 
@@ -727,6 +725,17 @@ fi
 
 # ── Functions ────────────────────────────────────────────────────────
 
+# Yazi wrapper: quit yazi and cd into the directory you navigated to.
+yy() {
+    local tmp cwd
+    tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+    yazi "$@" --cwd-file="$tmp"
+    if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+        builtin cd -- "$cwd"
+    fi
+    rm -f -- "$tmp"
+}
+
 # Find files by name
 ff() {
     local pattern="${1:?usage: ff PATTERN}"
@@ -856,9 +865,11 @@ zjclean() {
     fi
     echo "Sessions to delete:"
     zellij list-sessions --no-formatting 2>/dev/null | sed 's/^/  /'
-    printf "Delete all sessions and scrollback history? [y/N] "
-    read -r _zjclean_confirm
-    [[ "$_zjclean_confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; return 0; }
+    if ! read -q "_zjclean_confirm?Delete all sessions and scrollback history? [y/N] "; then
+        echo -e "\nAborted."
+        return 0
+    fi
+    echo ""
     printf '%s\n' "$sessions" | while IFS= read -r s; do
         zellij delete-session --force "$s" 2>/dev/null \
             && echo "  ✓ $s" \
@@ -1040,9 +1051,9 @@ ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 # Don't suggest dangerous commands from history.
 ZSH_AUTOSUGGEST_HISTORY_IGNORE='rm -rf *|sudo rm *|:(){ :|:& };:'
 
-# Autosuggestions plugin is sourced at the very end of this file (after fzf-tab and syntax-highlighting).
+# Autosuggestions plugin is sourced at the very end of this file (after syntax-highlighting).
 
-# Keep autosuggest acceptance explicit: Tab/Right (not Up/Down).
+# Keep autosuggest acceptance explicit: Ctrl+Space/End/Right (not Tab or Up/Down).
 typeset -ga ZSH_AUTOSUGGEST_ACCEPT_WIDGETS
 ZSH_AUTOSUGGEST_ACCEPT_WIDGETS=(
     autosuggest-accept
@@ -1056,6 +1067,8 @@ ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS=(
     vi-forward-char
     forward-char
     forward-word
+    _forward_char_with_autolist
+    _forward_word_with_autolist
 )
 
 # ── Shell QoL options ────────────────────────────────────────────────
@@ -1142,38 +1155,18 @@ zle -N _history_prefix_search_down
 # args without eagerly applying the first match.
 _down_history_or_dirs() {
     unset POSTDISPLAY
-    local cmd="${BUFFER%%[[:space:]]*}"
     local in_history_scroll=0
-    local in_dir_context=0
-    local -a words=()
-    local current_word=""
 
-    # Detect active history scroll: flag is set AND buffer hasn't been edited
+    # Detect active history scroll: flag is set AND buffer hasn't been edited.
     if (( _history_scroll_active )) && [[ "$BUFFER" == "$_history_scroll_last_buffer" ]]; then
         in_history_scroll=1
     fi
 
-    if [[ $CURSOR -eq ${#BUFFER} ]]; then
-        if [[ "$cmd" == "cd" || "$cmd" == "pushd" || "$cmd" == "popd" ]]; then
-            in_dir_context=1
-        elif [[ "$BUFFER" != *[[:space:]]* ]] && [[ "$BUFFER" == [./~]* ]]; then
-            in_dir_context=1
-        else
-            words=(${(z)BUFFER})
-            if [[ "$BUFFER" != *[[:space:]] ]] && (( ${#words} )); then
-                current_word="${words[-1]}"
-                if [[ "$current_word" == [./~]* || "$current_word" == */* ]]; then
-                    in_dir_context=1
-                fi
-            fi
-        fi
-    fi
-
     if (( in_history_scroll )); then
         zle _history_prefix_search_down
-    elif (( in_dir_context )); then
-        # Enter menu selection directly so Down highlights the first match
-        # instead of inserting it into the buffer.
+    elif [[ -n "$_auto_list_last_buffer" && "$LBUFFER" == "$_auto_list_last_buffer" ]]; then
+        # Auto-list is showing for the current position — Down enters the grid
+        # so the user can navigate with arrow keys and select with Enter.
         _auto_list_last_buffer=""
         if (( $+widgets[menu-select] )); then
             zle menu-select
@@ -1189,18 +1182,20 @@ _down_history_or_dirs() {
 zle -N _down_history_or_dirs
 
 _tab_complete_and_autolist() {
-    # General Tab behavior for non-cd commands.
+    # Enter the native completion menu. expand-or-complete inserts directly for a
+    # unique match; for multiple matches menu select (configured via zstyle) opens
+    # the interactive grid automatically.
+    _auto_list_last_buffer=""
     if (( $+widgets[expand-or-complete] )); then
         zle expand-or-complete
     else
         zle .expand-or-complete
     fi
-    zle _maybe_auto_list_choices
 }
 zle -N _tab_complete_and_autolist
 
 _cd_tab_complete() {
-    # Deterministic cd drill-down: append / if dir, then run completion so list appears.
+    # Deterministic cd drill-down: append / if dir, then open native menu.
     (( CURSOR == ${#BUFFER} )) || { zle list-choices; return 0; }
 
     local _tail="${BUFFER##*[[:space:]]}"
@@ -1220,58 +1215,24 @@ _cd_tab_complete() {
     fi
 
     _auto_list_last_buffer=""
-    # Run real completion (bypass fzf-tab so list is generated) then show list.
-    if (( $+functions[_ftb__main_complete] )); then
-        local _saved_main="${functions[_main_complete]}"
-        functions[_main_complete]="${functions[_ftb__main_complete]}"
-        zle expand-or-complete
-        functions[_main_complete]="$_saved_main"
-    else
-        zle expand-or-complete
-    fi
+    zle expand-or-complete
     zle list-choices
 }
 zle -N _cd_tab_complete
 
 _tab_accept_or_complete() {
-    # Tab accepts autosuggestion first (for all commands including cd).
-    local _before_buffer="$BUFFER"
-    local -i _before_cursor=$CURSOR
-
-    if (( $+widgets[autosuggest-accept] )); then
-        zle autosuggest-accept
-    fi
-
-    if [[ "$BUFFER" != "$_before_buffer" || $CURSOR -ne $_before_cursor ]]; then
-        # Autosuggestion was accepted — append / if last word is a directory,
-        # then show completions inside that directory.
-        local _tail="${BUFFER##*[[:space:]]}"
-        if [[ -n "$_tail" && "$BUFFER" != */ ]]; then
-            local _expanded
-            if [[ "$_tail" == /* ]]; then
-                _expanded="$_tail"
-            elif [[ "$_tail" == ~* ]]; then
-                _expanded="${_tail/#\~/$HOME}"
-            else
-                _expanded="$PWD/$_tail"
-            fi
-            if [[ -d "$_expanded" ]]; then
-                BUFFER="${BUFFER}/"
-                CURSOR=${#BUFFER}
-                _auto_list_last_buffer=""
-                zle list-choices
-            fi
-        fi
+    # If autosuggestion ghost text is visible, Tab accepts it fully.
+    if [[ -n "$POSTDISPLAY" ]]; then
+        (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
         return 0
     fi
-
-    # No autosuggestion accepted — for cd/pushd/popd use cd-only drill-down.
+    # cd/pushd/popd: deterministic drill-down with / appending.
     local _cmd="${BUFFER%%[[:space:]]*}"
     if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
         zle _cd_tab_complete
         return 0
     fi
-
+    # No ghost text and not a cd command — enter the completion menu.
     zle _tab_complete_and_autolist
 }
 zle -N _tab_accept_or_complete
@@ -1480,6 +1441,14 @@ _forward_word_with_autolist() {
 }
 zle -N _forward_word_with_autolist
 
+_backward_delete_char_with_autolist() {
+    zle .backward-delete-char
+    _history_scroll_active=0
+    _auto_list_last_buffer=""
+    zle _maybe_auto_list_choices
+}
+zle -N _backward_delete_char_with_autolist
+
 _autolist_is_enabled() {
     local _v="${ZSH_AUTOLIST_ON_TYPE:-1}"
     _v="${_v:l}"
@@ -1494,6 +1463,7 @@ _apply_autolist_mode() {
         zle -N bracketed-paste _bracketed_paste_with_autolist
         zle -N forward-char _forward_char_with_autolist
         zle -N forward-word _forward_word_with_autolist
+        zle -N backward-delete-char _backward_delete_char_with_autolist
     else
         if (( $+widgets[autosuggest-self-insert] )); then
             zle -A autosuggest-self-insert self-insert
@@ -1517,6 +1487,7 @@ _apply_autolist_mode() {
         fi
         zle -A .forward-char forward-char
         zle -A .forward-word forward-word
+        zle -A .backward-delete-char backward-delete-char
     fi
 }
 
@@ -1540,7 +1511,8 @@ if (( $+functions[add-zsh-hook] )); then
 fi
 
 if [[ -o interactive ]]; then
-    # Apply current auto-list mode (on by default, configurable).
+    # Apply autolist widget wrappers before plugins load so zsh-autosuggestions
+    # wraps _self_insert_with_autolist (not the raw builtin), preserving ghost text.
     _apply_autolist_mode
 
     # Arrow keys → sticky prefix history search
@@ -1576,8 +1548,8 @@ if [[ -o interactive ]]; then
 
     # Right arrow: partial-accept one char from suggestion (forward-char in ZSH_AUTOSUGGEST_PARTIAL_ACCEPT_WIDGETS)
     # Ctrl+Right / Alt+F: partial-accept one word from suggestion (forward-word)
-    # Tab: accept the full autosuggestion (see _tab_accept_or_complete)
-    # End: accept the full suggestion and move to end of line
+    # Ctrl+Space / End: accept the full autosuggestion
+    # Tab: accept ghost text if present, otherwise open native completion menu
     bindkey '^[[C' forward-char
     bindkey '^[OC' forward-char
     bindkey '^[[F' end-of-line
@@ -1629,42 +1601,28 @@ fi
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 # Allow ~/.zshrc.local to toggle auto-list mode without editing this file.
-if [[ -o interactive ]] && (( $+functions[_apply_autolist_mode] )); then
-    _apply_autolist_mode
+[[ -o interactive ]] && (( $+functions[_apply_autolist_mode] )) && _apply_autolist_mode
+
+# ── Carapace completions ─────────────────────────────────────────────
+# Rich flag/arg completion specs for 1000+ CLI tools (git, docker, kubectl, etc.).
+# Must be sourced after compinit (done above via OMZ) so the native menu is
+# populated with descriptions before the completion system is first used.
+if command -v carapace &>/dev/null; then
+    _carapace_cache="$HOME/.zsh/cache/carapace_init.zsh"
+    if [[ ! -f "$_carapace_cache" || "$(command -v carapace)" -nt "$_carapace_cache" ]]; then
+        carapace _carapace zsh >| "$_carapace_cache"
+    fi
+    source "$_carapace_cache"
+    unset _carapace_cache
 fi
 
-# ── Load fzf-tab, syntax-highlighting, autosuggestions (order matters) ──
-# fzf-tab first, then syntax-highlighting, then autosuggestions last so it
-# wraps the final widget set and avoids conflicts with fzf-tab ghost text.
-# Tab / Ctrl+Space / End: accept the full autosuggestion.
-# Right Arrow: partial-accept one char. Ctrl+Right / Alt+F: partial-accept one word.
-if (( _fzf_tab_loaded )); then
-    source "$_fzf_tab_plugin"
-    zstyle ':fzf-tab:*' fzf-flags '--height=40% --layout=reverse --border'
-    zstyle ':fzf-tab:*' switch-group ',' '.'
-    zstyle ':fzf-tab:*' continuous-trigger '/'
-    # Enter accepts and runs the command in one keystroke (see wiki: accept-line)
-    zstyle ':fzf-tab:*' accept-line enter
-    # Previews: dirs with lsd/eza/ls, files with bat/cat (see wiki/Preview)
-    zstyle ':fzf-tab:complete:*:*' fzf-preview \
-        '[[ -d $realpath ]] && (lsd -1 --color=always $realpath 2>/dev/null || eza -1 --color=always $realpath 2>/dev/null || ls -1 $realpath 2>/dev/null) || (bat --color=always --line-range :500 $realpath 2>/dev/null || cat $realpath 2>/dev/null)'
-    zstyle ':fzf-tab:complete:*:*' fzf-min-height 8
-    # kill/ps: show full command line (see wiki/Preview)
-    zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
-        '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w 2>/dev/null'
-    zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-flags --preview-window=down:3:wrap
-    # systemctl: show unit status (see wiki/Preview)
-    zstyle ':fzf-tab:complete:systemctl-*:*' fzf-preview 'SYSTEMD_COLORS=1 systemctl status $word 2>/dev/null'
-    # Keep cd/pushd/popd on native completion to preserve deterministic
-    # slash-free drill-down behavior handled by _cd_tab_complete.
-    zstyle ':fzf-tab:complete:cd:*' disabled-on any
-    zstyle ':fzf-tab:complete:pushd:*' disabled-on any
-    zstyle ':fzf-tab:complete:popd:*' disabled-on any
-fi
-
+# ── Load syntax-highlighting and autosuggestions (order matters) ─────
+# syntax-highlighting first, then autosuggestions last so it wraps the
+# final widget set. Tab is re-bound after load because autosuggestions
+# rebinds widgets on startup and would otherwise steal ^I.
 if [[ -r "$_zsh_defer_plugin" ]]; then
-    # zsh-defer (by romkatv): source it synchronously so the function is available,
-    # then defer the heavy plugins until after the first prompt renders (~100–150ms saved).
+    # zsh-defer (by romkatv): source synchronously so the function is available,
+    # then defer heavy plugins until after the first prompt renders (~100–150ms saved).
     source "$_zsh_defer_plugin"
     (( _zsh_autosuggest_loaded )) && zsh-defer source "$_zsh_autosuggest_plugin"
     (( _zsh_highlight_loaded )) && zsh-defer source "$_zsh_highlight_plugin"

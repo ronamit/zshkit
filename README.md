@@ -44,7 +44,7 @@ Git-aware prompt: branch, dirty status, and command duration at a glance.
 
 ## Autocomplete and suggestions
 
-Gray suggestion appears as you type. `Tab` accepts the full suggestion. `→` accepts one character at a time. `↑` searches older history matches.
+Gray suggestion appears as you type. `Tab` accepts the full ghost text instantly, or opens the completion grid if none is showing. Options appear automatically below the prompt as you type — press `↓` to enter the grid.
 
 ![Autosuggestions and history cycling](assets/autosuggest.gif)
 
@@ -52,18 +52,18 @@ Gray suggestion appears as you type. `Tab` accepts the full suggestion. `→` ac
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Accept full autosuggestion |
+| `Tab` | Accept full ghost text (if showing), otherwise enter completion grid |
+| `↓` | Enter completion grid (if auto-list showing), or newer history match |
 | `→` | Accept one character of the suggestion |
 | `Ctrl+→` / `Alt+F` | Accept one word of the suggestion |
 | `↑` | Prefix history search — older match |
-| `↓` | Newer history match (or directory menu when after `cd`) |
 | `Ctrl+R` | Fuzzy search full history |
 | `Ctrl+T` | Insert a file path at the cursor |
 | `Alt+C` | Fuzzy change directory |
 
 ## Navigation
 
-**Directory menu:** `↓` after `cd` opens a browsable list of subdirectories.
+**Completion grid:** options with descriptions appear below the prompt as you type; `↓` enters the grid for any command, not just `cd`.
 **History search:** `↑` searches older commands matching what you've typed so far; `↓` then moves forward through matches.
 `..` goes up a directory. `z` jumps anywhere by keyword.
 
