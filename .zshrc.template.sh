@@ -917,8 +917,10 @@ zjss() {
             "$(_pane "${sessions[3]}")" "$(_pane "${sessions[4]}")" > "$layout"
     fi
 
-    printf '\e]2;%s @ %s\a' "${sessions[1]}" "${host%%.*}"
-    zellij --layout "$layout"
+    local local_session="${(j:,:)sessions}@${host%%.*}"
+    printf '\e]2;%s\a' "$local_session"
+    rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/zellij/sessions/$local_session" 2>/dev/null
+    zellij --layout "$layout" --session "$local_session"
     local rc=$?
     rm -f "$layout"
     _zshkit_reset_terminal_input_modes
