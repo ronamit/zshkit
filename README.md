@@ -112,6 +112,8 @@ zjs myserver work   # specify the session name
 ```
 
 > **Remote sessions:** run `bash setup_zsh.sh` on the remote machine too — Zellij needs to be installed there for sessions to live on the remote side.
+> **Text selection:** Zellij captures mouse events for scroll and pane focus. To select text with the mouse, hold **`Shift`** while dragging, then press `Enter` or `y` to copy.
+> **Scrollback in editor:** `Ctrl+s` → `e` opens the full pane scrollback in micro — use `Ctrl+A` to select all, `Ctrl+C` to copy, `Ctrl+Q` to quit.
 
 ## Disk usage
 
