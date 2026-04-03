@@ -68,9 +68,6 @@ scrollbar_handle_opacity 0.6
 # Keep the pointer out of the way once typing begins.
 mouse_hide_wait -3.0
 
-# Scroll into scrollback when dragging a selection to the top/bottom edge.
-drag_scroll_multiplier 5.0
-
 # Keep editing behavior predictable while still allowing ligature fonts.
 disable_ligatures cursor
 cursor_blink_interval 0
@@ -112,10 +109,6 @@ notify_on_cmd_finish invisible 10.0
 
 # Slightly dim inactive Kitty panes if you use Kitty splits.
 inactive_text_alpha 0.75
-
-# Restore the previous tab layout and working directories when Kitty restarts.
-# Saves tab titles and CWDs on exit; does not restore scrollback content.
-restore_session after_restart
 
 # Skip the "close window?" confirmation dialog.
 confirm_os_window_close 0

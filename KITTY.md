@@ -8,27 +8,27 @@ zshkit treats Kitty as the default terminal and installs a few managed files und
 
 ## General Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Ctrl+Shift+F2` | Open `kitty.conf` in your editor |
-| `Ctrl+Shift+F5` | Reload Kitty config |
-| `Ctrl+Shift+F3` | Open Kitty's command palette |
-| `Ctrl+Shift+O` | Open Kitty's fast file picker |
-| `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
-| `Ctrl+Shift+Z` | Scroll back to the previous shell prompt |
-| `Ctrl+Shift+X` | Scroll forward to the next shell prompt |
-| `Ctrl+Shift+G` | Show the output of the last command in a scrollable overlay |
+| Linux | macOS | Action |
+|-------|-------|--------|
+| `Ctrl+Shift+F2` | `Cmd+,` | Open `kitty.conf` in your editor |
+| `Ctrl+Shift+F5` | `Ctrl+Cmd+,` | Reload Kitty config |
+| `Ctrl+Shift+F3` | `Ctrl+Shift+F3` | Open Kitty's command palette |
+| `Ctrl+Shift+O` | `Ctrl+Shift+O` | Open Kitty's fast file picker |
+| `Ctrl+Shift+Alt+O` | `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
+| `Ctrl+Shift+Z` | `Ctrl+Shift+Z` | Scroll back to the previous shell prompt |
+| `Ctrl+Shift+X` | `Ctrl+Shift+X` | Scroll forward to the next shell prompt |
+| `Ctrl+Shift+G` | `Ctrl+Shift+G` | Show the output of the last command in a scrollable overlay |
 
 ## Tabs
 
-| Key | Action |
-|-----|--------|
-| `Ctrl+Shift+T` / `Cmd+Shift+T` | New tab in the current working directory |
-| `Ctrl+Shift+Q` / `Cmd+W` | Close current tab |
-| `Ctrl+Shift+Right` / `Ctrl+Tab` / `Shift+Cmd+]` | Next tab |
-| `Ctrl+Shift+Left` / `Ctrl+Shift+Tab` / `Shift+Cmd+[` | Previous tab |
-| `Alt+1` – `Alt+9` | Jump directly to tab 1–9 |
-| `Ctrl+Shift+Alt+T` / `Shift+Cmd+I` | Rename current tab |
+| Linux | macOS | Action |
+|-------|-------|--------|
+| `Ctrl+Shift+T` | `Cmd+Shift+T` | New tab in the current working directory |
+| `Ctrl+Shift+Q` | `Cmd+W` | Close current tab |
+| `Ctrl+Shift+Right` or `Ctrl+Tab` | `Shift+Cmd+]` or `Ctrl+Tab` | Next tab |
+| `Ctrl+Shift+Left` or `Ctrl+Shift+Tab` | `Shift+Cmd+[` or `Ctrl+Shift+Tab` | Previous tab |
+| `Alt+1` – `Alt+9` | `Alt+1` – `Alt+9` | Jump directly to tab 1–9 |
+| `Ctrl+Shift+Alt+T` | `Shift+Cmd+I` | Rename current tab |
 
 On macOS, Kitty's default `Cmd+T` still opens a new tab. zshkit adds `Cmd+Shift+T` specifically for `new_tab_with_cwd`, so the new tab starts in the current working directory.
 
@@ -36,16 +36,16 @@ On macOS, Kitty's default `Cmd+T` still opens a new tab. zshkit adds `Cmd+Shift+
 
 Kitty calls splits "windows". They live inside a tab and are arranged by the active layout.
 
-| Key | Action |
-|-----|--------|
-| `Ctrl+Shift+Enter` / `Cmd+Enter` | New window (split) using the current layout |
-| `Ctrl+Shift+W` / `Shift+Cmd+D` | Close the focused window |
-| `Ctrl+Shift+]` | Next window |
-| `Ctrl+Shift+[` | Previous window |
-| `Ctrl+Shift+F7` | Show window overlays and focus a pane visually |
-| `Ctrl+Shift+F8` | Swap the current pane with another pane visually |
-| `Ctrl+Shift+R` / `Cmd+R` | Start resizing the focused window with arrow keys |
-| `Ctrl+Shift+L` | Cycle through layouts |
+| Linux | macOS | Action |
+|-------|-------|--------|
+| `Ctrl+Shift+Enter` | `Cmd+Enter` | New window (split) using the current layout |
+| `Ctrl+Shift+W` | `Shift+Cmd+D` | Close the focused window |
+| `Ctrl+Shift+]` | `Ctrl+Shift+]` | Next window |
+| `Ctrl+Shift+[` | `Ctrl+Shift+[` | Previous window |
+| `Ctrl+Shift+F7` | `Ctrl+Shift+F7` | Show window overlays and focus a pane visually |
+| `Ctrl+Shift+F8` | `Ctrl+Shift+F8` | Swap the current pane with another pane visually |
+| `Ctrl+Shift+R` | `Cmd+R` | Start resizing the focused window with arrow keys |
+| `Ctrl+Shift+L` | `Ctrl+Shift+L` | Cycle through layouts |
 
 The visual window actions are keyboard-driven overlays, not drag-and-drop. Use `F7` to jump to a pane and `F8` to swap the current pane with another one.
 
@@ -58,6 +58,7 @@ Press `Ctrl+Shift+L` to cycle through:
 | `tall` | One wide pane on the left, stack of narrow panes on the right |
 | `fat` | One tall pane on top, row of short panes below |
 | `grid` | Evenly spaced grid |
+| `splits` | Free-form split tree where you place panes with `launch --location=...` |
 | `horizontal` | Side-by-side panes |
 | `vertical` | Stacked panes |
 | `stack` | One maximized pane at a time (switch with `]` / `[`) |
@@ -74,26 +75,25 @@ map ctrl+shift+alt+s goto_layout stack
 
 ### Practical split workflow
 
-```text
-# Open kitty, then:
-Ctrl+Shift+Enter          # split: new window alongside current
-Ctrl+Shift+Enter          # split again — now three panes
-Ctrl+Shift+L              # cycle layout until arrangement looks right
-Ctrl+Shift+R              # resize: arrow keys nudge the border, Enter to confirm
-Ctrl+Shift+F7             # jump directly to the pane you want
-Ctrl+Shift+F8             # swap the current pane with another pane
-Ctrl+Shift+] / [          # step between panes
-```
+| Step | Linux | macOS | What it does |
+|------|-------|-------|--------------|
+| 1 | `Ctrl+Shift+Enter` | `Cmd+Enter` | Split the current tab and create a second pane |
+| 2 | `Ctrl+Shift+Enter` | `Cmd+Enter` | Split again so you have three panes to arrange |
+| 3 | `Ctrl+Shift+L` | `Ctrl+Shift+L` | Cycle layouts until the overall arrangement looks right |
+| 4 | `Ctrl+Shift+R` | `Cmd+R` | Enter resize mode, then use arrow keys and press `Enter` to confirm |
+| 5 | `Ctrl+Shift+F7` | `Ctrl+Shift+F7` | Jump directly to the pane you want to focus |
+| 6 | `Ctrl+Shift+F8` | `Ctrl+Shift+F8` | Swap the current pane with another pane |
+| 7 | `Ctrl+Shift+]` / `Ctrl+Shift+[` | `Ctrl+Shift+]` / `Ctrl+Shift+[` | Step forward or backward between panes |
 
 ## Hints (Path / URL selection)
 
-| Key | Action |
-|-----|--------|
-| `Ctrl+Shift+P`, then `f` | Hint-select a visible path and paste it into the prompt |
-| `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
-| `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
-| `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
-| `Ctrl+Shift+P`, then `u` | Hint-select a visible URL and open it in the browser |
+| Linux | macOS | Action |
+|-------|-------|--------|
+| `Ctrl+Shift+P`, then `f` | `Ctrl+Shift+P`, then `f` | Hint-select a visible path and paste it into the prompt |
+| `Ctrl+Shift+P`, then `n` | `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
+| `Ctrl+Shift+P`, then `h` | `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
+| `Ctrl+Shift+P`, then `l` | `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
+| `Ctrl+Shift+P`, then `u` | `Ctrl+Shift+P`, then `u` | Hint-select a visible URL and open it in the browser |
 
 ### Opening URLs inside Zellij
 
@@ -104,10 +104,6 @@ Zellij captures all mouse events, so Kitty's normal `Ctrl+click` on a URL does n
 | Hint picker | `Ctrl+Shift+P`, then `u` — overlays letter hints on every URL; press the hint letters to open |
 | Bypass Zellij | `Ctrl+Shift+click` — forces Kitty to handle the click, bypassing Zellij's mouse capture |
 | Outside Zellij | `Ctrl+click` works normally when Zellij is not running |
-
-## Session Restore
-
-Kitty saves the current tab layout and working directories on exit and restores them on next launch (`restore_session after_restart` in `kitty.conf`). Tab titles and CWDs are preserved; scrollback content is not.
 
 ## Session Files — Fixed Daily Layout
 
@@ -151,6 +147,8 @@ Open it with `kitty --session ~/.config/kitty/sessions/work.conf`, or add an ali
 ```bash
 alias work='kitty --session ~/.config/kitty/sessions/work.conf'
 ```
+
+Kitty session files let you reopen a known workspace on demand. They are different from automatic crash/restart restore: they recreate the tabs, layouts, and launch commands you define in the session file.
 
 ## Quick-Access Terminal (Quake-style drop-down)
 
