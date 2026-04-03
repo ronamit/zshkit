@@ -1,6 +1,6 @@
 # zshkit
 
-[Setup details](SETUP_DETAILS.md) · [Usage guide](USAGE_GUIDE.md)
+[Setup details](SETUP_DETAILS.md) · [Usage guide](USAGE_GUIDE.md) · [Kitty](KITTY.md)
 
 A single install script that sets up a fast, opinionated shell environment on any Linux or macOS machine. Bundles Zellij, fzf, zoxide, Powerlevel10k, and custom helpers so you're productive immediately.
 
@@ -124,6 +124,7 @@ ncdu         # interactive drill-down
 
 - [SETUP_DETAILS.md](SETUP_DETAILS.md) — install details, customization, rollback
 - [USAGE_GUIDE.md](USAGE_GUIDE.md) — all aliases, keybindings, Zellij, fzf, VPN, EC2
+- [KITTY.md](KITTY.md) — Kitty keybindings, split-screen layouts, tabs, session files, hint picker
 - [AGENTS.md](AGENTS.md) — notes for AI coding agents
 
 ## Updating

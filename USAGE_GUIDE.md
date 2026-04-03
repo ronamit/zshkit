@@ -124,78 +124,7 @@ Practical notes:
 
 ## Kitty
 
-zshkit treats Kitty as the default terminal and installs a few managed files under `~/.config/kitty/`:
-
-- `kitty.conf` for the main terminal behavior and keybindings
-- `open-actions.conf` so clickable file hyperlinks open in `micro` instead of a generic file browser
-- `quick-access-terminal.conf` for a Quake-style drop-down terminal starter config
-
-Inside Kitty:
-
-| Key | Action |
-|-----|--------|
-| `Ctrl+Shift+F2` | Open `kitty.conf` in your editor |
-| `Ctrl+Shift+F5` | Reload Kitty config |
-| `Ctrl+Shift+F3` | Open Kitty's command palette |
-| `Ctrl+Shift+T` / `Cmd+Shift+T` | Open a new tab in the current working directory |
-| `Ctrl+Shift+O` | Open Kitty's fast file picker |
-| `Ctrl+Shift+Alt+O` | Open Kitty's fast directory picker |
-| `Ctrl+Shift+Z` | Scroll back to the previous shell prompt |
-| `Ctrl+Shift+X` | Scroll forward to the next shell prompt |
-| `Ctrl+Shift+G` | Show the output of the last command in a scrollable overlay |
-| `Alt+1` – `Alt+9` | Jump directly to tab 1–9 |
-| `Ctrl+Shift+P`, then `f` | Hint-select a visible path and paste it into the prompt |
-| `Ctrl+Shift+P`, then `n` | Hint-select a visible `file:line` reference and open it |
-| `Ctrl+Shift+P`, then `h` | Hint-select a visible hash and paste it into the prompt |
-| `Ctrl+Shift+P`, then `l` | Hint-select a visible line and paste it into the prompt |
-| `Ctrl+Shift+P`, then `u` | Hint-select a visible URL and open it in the browser |
-
-### Opening URLs inside Zellij
-
-Zellij captures all mouse events, so Kitty's normal `Ctrl+click` on a URL does not reach Kitty when a Zellij session is running. Three ways to open links:
-
-| Method | How |
-|--------|-----|
-| Hint picker | `Ctrl+Shift+P`, then `u` — overlays letter hints on every URL in the visible screen; press the hint letters to open |
-| Bypass Zellij | `Ctrl+Shift+click` — forces Kitty to handle the click directly, bypassing Zellij's mouse capture |
-| Outside Zellij | `Ctrl+click` works normally when Zellij is not running |
-
-### Session restore
-
-Kitty saves the current tab layout and working directories on exit and restores them on next launch (`restore_session after_restart` in `kitty.conf`). Tab titles and CWDs are preserved; scrollback content is not.
-
-Shell helpers that pair well with Kitty:
-
-- `rg` emits Kitty hyperlinks, so file results from ripgrep are clickable
-- `hg` runs Kitty's hyperlinked grep kitten for richer interactive grep output
-- `clipcopy` / `clippaste` use Kitty's clipboard kitten, which is handy over SSH
-- `icat image.png` previews an image inline in the terminal
-- `kqa` launches Kitty's quick-access terminal using the managed starter config
-
-### Kitty session files — fixed daily layout
-
-To open a fixed set of tabs automatically (e.g. your daily SSH layout), create `~/.config/kitty/sessions/work.conf`:
-
-```conf
-new_tab work
-launch ssh myserver -t "zellij attach -c -s work"
-
-new_tab infra
-launch ssh myserver -t "zellij attach -c -s infra"
-```
-
-Open it with `kitty --session ~/.config/kitty/sessions/work.conf`, or add an alias in `~/.zshrc.local`:
-
-```bash
-alias work='kitty --session ~/.config/kitty/sessions/work.conf'
-```
-
-Quick-access terminal notes:
-
-- `kqa` is the easiest way to try it immediately
-- on Linux, bind your desktop/window-manager shortcut to `kitten quick-access-terminal --detach`
-- on macOS, first run `kqa` once, then assign the built-in Kitty Quick access service a shortcut in System Settings
-- tweak `~/.config/kitty/quick-access-terminal.conf` if you want a different height, edge, or opacity
+See [KITTY.md](KITTY.md) for the full Kitty reference: keybindings, split-screen layouts, tabs, session files, hint picker, and the quick-access terminal.
 
 ## Disk Usage
 
