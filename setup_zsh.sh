@@ -1010,7 +1010,7 @@ ZELLIJ_CACHE_DIR="$HOME/.cache/zellij"
 PERM_FILE="$ZELLIJ_CACHE_DIR/permissions.kdl"
 PLUGIN_ABSOLUTE_PATH="$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
 ZJSTATUS_PLUGIN_URL="file:$PLUGIN_ABSOLUTE_PATH"
-ZJSTATUS_PERM_KEY="$PLUGIN_ABSOLUTE_PATH"
+ZJSTATUS_PERM_KEY="file:$PLUGIN_ABSOLUTE_PATH"
 
 mkdir -p "$ZELLIJ_CACHE_DIR"
 
@@ -1022,7 +1022,7 @@ else
     echo "  ✓ Zellij permissions for zjstatus already seeded"
 fi
 
-_ATTENTION_PERM_KEY="$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
+_ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 if [ ! -f "$PERM_FILE" ] || ! grep -qF "$_ATTENTION_PERM_KEY" "$PERM_FILE"; then
     echo "  ! Seeding Zellij permissions cache for zellij-attention (unsupported workaround)"
     printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
