@@ -17,6 +17,13 @@ copy_on_select false
 // Mouse: enable drag-resizing of pane borders and Ctrl+ScrollWheel pane resize.
 advanced_mouse_actions true
 
+// Disabled to allow native terminal text selection without holding Shift, and to enable
+// scroll-while-selecting. This deliberately sacrifices Zellij's native mouse interactions
+// (click-to-focus panes, buffer scrolling via mouse) in favour of a frictionless copy-paste
+// experience. If you want Zellij mouse support back, set this to true — but you will then
+// need Shift+drag for text selection.
+mouse_mode false
+
 __SCROLLBACK_EDITOR_LINE__
 
 // zellij-attention: adds ⏳/✅ icons to tab names when Claude Code needs input or finishes.

@@ -92,8 +92,8 @@ If you want to try other terminals, **Ghostty** and **iTerm2** are still both so
 | Kitty | Linux, macOS | Yes | Installed by setup from upstream releases |
 | Ghostty | Both | Yes | Not installed by setup; worth trying as an alternative |
 | iTerm2 | macOS | Yes | Not installed by setup; worth trying as an alternative |
-| GNOME Terminal | Linux | No | Use `Shift+drag` → `Ctrl+Shift+C` instead |
-| macOS Terminal.app | macOS | No | Use `Shift+drag` to select instead |
+| GNOME Terminal | Linux | No | Drag to select, then `Ctrl+Shift+C` to copy — SSH clipboard copy not available (no OSC 52) |
+| macOS Terminal.app | macOS | No | Drag to select — SSH clipboard copy not available (no OSC 52) |
 
 See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 
@@ -340,6 +340,24 @@ if [ -t 1 ] && [ -z "$ZSH_VERSION" ] && command -v zsh >/dev/null 2>&1; then
     exec zsh
 fi
 ```
+
+## Zellij Design Choices
+
+### `mouse_mode false` — native text selection over Zellij mouse integration
+
+The managed Zellij config sets `mouse_mode false`. When `mouse_mode` is `true` (Zellij's default), Zellij intercepts all mouse events so it can handle things like click-to-focus panes and buffer scrolling. The side effect is that native terminal text selection requires holding **Shift** and drag-to-select does not auto-scroll when you reach the edge of the screen.
+
+Because this setup prioritises a keyboard-driven workflow and frictionless copy-paste, we trade Zellij's mouse integration for native terminal behaviour:
+
+| Feature | `mouse_mode true` | `mouse_mode false` (default here) |
+|---|---|---|
+| Text selection | Shift+drag required | Plain drag works |
+| Scroll while selecting | No | Yes (terminal-native) |
+| Click to focus pane | Yes | No (use `Alt+←/→` or `Ctrl+p` instead) |
+| Mouse scroll in pane buffer | Yes | No (use keyboard scroll: `Ctrl+Shift+u/d`) |
+| Pane drag-resize | Yes (via `advanced_mouse_actions`) | No |
+
+To re-enable Zellij mouse support, set `mouse_mode true` in `~/.config/zellij/config.kdl` (and in `templates/zellij/config.kdl.template` if you want the change to survive future `setup_zsh.sh` runs).
 
 ## References
 

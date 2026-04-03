@@ -262,7 +262,7 @@ Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `
 Managed defaults:
 
 - built-in default preset
-- mouse enabled
+- `mouse_mode` disabled — native terminal text selection and scroll-while-selecting work without holding Shift
 - `100000` lines of scrollback
 - top `zjstatus` bar showing session + host on the left and metrics on the right
 - managed layout with a top metrics bar and one main shell pane below it
@@ -333,8 +333,6 @@ Enter Scroll mode with `Ctrl+s` (must be inside a Zellij session — run `zj` if
 3. `Ctrl+C` to copy to your system clipboard
 4. `Ctrl+Q` to quit
 
-> `Shift+arrows` for selection may be intercepted by Zellij — use `Ctrl+A` or mouse instead.
-
 To use a different editor for Zellij's scrollback, change the `scrollback_editor` line in `~/.config/zellij/config.kdl`. To set your shell's `$EDITOR`, add to `~/.zshrc.local` and reload:
 
 ```bash
@@ -350,7 +348,6 @@ export EDITOR=vim    # or micro, nvim, hx, etc.
 | `Alt+f` | Show / hide all floating panes |
 | Pane mode → `f` | Open a new floating pane |
 | Pane mode → `i` | Pin the focused floating pane — stays on top of tiled panes permanently |
-| Mouse drag | Reposition a floating pane |
 
 Practical use: open a floating pane for a quick reference (`man curl`, a Python REPL, a second shell), hide it with `Alt+f`, and it keeps running in the background.
 
@@ -358,7 +355,7 @@ Practical use: open a floating pane for a quick reference (`man curl`, a Python 
 
 ### Multiple Pane Select
 
-`Alt+p` enters multiple-pane selection. Select panes with arrow keys or by clicking, then batch-operate:
+`Alt+p` enters multiple-pane selection. Select panes with arrow keys, then batch-operate:
 
 - Close all selected panes at once
 - Break selected panes into a new tab
@@ -366,20 +363,22 @@ Practical use: open a floating pane for a quick reference (`man curl`, a Python 
 
 ### Mouse and Clipboard
 
+`mouse_mode` is disabled so Zellij does not capture mouse events. All mouse interactions go directly to the terminal.
+
 | Behavior | Notes |
 |----------|-------|
-| Mouse mode | Enabled |
-| Drag to select text | Copies to clipboard on release — no modifier key needed for regular shell output |
-| Drag pane border | Resize the pane (enabled via `advanced_mouse_actions`) |
-| `Ctrl+ScrollWheel` | Resize the focused pane (enabled via `advanced_mouse_actions`) |
-| Hold `Shift` + mouse | Bypass Zellij — use native terminal selection, scroll, and link clicking. Mainly needed inside apps that have their own mouse handling (vim, htop, lazygit, etc.) |
+| Mouse mode | Disabled — terminal handles all mouse events natively |
+| Drag to select text | Works without any modifier key — plain click-and-drag selects |
+| Scroll while selecting | Works — dragging to the screen edge auto-scrolls (terminal-native) |
+| Pane focus | Keyboard only: `Alt+←/→/↑/↓` or enter Pane mode (`Ctrl+p`) and use arrow keys |
+| Mouse scroll in pane buffer | Not available — use Scroll mode (`Ctrl+s`) instead |
 | Clipboard — macOS | `pbcopy` (built-in, no setup needed) |
 | Clipboard — Linux Wayland | `wl-copy` (`wl-clipboard` package, installed by setup) |
 | Clipboard — Linux X11 | `xclip` (installed by setup) |
 
-> **OSC 52 requirement:** Mouse-drag clipboard copy (both locally and over SSH) requires a terminal that supports OSC 52 — Kitty, iTerm2, Ghostty, WezTerm, or Alacritty. The setup installs Kitty automatically on both Linux and macOS. Ghostty and iTerm2 are still good alternatives to try. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
+> **OSC 52 requirement:** Clipboard copy over SSH requires a terminal that supports OSC 52 — Kitty, iTerm2, Ghostty, WezTerm, or Alacritty. The setup installs Kitty automatically on both Linux and macOS. Ghostty and iTerm2 are still good alternatives to try. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
 >
-> **GNOME Terminal / terminals without OSC 52:** Use `Shift+drag` to select, then `Ctrl+Shift+C` to copy. This bypasses Zellij and uses the terminal's native selection — works locally and over SSH.
+> **GNOME Terminal / terminals without OSC 52:** Select text normally (drag), then `Ctrl+Shift+C` to copy.
 
 ### Status and Restore
 

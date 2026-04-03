@@ -97,13 +97,12 @@ map ctrl+shift+alt+s goto_layout stack
 
 ### Opening URLs inside Zellij
 
-Zellij captures all mouse events, so Kitty's normal `Ctrl+click` on a URL does not reach Kitty when a Zellij session is running. Three ways to open links:
+Because `mouse_mode` is disabled, Zellij does not capture mouse events — Kitty's normal `Ctrl+click` on a URL works directly inside a Zellij session.
 
 | Method | How |
 |--------|-----|
+| Direct click | `Ctrl+click` on any URL — works inside and outside Zellij |
 | Hint picker | `Ctrl+Shift+P`, then `u` — overlays letter hints on every URL; press the hint letters to open |
-| Bypass Zellij | `Ctrl+Shift+click` — forces Kitty to handle the click, bypassing Zellij's mouse capture |
-| Outside Zellij | `Ctrl+click` works normally when Zellij is not running |
 
 ## Session Files — Fixed Daily Layout
 
