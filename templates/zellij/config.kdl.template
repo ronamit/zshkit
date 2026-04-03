@@ -14,15 +14,15 @@ show_release_notes false
 // e.g. Ghostty, Kitty, WezTerm, Alacritty, iTerm2).
 copy_on_select false
 
-// Mouse: enable drag-resizing of pane borders and Ctrl+ScrollWheel pane resize.
+// Mouse: Zellij captures mouse events for pane focus, scroll, and border drag-resize.
+// TRADE-OFF: because Zellij owns the mouse, native terminal text selection requires
+// holding Shift while dragging. This is an architectural Zellij limitation — there is
+// no config option to get plain drag-select while keeping mouse scroll. Tmux has the
+// same constraint. The only escape is switching to a terminal's native splits (e.g.
+// Ghostty splits), which sacrifices session persistence.
+// → To select text: hold Shift + drag.
+// → To copy: release, then Enter or y (copy_on_select is false — see above).
 advanced_mouse_actions true
-
-// Disabled to allow native terminal text selection without holding Shift, and to enable
-// scroll-while-selecting. This deliberately sacrifices Zellij's native mouse interactions
-// (click-to-focus panes, buffer scrolling via mouse) in favour of a frictionless copy-paste
-// experience. If you want Zellij mouse support back, set this to true — but you will then
-// need Shift+drag for text selection.
-mouse_mode false
 
 __SCROLLBACK_EDITOR_LINE__
 

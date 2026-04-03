@@ -92,8 +92,8 @@ If you want to try other terminals, **Ghostty** and **iTerm2** are still both so
 | Kitty | Linux, macOS | Yes | Installed by setup from upstream releases |
 | Ghostty | Both | Yes | Not installed by setup; worth trying as an alternative |
 | iTerm2 | macOS | Yes | Not installed by setup; worth trying as an alternative |
-| GNOME Terminal | Linux | No | Drag to select, then `Ctrl+Shift+C` to copy — SSH clipboard copy not available (no OSC 52) |
-| macOS Terminal.app | macOS | No | Drag to select — SSH clipboard copy not available (no OSC 52) |
+| GNOME Terminal | Linux | No | Use `Shift+drag` → `Ctrl+Shift+C`; SSH clipboard copy not available (no OSC 52) |
+| macOS Terminal.app | macOS | No | Use `Shift+drag` to select; SSH clipboard copy not available (no OSC 52) |
 
 See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 
@@ -343,21 +343,19 @@ fi
 
 ## Zellij Design Choices
 
-### `mouse_mode false` — native text selection over Zellij mouse integration
+### Mouse mode — `Shift+drag` required for text selection
 
-The managed Zellij config sets `mouse_mode false`. When `mouse_mode` is `true` (Zellij's default), Zellij intercepts all mouse events so it can handle things like click-to-focus panes and buffer scrolling. The side effect is that native terminal text selection requires holding **Shift** and drag-to-select does not auto-scroll when you reach the edge of the screen.
+Zellij's `mouse_mode` is enabled (the default). This means Zellij intercepts all mouse events to provide pane focus, mouse scroll, and border drag-resize. The unavoidable side effect is that native terminal text selection requires **holding `Shift` while dragging**.
 
-Because this setup prioritises a keyboard-driven workflow and frictionless copy-paste, we trade Zellij's mouse integration for native terminal behaviour:
+This is an architectural limitation of Zellij — there is no config flag that gives plain drag-select while keeping mouse scroll. Tmux has the same constraint. The only alternative is using a terminal's built-in splits (e.g. Ghostty splits), which sacrifices Zellij's session persistence.
 
-| Feature | `mouse_mode true` | `mouse_mode false` (default here) |
-|---|---|---|
-| Text selection | Shift+drag required | Plain drag works |
-| Scroll while selecting | No | Yes (terminal-native) |
-| Click to focus pane | Yes | No (use `Alt+←/→` or `Ctrl+p` instead) |
-| Mouse scroll in pane buffer | Yes | No (use keyboard scroll: `Ctrl+Shift+u/d`) |
-| Pane drag-resize | Yes (via `advanced_mouse_actions`) | No |
+**To select and copy text:**
 
-To re-enable Zellij mouse support, set `mouse_mode true` in `~/.config/zellij/config.kdl` (and in `templates/zellij/config.kdl.template` if you want the change to survive future `setup_zsh.sh` runs).
+1. Hold `Shift` and drag to select
+2. Release, then press `Enter` or `y` to copy to clipboard
+
+**Why not disable `mouse_mode`?**  
+Setting `mouse_mode false` breaks mouse scroll entirely — the terminal prints raw escape codes (`^[[B`) instead of scrolling. It was tried and reverted. The Shift+drag friction is the lesser trade-off.
 
 ## References
 

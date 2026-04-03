@@ -262,7 +262,7 @@ Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `
 Managed defaults:
 
 - built-in default preset
-- `mouse_mode` disabled — native terminal text selection and scroll-while-selecting work without holding Shift
+- mouse mode enabled — scroll and click-to-focus work; `Shift+drag` required for text selection (see [Mouse and Clipboard](#mouse-and-clipboard))
 - `100000` lines of scrollback
 - top `zjstatus` bar showing session + host on the left and metrics on the right
 - managed layout with a top metrics bar and one main shell pane below it
@@ -363,22 +363,23 @@ Practical use: open a floating pane for a quick reference (`man curl`, a Python 
 
 ### Mouse and Clipboard
 
-`mouse_mode` is disabled so Zellij does not capture mouse events. All mouse interactions go directly to the terminal.
+Zellij captures all mouse events so it can handle pane focus, scroll, and border drag-resize. The trade-off is that native terminal text selection requires holding **`Shift`** while dragging — this is an architectural Zellij limitation with no config workaround (disabling `mouse_mode` breaks scroll entirely).
 
 | Behavior | Notes |
 |----------|-------|
-| Mouse mode | Disabled — terminal handles all mouse events natively |
-| Drag to select text | Works without any modifier key — plain click-and-drag selects |
-| Scroll while selecting | Works — dragging to the screen edge auto-scrolls (terminal-native) |
-| Pane focus | Keyboard only: `Alt+←/→/↑/↓` or enter Pane mode (`Ctrl+p`) and use arrow keys |
-| Mouse scroll in pane buffer | Not available — use Scroll mode (`Ctrl+s`) instead |
+| Select text | **`Shift+drag`** — hold Shift, click and drag, release |
+| Copy selection | `Enter` or `y` after releasing (`copy_on_select false` keeps selection visible) |
+| Mouse scroll | Works — Zellij scrolls the pane buffer |
+| Click to focus pane | Works |
+| Drag pane border | Resize the pane (via `advanced_mouse_actions`) |
+| `Ctrl+ScrollWheel` | Resize the focused pane (via `advanced_mouse_actions`) |
 | Clipboard — macOS | `pbcopy` (built-in, no setup needed) |
 | Clipboard — Linux Wayland | `wl-copy` (`wl-clipboard` package, installed by setup) |
 | Clipboard — Linux X11 | `xclip` (installed by setup) |
 
 > **OSC 52 requirement:** Clipboard copy over SSH requires a terminal that supports OSC 52 — Kitty, iTerm2, Ghostty, WezTerm, or Alacritty. The setup installs Kitty automatically on both Linux and macOS. Ghostty and iTerm2 are still good alternatives to try. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
 >
-> **GNOME Terminal / terminals without OSC 52:** Select text normally (drag), then `Ctrl+Shift+C` to copy.
+> **GNOME Terminal / terminals without OSC 52:** `Shift+drag` to select, then `Ctrl+Shift+C` to copy.
 
 ### Status and Restore
 
