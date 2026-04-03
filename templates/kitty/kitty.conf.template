@@ -68,6 +68,9 @@ scrollbar_handle_opacity 0.6
 # Keep the pointer out of the way once typing begins.
 mouse_hide_wait -3.0
 
+# Scroll into scrollback when dragging a selection to the top/bottom edge.
+drag_scroll_multiplier 5.0
+
 # Keep editing behavior predictable while still allowing ligature fonts.
 disable_ligatures cursor
 cursor_blink_interval 0
