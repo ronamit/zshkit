@@ -429,6 +429,7 @@ sshv() {
         echo "usage: sshv [ssh-options] user@host [command]"
         return 1
     fi
+    local -a original_args=("$@")
     # Reset local terminal input modes before connecting so stale SSH/app state
     # doesn't leak raw mouse or Kitty keyboard escape sequences into the shell.
     _zshkit_reset_terminal_input_modes
@@ -455,8 +456,23 @@ sshv() {
         return "$ssh_rc"
     fi
 
-    # ── Hint: possible VPN issue ──
+    # ── One-time auto-retry on connection drop (exit 255) ──
+    if (( ssh_rc == 255 )); then
+        printf "sshv: connection lost — retrying once…\n"
+        sleep 1
+        _zshkit_reset_terminal_input_modes
+        command ssh "${ssh_args[@]}"
+        ssh_rc=$?
+        _zshkit_reset_terminal_input_modes
+        (( ssh_rc == 0 )) && return 0
+    fi
+
+    # Caller handles hints (e.g. zjs) — just return.
+    [[ "${_SSHV_NO_HINTS:-}" == 1 ]] && return "$ssh_rc"
+
+    # ── Hints: reconnect command + possible VPN issue ──
     printf "sshv: connection failed (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$ssh_rc"
+    printf "  Reconnect with: sshv %s\n" "${(j: :)${(@q-)original_args}}"
     return "$ssh_rc"
 }
 
@@ -906,9 +922,13 @@ zjs() {
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
-    sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
+    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
+    if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
+        printf "zjs: connection lost (exit %d)\n" "$zjs_rc"
+        printf "  Reconnect with: zjs %s %s\n" "$host" "$session"
+    fi
     return $zjs_rc
 }
 
