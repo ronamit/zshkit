@@ -44,7 +44,7 @@ fi
 # Reset terminal input modes that commonly leak after abrupt app/SSH exits.
 _zshkit_reset_terminal_input_modes() {
     [[ -o interactive && -t 1 ]] || return 0
-    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l'
+    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
     if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
         printf '\e[<u'
     fi
@@ -201,7 +201,8 @@ if (( _refresh_ssh_hosts_cache )); then
         if [[ -r ~/.ssh/config ]]; then
             grep -i '^Host ' ~/.ssh/config | awk '{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}'
         fi
-    } | grep -vE '^\s*$' | sort -u >| "$_ssh_cache_file"
+    } | grep -vE '^\s*$' | sort -u >| "${_ssh_cache_file}.tmp" \
+        && mv -- "${_ssh_cache_file}.tmp" "$_ssh_cache_file"
 fi
 _ssh_hosts=()
 [[ -r "$_ssh_cache_file" ]] && _ssh_hosts=(${(f)"$(cat "$_ssh_cache_file")"})
@@ -413,7 +414,12 @@ ssh-fix-colors() {
         return 1
     fi
     echo "Installing '$TERM' terminfo on $host..."
-    infocmp -x "$TERM" | command ssh "$host" -- tic -x - 2>/dev/null \
+    local terminfo
+    terminfo=$(infocmp -x "$TERM" 2>/dev/null) || {
+        echo "Failed — could not read terminfo for '$TERM' locally"
+        return 1
+    }
+    printf '%s\n' "$terminfo" | command ssh "$host" -- tic -x - \
         && echo "Done — '$TERM' is now available on $host" \
         || echo "Failed — you may need to install ncurses on the remote"
 }
@@ -753,11 +759,14 @@ fi
 yy() {
     local tmp cwd
     tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-    yazi "$@" --cwd-file="$tmp"
-    if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-        builtin cd -- "$cwd"
-    fi
-    rm -f -- "$tmp"
+    {
+        yazi "$@" --cwd-file="$tmp"
+        if cwd="$(command cat -- "$tmp")" && [[ -n "$cwd" && "$cwd" != "$PWD" ]]; then
+            builtin cd -- "$cwd"
+        fi
+    } always {
+        rm -f -- "$tmp"
+    }
 }
 
 # Find files by name
