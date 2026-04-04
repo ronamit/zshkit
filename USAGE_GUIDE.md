@@ -97,7 +97,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `hg` | Run Kitty's hyperlinked grep kitten |
 | `icat [PATH]` | Preview images inline in Kitty |
 | `kqa` | Launch Kitty's quick-access terminal (`kitten quick-access-terminal --detach`) |
-| `sshv HOST [ARGS...]` | SSH with `ConnectTimeout=10`, terminal input reset, and a VPN hint on failure |
+| `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=10`, keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
 | `vpn-status` | Show VPN process, interface, and recent log status |
@@ -219,9 +219,12 @@ Normal `ssh` is left untouched. Use `sshv` when you want the optional VPN-aware 
 
 In interactive shells, `sshv`:
 
-- adds `ConnectTimeout=10` unless you set one explicitly (override with `-o ConnectTimeout=…`)
+- adds `ConnectTimeout=10` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
+- adds `ServerAliveInterval=15` and `ServerAliveCountMax=3` unless any argument contains `ServerAliveInterval` — so idle-but-dead TCP paths are detected instead of hanging forever; override with `-o ServerAliveInterval=…` / `-o ServerAliveCountMax=…` as needed
 - resets terminal input modes before and after — prevents raw mouse and Kitty keyboard escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
-- if the connection fails, prints a hint to run `vpn-connect` and retry manually
+- on exit code `255`, retries the same SSH command **once** only if the session lasted longer than 5 seconds (avoids a second password prompt on quick auth or DNS failures)
+- if stdin or stdout is not a TTY (scripts, pipes), returns the exit code immediately — no auto-retry, no VPN hint
+- otherwise, on failure, prints a hint to run `vpn-connect` and the exact reconnect command (unless `_SSHV_NO_HINTS=1`)
 
 The VPN helper commands are installed by `setup_zsh.sh`. They use managed per-user locations instead of `~/vpn/`, and they print setup instructions if your credentials or `.ovpn` config are still missing. For the exact paths and setup steps, see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 

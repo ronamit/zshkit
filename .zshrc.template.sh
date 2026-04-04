@@ -432,6 +432,9 @@ ssh-fix-colors() {
 # Features:
 #   - Leaves normal `ssh` untouched.
 #   - Adds ConnectTimeout=10 if unset (override with -o ConnectTimeout=…).
+#   - Adds ServerAliveInterval=15 and ServerAliveCountMax=3 if unset (override with
+#     -o ServerAliveInterval=… / ServerAliveCountMax=…) so dead TCP paths fail
+#     instead of hanging; pairs with the duration-gated retry on exit 255.
 #   - Resets terminal mouse tracking and Kitty keyboard mode before and after every session.
 #   - On failure in interactive shells, offers vpn-connect and retries once.
 sshv() {
@@ -445,16 +448,24 @@ sshv() {
     _zshkit_reset_terminal_input_modes
 
     local has_timeout=0
+    local has_alive=0
     local arg
     for arg in "$@"; do
         [[ "$arg" == *ConnectTimeout* ]] && has_timeout=1
+        [[ "$arg" == *ServerAliveInterval* ]] && has_alive=1
     done
 
     local -a ssh_args=("$@")
-    (( has_timeout )) || ssh_args=(-o ConnectTimeout=10 "$@")
+    (( has_timeout )) || ssh_args=(-o ConnectTimeout=10 "${ssh_args[@]}")
+    # Force client to detect dead tunnels (3 missed 15s pings ≈ disconnect).
+    (( has_alive )) || ssh_args=(-o ServerAliveInterval=15 -o ServerAliveCountMax=3 "${ssh_args[@]}")
 
+    # Track session duration so exit 255 + short runtime (auth/DNS/config)
+    # does not trigger the "connection lost" retry — only longer sessions.
+    local start_time=$SECONDS
     command ssh "${ssh_args[@]}"
     local ssh_rc=$?
+    local duration=$(( SECONDS - start_time ))
     # Reset terminal input modes immediately after SSH exits — the remote
     # session may have enabled them (e.g. Zellij/tmux/vim) and an abrupt
     # disconnect won't clean them up.
@@ -467,8 +478,10 @@ sshv() {
     fi
 
     # ── One-time auto-retry on connection drop (exit 255) ──
-    if (( ssh_rc == 255 )); then
-        printf "sshv: connection lost — retrying once…\n"
+    # Keepalives surface dead links as 255 after the session is up; gate retry
+    # behind a 5-second minimum to avoid double-prompting on auth/DNS failures.
+    if (( ssh_rc == 255 && duration > 5 )); then
+        printf "sshv: connection lost (dropped after %ds) — retrying once…\n" "$duration"
         sleep 1
         _zshkit_reset_terminal_input_modes
         command ssh "${ssh_args[@]}"
