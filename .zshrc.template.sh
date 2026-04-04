@@ -169,6 +169,10 @@ zstyle ':completion:*' matcher-list \
 
 # Show descriptions for options (e.g. git --verbose "be more verbose").
 zstyle ':completion:*' verbose yes
+# apt package enumeration is extremely slow with verbose on — disable descriptions
+# to avoid the "Killed by signal in _describe after Xs" timeout.
+zstyle ':completion:*:apt*:argument-rest:*' verbose no
+zstyle ':completion:*:apt-get*:argument-rest:*' verbose no
 
 # Directories first for cd; don't offer . or ..
 zstyle ':completion:*' list-dirs-first true
@@ -1183,11 +1187,15 @@ _tab_complete_and_autolist() {
     # unique match; for multiple matches menu select (configured via zstyle) opens
     # the interactive grid automatically.
     _auto_list_last_buffer=""
+    local _lbuf_before="$LBUFFER"
     if (( $+widgets[expand-or-complete] )); then
         zle expand-or-complete
     else
         zle .expand-or-complete
     fi
+    # If the buffer didn't change, Tab showed a list rather than auto-inserting.
+    # Arm _auto_list_last_buffer so Down immediately enters the menu.
+    [[ "$LBUFFER" == "$_lbuf_before" ]] && _auto_list_last_buffer="$LBUFFER"
 }
 zle -N _tab_complete_and_autolist
 
