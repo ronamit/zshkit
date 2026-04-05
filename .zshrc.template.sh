@@ -486,7 +486,23 @@ sshv() {
         printf "sshv: connection lost (dropped after %ds) — retrying once… (Ctrl+C to cancel)\n" "$duration"
         sleep 1
         _zshkit_reset_terminal_input_modes
-        command ssh "${ssh_args[@]}"
+
+        # For plain `sshv host` calls (not from zjs which already embeds the
+        # zellij-attach command), check if the remote has an active Zellij
+        # session and reattach to it rather than opening a bare login shell.
+        local -a _retry_args=("${ssh_args[@]}")
+        if [[ "${_SSHV_NO_HINTS:-}" != 1 ]]; then
+            local _zj_session
+            _zj_session=$(command ssh -o ConnectTimeout=5 "${ssh_args[@]}" \
+                'zellij list-sessions --short --no-formatting 2>/dev/null | head -1' 2>/dev/null)
+            if [[ -n "$_zj_session" ]]; then
+                printf "sshv: found Zellij session '%s' — reattaching…\n" "$_zj_session"
+                _retry_args=(-t "${ssh_args[@]}"
+                    "PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij attach ${(q)_zj_session}")
+            fi
+        fi
+
+        command ssh "${_retry_args[@]}"
         ssh_rc=$?
         stty echo icanon 2>/dev/null
         _zshkit_reset_terminal_input_modes
