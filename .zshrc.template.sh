@@ -483,12 +483,20 @@ sshv() {
     if (( ssh_rc == 255 && duration > 5 )); then
         # Restore tty line discipline in case SSH left it in raw mode.
         stty echo icanon 2>/dev/null
-        printf "sshv: connection lost (dropped after %ds) — retrying once… (Ctrl+C to cancel)\n" "$duration"
-        sleep 1
-        # Suppress echo during the retry so keystrokes (e.g. arrow keys) don't
-        # get printed as raw escape sequences (^[[B) while SSH is connecting.
+        local _dur_str
+        if (( duration >= 3600 )); then
+            _dur_str="${$(( duration / 3600 ))}h $(( (duration % 3600) / 60 ))m $(( duration % 60 ))s"
+        elif (( duration >= 60 )); then
+            _dur_str="${$(( duration / 60 ))}m $(( duration % 60 ))s"
+        else
+            _dur_str="${duration}s"
+        fi
+        printf "sshv: connection lost (dropped after %s) — retrying once… (Ctrl+C to cancel)\n" "$_dur_str"
+        # Suppress echo before the wait + retry so keystrokes (e.g. arrow keys)
+        # don't get printed as raw escape sequences (^[[B).
         # ZSH's ZLE will handle any buffered keys correctly after we return.
         stty -echo 2>/dev/null
+        sleep 1
         _zshkit_reset_terminal_input_modes
 
         # For plain `sshv host` calls (not zjs, which already has `zellij attach
