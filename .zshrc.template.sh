@@ -979,7 +979,7 @@ zjs() {
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
-        printf "zjs: connection lost (exit %d)\n" "$zjs_rc"
+        printf "zjs: connection lost (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$zjs_rc"
         printf "  Reconnect with: zjs %s %s\n" "$host" "$session"
     fi
     return $zjs_rc
