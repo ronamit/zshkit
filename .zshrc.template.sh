@@ -481,11 +481,14 @@ sshv() {
     # Keepalives surface dead links as 255 after the session is up; gate retry
     # behind a 5-second minimum to avoid double-prompting on auth/DNS failures.
     if (( ssh_rc == 255 && duration > 5 )); then
-        printf "sshv: connection lost (dropped after %ds) — retrying once…\n" "$duration"
+        # Restore tty line discipline in case SSH left it in raw mode.
+        stty echo icanon 2>/dev/null
+        printf "sshv: connection lost (dropped after %ds) — retrying once… (Ctrl+C to cancel)\n" "$duration"
         sleep 1
         _zshkit_reset_terminal_input_modes
         command ssh "${ssh_args[@]}"
         ssh_rc=$?
+        stty echo icanon 2>/dev/null
         _zshkit_reset_terminal_input_modes
         (( ssh_rc == 0 )) && return 0
     fi
