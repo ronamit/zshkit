@@ -164,18 +164,3 @@ Done means:
 - State important environment assumptions.
 - Do not assume network or cloud access unless explicitly allowed.
 
----
-
-## Enforcement
-
-This file provides guidance, not guarantees.
-
-For rules that must happen every time, prefer enforcement through:
-- sandbox / approval settings
-- rules
-- hooks
-- linters / formatters
-- type checks
-- tests
-- CI
-- branch protections
