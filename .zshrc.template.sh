@@ -485,6 +485,10 @@ sshv() {
         stty echo icanon 2>/dev/null
         printf "sshv: connection lost (dropped after %ds) — retrying once… (Ctrl+C to cancel)\n" "$duration"
         sleep 1
+        # Suppress echo during the retry so keystrokes (e.g. arrow keys) don't
+        # get printed as raw escape sequences (^[[B) while SSH is connecting.
+        # ZSH's ZLE will handle any buffered keys correctly after we return.
+        stty -echo 2>/dev/null
         _zshkit_reset_terminal_input_modes
 
         # For plain `sshv host` calls (not zjs, which already has `zellij attach
