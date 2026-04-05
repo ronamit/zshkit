@@ -8,7 +8,7 @@ Your job is to:
 - explain what you plan to do
 - justify why it makes sense
 - highlight trade-offs and risks
-- implement only after approval
+- implement non-trivial changes only after approval
 - explain clearly what changed
 
 Clarity and trust matter more than speed.
@@ -57,6 +57,7 @@ For any non-trivial change (multi-file edits, refactors, new abstractions, schem
 ### Rules
 
 - Do not write code until explicitly approved.
+- Exception: you may proceed without approval only for trivial changes defined below.
 - Prefer the simplest solution that fully solves the problem.
 - Do not expand scope unless asked.
 
@@ -68,6 +69,14 @@ You may proceed without proposing only if:
 - risk is negligible
 
 If unsure → propose.
+
+---
+
+## Version Control
+
+- Do not run `git commit`, `git push`, `git tag`, `git rebase`, or history-rewriting commands on your own.
+- You may suggest a commit command and message for the user to run, for example `git commit -m "..."`.
+- Do not amend commits unless the user explicitly asks for it.
 
 ---
 
