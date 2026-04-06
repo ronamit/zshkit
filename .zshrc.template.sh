@@ -91,7 +91,6 @@ plugins=(
     colored-man-pages
     extract
     fzf
-    zsh-history-substring-search
 )
 # Load z plugin only when zoxide is not installed (zoxide provides the z command)
 command -v zoxide &>/dev/null || plugins+=(z)
@@ -133,6 +132,9 @@ function compinit() {
 
 # Re-apply menu select after oh-my-zsh (it can get overridden).
 zstyle ':completion:*' menu select
+
+# Ensure the cache directory exists before any cache writes below.
+[[ -d "$HOME/.zsh/cache" ]] || mkdir -p "$HOME/.zsh/cache"
 
 # Ensure LS_COLORS is set (Ubuntu doesn't always export it in zsh).
 if [[ -z "$LS_COLORS" ]]; then
@@ -180,7 +182,6 @@ zstyle ':completion:*:cd:*' tag-order local-directories directory-stack path-dir
 zstyle ':completion:*' ignore-parents parent pwd
 
 # Completion cache (makes repeated completions instant)
-[[ -d "$HOME/.zsh/cache" ]] || mkdir -p "$HOME/.zsh/cache"
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "$HOME/.zsh/cache"
 
@@ -1047,13 +1048,22 @@ _zshkit_auto_fetch() {
     [[ -f "$marker" ]] && mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)
     if (( EPOCHSECONDS - mtime > 60 )); then
         touch "$marker"
-        git -C "$repo" fetch -q --all &!
+        git -C "$repo" fetch -q --all </dev/null &!
     fi
 }
 add-zsh-hook precmd _zshkit_auto_fetch
 
 # Show disk usage of directories (top 10)
-ducks() { du -sh * 2>/dev/null | sort -hr | head -11; }
+# sort -h (human-readable) is GNU coreutils; macOS BSD sort lacks it.
+ducks() {
+    if command -v gsort &>/dev/null; then
+        du -sh * 2>/dev/null | gsort -hr | head -11
+    elif [[ "$(uname -s)" != "Darwin" ]]; then
+        du -sh * 2>/dev/null | sort -hr | head -11
+    else
+        du -sk * 2>/dev/null | sort -rn | head -11 | awk '{printf "%s\t%s\n", $1"K", $2}'
+    fi
+}
 
 # Quick reload
 alias reload='source ~/.zshrc && echo "✓ zsh config reloaded"'
