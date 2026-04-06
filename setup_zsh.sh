@@ -9,6 +9,7 @@
 #
 # Usage:  bash setup_zsh.sh [--yes|-y]
 #   --yes / -y   auto-confirm all prompts (replace existing configs without asking)
+#                 On Linux, unattended runs still need non-interactive sudo.
 # ======================================================================
 
 # Fail on undefined variables and pipe errors.
@@ -74,6 +75,23 @@ BREW_FORMULAS_TO_INSTALL=()
 # ── Helpers ──────────────────────────────────────────────────────────
 
 step() { STEP=$((STEP + 1)); echo ""; echo "[$STEP] $1"; }
+
+require_noninteractive_sudo_for_yes_mode() {
+    [ "$IS_MACOS" -eq 1 ] && return 0
+    [ "$ZSHKIT_YES" -eq 1 ] || return 0
+
+    if ! command -v sudo &>/dev/null; then
+        echo "Error: setup_zsh.sh --yes on Linux requires sudo for package and terminfo setup."
+        echo "       Install sudo, run the script interactively, or configure passwordless sudo first."
+        exit 1
+    fi
+
+    if ! sudo -n true 2>/dev/null; then
+        echo "Error: setup_zsh.sh --yes on Linux needs non-interactive sudo."
+        echo "       Configure passwordless sudo for this user, or rerun without --yes."
+        exit 1
+    fi
+}
 
 apt_update_once() {
     if [ "$APT_INDEX_REFRESHED" -eq 0 ]; then
@@ -621,6 +639,8 @@ else
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
+require_noninteractive_sudo_for_yes_mode
+
 # ── Bootstrap: zsh, curl, git ────────────────────────────────────────
 
 step "Installing core dependencies (zsh, curl, git)..."
@@ -844,22 +864,37 @@ else
 fi
 
 # xclip shim: on Wayland, xclip only reaches the X11 clipboard; Wayland apps can't see it.
-# This shim intercepts clipboard operations and routes them to wl-copy/wl-paste instead.
+# This shim intercepts clipboard and primary-selection operations and routes them
+# to wl-copy/wl-paste instead.
 if [ "$IS_MACOS" -eq 0 ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     _xclip_shim="$HOME/.local/bin/xclip"
     mkdir -p "$(dirname "$_xclip_shim")"
     cat > "$_xclip_shim" << 'XCLIP_SHIM'
 #!/bin/bash
-_is_clipboard=false
 _is_read=false
+_selection=""
+_expect_selection_value=false
 for _arg in "$@"; do
-    [[ "$_arg" == "clipboard" ]] && _is_clipboard=true
-    [[ "$_arg" == "-o" ]]        && _is_read=true
+    if $_expect_selection_value; then
+        _selection="$_arg"
+        _expect_selection_value=false
+        continue
+    fi
+    case "$_arg" in
+        -o) _is_read=true ;;
+        -selection|-sel) _expect_selection_value=true ;;
+        clipboard|primary) _selection="$_arg" ;;
+    esac
 done
-if $_is_clipboard && $_is_read; then
+
+if [[ "$_selection" == "clipboard" && $_is_read == true ]]; then
     exec wl-paste --no-newline
-elif $_is_clipboard; then
+elif [[ "$_selection" == "clipboard" ]]; then
     exec wl-copy
+elif [[ "$_selection" == "primary" && $_is_read == true ]]; then
+    exec wl-paste --no-newline --primary
+elif [[ "$_selection" == "primary" ]]; then
+    exec wl-copy --primary
 else
     exec /usr/bin/xclip "$@"
 fi

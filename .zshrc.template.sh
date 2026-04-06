@@ -111,6 +111,7 @@ DISABLE_MAGIC_FUNCTIONS="true"
 function compinit() {
     unfunction compinit
     autoload -Uz compinit
+    setopt localoptions extended_glob
     if [[ -n ${ZDOTDIR:-$HOME}/.zcompdump(#qN.mh+24) ]]; then
         compinit "$@"
     else
@@ -1591,9 +1592,6 @@ if [[ -o interactive ]]; then
     bindkey '^N'   _down_history_or_dirs
     bindkey '^I' _tab_accept_or_complete
     bindkey '^[[Z' reverse-menu-complete      # Shift+Tab
-    if (( $+widgets[autosuggest-accept] )); then
-        bindkey '^ '   autosuggest-accept      # Ctrl+Space
-    fi
 
     # Completion menu navigation
     bindkey -M menuselect '^I'   menu-complete
@@ -1691,11 +1689,15 @@ if [[ -r "$_zsh_defer_plugin" ]]; then
     source "$_zsh_defer_plugin"
     (( _zsh_autosuggest_loaded )) && zsh-defer source "$_zsh_autosuggest_plugin"
     (( _zsh_highlight_loaded )) && zsh-defer source "$_zsh_highlight_plugin"
-    # Re-bind Tab after deferred plugins settle (autosuggestions rebinds widgets on load).
+    # Re-bind keys after deferred plugins settle (autosuggestions rebinds widgets on load).
     [[ -o interactive ]] && zsh-defer -c \
         '(( $+widgets[_tab_accept_or_complete] )) && {
             bindkey -M emacs "^I" _tab_accept_or_complete
             bindkey -M viins "^I" _tab_accept_or_complete
+        }
+        (( $+widgets[autosuggest-accept] )) && {
+            bindkey -M emacs "^ " autosuggest-accept
+            bindkey -M viins "^ " autosuggest-accept
         }'
 else
     # zsh-defer not available — fall back to synchronous sourcing.
@@ -1707,5 +1709,9 @@ else
     if [[ -o interactive ]] && (( $+widgets[_tab_accept_or_complete] )); then
         bindkey -M emacs '^I' _tab_accept_or_complete
         bindkey -M viins '^I' _tab_accept_or_complete
+    fi
+    if [[ -o interactive ]] && (( $+widgets[autosuggest-accept] )); then
+        bindkey -M emacs '^ ' autosuggest-accept
+        bindkey -M viins '^ ' autosuggest-accept
     fi
 fi

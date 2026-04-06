@@ -13,6 +13,7 @@ bash setup_zsh.sh
 - Linux: requires `apt-get` (Ubuntu/Debian family).
 - macOS: requires [Homebrew](https://brew.sh).
 - The script is safe to re-run.
+- `bash setup_zsh.sh --yes` skips prompts, but on Linux it still needs non-interactive `sudo`. For unattended/headless provisioning, configure passwordless `sudo` first or run interactively.
 
 > **Local and remote:** Run the installer on every machine you work on — local and remote. Your local install gives you the shell and tools. Running it on a remote machine is what makes `zj` sessions persist there across SSH disconnects.
 

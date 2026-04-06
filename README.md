@@ -22,6 +22,8 @@ bash setup_zsh.sh        # interactive
 bash setup_zsh.sh --yes  # non-interactive
 ```
 
+On Linux, `--yes` still requires non-interactive `sudo` for package installs and terminfo setup. For unattended provisioning, configure passwordless `sudo` first or use the interactive mode.
+
 **Requirements:** Linux (Ubuntu/Debian) or macOS with [Homebrew](https://brew.sh).
 
 After it finishes:
