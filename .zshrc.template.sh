@@ -255,6 +255,16 @@ if command -v direnv &>/dev/null; then
     unset _direnv_cache
 fi
 
+# navi: interactive cheatsheet widget — Ctrl+G opens the fzf picker
+if command -v navi &>/dev/null; then
+    _navi_cache="$HOME/.zsh/cache/navi_widget.zsh"
+    if [[ ! -f "$_navi_cache" || "$(command -v navi)" -nt "$_navi_cache" ]]; then
+        navi widget zsh >| "$_navi_cache"
+    fi
+    source "$_navi_cache"
+    unset _navi_cache
+fi
+
 # run-help: Alt+H or "help <cmd>" shows man for builtins/commands (e.g. help git).
 autoload -Uz run-help
 unalias run-help 2>/dev/null

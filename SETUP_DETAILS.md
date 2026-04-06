@@ -24,7 +24,7 @@ bash setup_zsh.sh
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
 | Plugins | zsh-autosuggestions, zsh-history-substring-search, zsh-syntax-highlighting |
-| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv |
+| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |
 | Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/kitty/kitty.conf`, `open-actions.conf`, and `quick-access-terminal.conf` from **`templates/kitty/`** on local Kitty installs, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |

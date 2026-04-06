@@ -719,6 +719,8 @@ if [ "$IS_MACOS" -eq 1 ]; then
     add_brew gh gh
     # Python package manager (fast drop-in for pip/venv)
     add_brew uv uv
+    # Interactive cheatsheet tool with fzf widget
+    add_brew navi navi
     flush_brew_installs
 else
 
@@ -886,6 +888,18 @@ if ! command -v uv &>/dev/null; then
     fi
 else
     echo "  ✓ uv already installed"
+fi
+
+# navi: not in apt; install via the official installer to ~/.local/bin/navi
+if ! command -v navi &>/dev/null; then
+    echo "  Installing navi interactive cheatsheet tool..."
+    if BIN_DIR="$HOME/.local/bin" bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install) 2>/dev/null; then
+        echo "  ✓ navi installed"
+    else
+        echo "  ⚠ navi install failed — install manually: BIN_DIR=~/.local/bin bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)"
+    fi
+else
+    echo "  ✓ navi already installed"
 fi
 
 _carapace_installed_version="$(carapace --version 2>/dev/null | awk '{print $2}')"

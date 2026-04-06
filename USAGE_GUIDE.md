@@ -63,6 +63,7 @@ Behavior summary:
 | `Ctrl+R` | Fuzzy search shell history |
 | `Ctrl+T` | Fuzzy insert file path |
 | `Alt+C` | Fuzzy change directory |
+| `Ctrl+G` | navi: fuzzy-browse cheatsheets and insert a command |
 
 FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git`.
 
@@ -113,6 +114,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `ducks` | Show top-level sizes for entries in the current directory |
 | `ncdu [PATH]` | Open the interactive `ncdu` directory-size browser for a path |
 | `micro [FILE]` | Open the `micro` terminal editor for quick edits |
+| `navi` | Browse and run commands from cheatsheets interactively (or press `Ctrl+G` anywhere at the prompt) |
 | `c` | Open `cursor` or `code` if installed |
 
 Practical notes:
@@ -436,5 +438,6 @@ Kitty's own automatic tab title updates are disabled (`shell_integration enabled
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
 - [carapace](https://carapace.sh)
 - [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
+- [navi](https://github.com/denisidoro/navi)
 - [Zellij screencasts](https://zellij.dev/screencasts/)
 - [Zellij cheat sheet](https://zellijcheatsheet.dev/)
