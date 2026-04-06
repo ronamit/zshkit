@@ -393,7 +393,7 @@ Zellij captures all mouse events so it can handle pane focus, scroll, and border
 | Status bar | Top `zjstatus` plugin fed by `~/.local/bin/zellij-metrics` |
 | Left side | Session name and machine name |
 | Right side | CPU, RAM, GPU when available, and time |
-| Permission handling | Installer pre-seeds `zjstatus` permissions cache; if a prompt still appears, focus the bar and press `y` |
+| Permission handling | First run: Zellij prompts for plugin permissions — focus the status bar and press `y`. Optional: `ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1` when running `setup_zsh.sh` skips that (less safe if a plugin is compromised) |
 | Session restore | Enabled via Zellij serialization settings |
 | Scrollback | `100000` lines |
 

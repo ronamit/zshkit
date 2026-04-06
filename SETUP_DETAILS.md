@@ -13,9 +13,16 @@ bash setup_zsh.sh
 - Linux: requires `apt-get` (Ubuntu/Debian family).
 - macOS: requires [Homebrew](https://brew.sh).
 - The script is safe to re-run.
-- `bash setup_zsh.sh --yes` skips prompts, but on Linux it still needs non-interactive `sudo`. For unattended/headless provisioning, configure passwordless `sudo` first or run interactively.
+- `bash setup_zsh.sh --yes` skips prompts, but on Linux it still needs non-interactive `sudo` for apt/terminfo. Prefer running interactively (type your password when `sudo` runs) instead of enabling blanket passwordless `sudo` for your user.
 
 > **Local and remote:** Run the installer on every machine you work on — local and remote. Your local install gives you the shell and tools. Running it on a remote machine is what makes `zj` sessions persist there across SSH disconnects.
+
+### Security notes
+
+- **Pinned downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are checked against SHA256 hashes in `setup_zsh.sh`. If you change `ZELLIJ_VERSION`, `CARAPACE_VERSION`, etc., update those hashes or set `ZSHKIT_SKIP_BINARY_SHA256=1` (disables verification).
+- **curl \| sh:** Oh My Zsh, Kitty, `uv`, and `navi` still use upstream install scripts over HTTPS (standard trade-off: convenience vs. supply-chain review). Mitigate by pinning versions where this repo does, auditing scripts before upgrades, or installing those tools via distro packages instead.
+- **Zellij plugin permissions:** By default the installer does **not** pre-write `~/.cache/zellij/permissions.kdl`. Approve plugins inside Zellij once; use `ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1` only if you accept the risk of auto-granting `RunCommands` to bundled WASM.
+- **direnv:** The template enables `direnv` only if the binary exists; new `.envrc` files still require `direnv allow` before they run.
 
 ## What The Setup Script Does
 
@@ -59,7 +66,7 @@ The setup writes or manages these locations:
 | `~/.zshenv` | `skip_global_compinit=1` added to avoid completion conflicts |
 | `~/.bashrc` | Zsh auto-launch fallback block appended (only if not already present) |
 | `~/.terminfo/` | User-local terminfo entries for Ghostty, Kitty, and WezTerm |
-| `~/.cache/zellij/permissions.kdl` | zjstatus permissions pre-seeded to skip the interactive `y` prompt |
+| `~/.cache/zellij/permissions.kdl` | Written by Zellij when you approve plugins; optional pre-seed if `ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1` (see `setup_zsh.sh` header) |
 
 The script preserves `~/.zshrc.local`, backs up existing managed files before overwriting them, and skips `chsh` over SSH so the default shell is only changed when it is safe to do so.
 
