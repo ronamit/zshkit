@@ -435,9 +435,10 @@ ssh-fix-colors() {
         echo "Failed — could not read terminfo for '$TERM' locally"
         return 1
     }
-    printf '%s\n' "$terminfo" | command ssh "$host" -- tic -x - \
+    printf '%s\n' "$terminfo" | command ssh "$host" -- \
+        'command -v tic >/dev/null 2>&1 || { echo "remote: tic not found (e.g. install ncurses-bin)" >&2; exit 1; }; exec tic -x -' \
         && echo "Done — '$TERM' is now available on $host" \
-        || echo "Failed — you may need to install ncurses on the remote"
+        || echo "Failed — ensure tic/ncurses exists on the remote"
 }
 
 # VPN-aware SSH helper.
@@ -493,8 +494,9 @@ sshv() {
     # Keepalives surface dead links as 255 after the session is up; gate retry
     # behind a 5-second minimum to avoid double-prompting on auth/DNS failures.
     if (( ssh_rc == 255 && duration > 5 )); then
-        # Restore tty line discipline in case SSH left it in raw mode.
+        # Restore tty line discipline in case SSH left it in raw mode; leave alternate screen if stuck.
         stty echo icanon 2>/dev/null
+        command -v tput &>/dev/null && tput rmcup 2>/dev/null
         local _dur_str
         if (( duration >= 3600 )); then
             _dur_str="${$(( duration / 3600 ))}h $(( (duration % 3600) / 60 ))m $(( duration % 60 ))s"
@@ -772,12 +774,23 @@ alias pyserver='python -m http.server'
 _venv_auto_activate() {
     # 1. Deactivate if we've left the current virtualenv's project directory
     if [[ -n "$VIRTUAL_ENV" ]]; then
-        local project_dir="$VIRTUAL_ENV"
-        [[ "$project_dir" == */.venv ]] && project_dir="${project_dir%/.venv}"
-        [[ "$project_dir" == */venv ]] && project_dir="${project_dir%/venv}"
-        if [[ "$PWD" != "$project_dir" && "$PWD" != "$project_dir"/* ]]; then
-            deactivate 2>/dev/null
+        if [[ -n "${_ZSHKIT_VENV_ANCHOR:-}" ]]; then
+            # UV (or similar) env outside the repo: anchored to the directory where we auto-activated
+            if [[ "$PWD" != "${_ZSHKIT_VENV_ANCHOR}" && "$PWD" != "${_ZSHKIT_VENV_ANCHOR}"/* ]]; then
+                deactivate 2>/dev/null
+                unset _ZSHKIT_VENV_ANCHOR
+            fi
+        else
+            local project_dir="$VIRTUAL_ENV"
+            [[ "$project_dir" == */.venv ]] && project_dir="${project_dir%/.venv}"
+            [[ "$project_dir" == */venv ]] && project_dir="${project_dir%/venv}"
+            # In-project .venv / venv only; external paths (no suffix) skip auto-deactivate
+            if [[ "$VIRTUAL_ENV" != "$project_dir" && "$PWD" != "$project_dir" && "$PWD" != "$project_dir"/* ]]; then
+                deactivate 2>/dev/null
+            fi
         fi
+    else
+        unset _ZSHKIT_VENV_ANCHOR
     fi
 
     # 2. Activate if we are in a directory with a virtualenv (and not already in one)
@@ -786,6 +799,9 @@ _venv_auto_activate() {
             source .venv/bin/activate 2>/dev/null
         elif [[ -d venv ]]; then
             source venv/bin/activate 2>/dev/null
+        elif [[ -f pyproject.toml && -n "${UV_PROJECT_ENVIRONMENT:-}" && -r "$UV_PROJECT_ENVIRONMENT/bin/activate" ]]; then
+            # uv: non-default venv path (see https://docs.astral.sh/uv/concepts/projects/#project-environment-path)
+            source "$UV_PROJECT_ENVIRONMENT/bin/activate" 2>/dev/null && _ZSHKIT_VENV_ANCHOR="$PWD"
         fi
     fi
 }
@@ -814,7 +830,7 @@ fi
 # Yazi wrapper: quit yazi and cd into the directory you navigated to.
 yy() {
     local tmp cwd
-    tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+    tmp="$(mktemp "${TMPDIR:-/tmp}/yazi-cwd.XXXXXX")"
     {
         yazi "$@" --cwd-file="$tmp"
         if cwd="$(command cat -- "$tmp")" && [[ -n "$cwd" && "$cwd" != "$PWD" ]]; then

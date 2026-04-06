@@ -24,7 +24,7 @@ bash setup_zsh.sh
 | Category | Items |
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
-| Plugins | zsh-autosuggestions, zsh-history-substring-search, zsh-syntax-highlighting |
+| Plugins | zsh-autosuggestions, zsh-history-substring-search, fast-syntax-highlighting |
 | CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |
@@ -366,4 +366,4 @@ Setting `mouse_mode false` breaks mouse scroll entirely — the terminal prints 
 - [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
 - [gitstatus](https://github.com/romkatv/powerlevel10k/blob/master/gitstatus/README.md)
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-- [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
+- [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)

@@ -274,9 +274,9 @@ Managed defaults:
 
 Main session command:
 
-- `zj` picks an active session with `fzf` when available; if no sessions exist, it starts one named after the current directory
-- Outside Zellij, `zj work` attaches to or creates `work`
-- Inside Zellij, `zj work` creates `work` in the background if needed, then opens the session manager plugin so you can switch to it; if the plugin fails to launch, it prints the manual shortcut (`Ctrl+o, w`)
+- **`zj` outside Zellij:** picks an active session with `fzf` when available; if none exist, starts one named after the current directory (or the name you pass).
+- **`zj` inside Zellij:** Zellij does not support switching sessions from the CLI like a nested attach, so `zj` opens the **session-manager** flow: it ensures the named session exists in the background, then launches that plugin so you switch there. Nested runs mean “open manager to switch,” not “attach immediately.” If the plugin fails to launch, you get the manual shortcut (`Ctrl+o, w`).
+- Example **`zj work`:** outside Zellij, attach to or create `work`; inside Zellij, same manager flow for the `work` session.
 
 | Command | Does |
 |---------|------|
@@ -437,7 +437,7 @@ Kitty's own automatic tab title updates are disabled (`shell_integration enabled
 - [Git status symbols explained](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#what-do-different-symbols-in-git-status-mean)
 - [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
 - [carapace](https://carapace.sh)
-- [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
+- [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting)
 - [navi](https://github.com/denisidoro/navi)
 - [Zellij screencasts](https://zellij.dev/screencasts/)
 - [Zellij cheat sheet](https://zellijcheatsheet.dev/)

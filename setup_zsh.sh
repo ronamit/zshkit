@@ -863,14 +863,17 @@ else
     (( _micro_updated )) && echo "  ✓ Updated micro settings" || echo "  ✓ micro settings already up to date"
 fi
 
-# xclip shim: on Wayland, xclip only reaches the X11 clipboard; Wayland apps can't see it.
-# This shim intercepts clipboard and primary-selection operations and routes them
-# to wl-copy/wl-paste instead.
-if [ "$IS_MACOS" -eq 0 ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
+# xclip shim (Linux): on Wayland, real xclip only reaches the X11 clipboard; Wayland apps can't see it.
+# Install unconditionally so headless/SSH/tmux installs still get the shim; Wayland vs X11 is decided at runtime.
+if [ "$IS_MACOS" -eq 0 ]; then
     _xclip_shim="$HOME/.local/bin/xclip"
     mkdir -p "$(dirname "$_xclip_shim")"
     cat > "$_xclip_shim" << 'XCLIP_SHIM'
 #!/bin/bash
+# Delegate to system xclip unless we are on Wayland with wl-clipboard available.
+if [[ -z "${WAYLAND_DISPLAY:-}" ]] || ! command -v wl-copy &>/dev/null || ! command -v wl-paste &>/dev/null; then
+    exec /usr/bin/xclip "$@"
+fi
 _is_read=false
 _selection=""
 _expect_selection_value=false
@@ -900,7 +903,7 @@ else
 fi
 XCLIP_SHIM
     chmod +x "$_xclip_shim"
-    echo "  ✓ Installed xclip → wl-copy shim at $_xclip_shim"
+    echo "  ✓ Installed xclip shim at $_xclip_shim (routes to wl-copy when Wayland + wl-clipboard are active)"
 fi
 
 # yazi often not in apt on older Ubuntu/Debian; try snap if still missing (--classic required)
