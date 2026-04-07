@@ -1,6 +1,6 @@
 # zshkit
 
-[Setup details](SETUP_DETAILS.md) · [Usage guide](USAGE_GUIDE.md) · [Kitty](KITTY.md)
+[Setup details](SETUP_DETAILS.md) · [Usage guide](USAGE_GUIDE.md) · [Ghostty](GHOSTTY.md)
 
 A single install script that sets up a fast, opinionated shell environment on any Linux or macOS machine. Bundles Zellij, fzf, zoxide, Powerlevel10k, and custom helpers so you're productive immediately.
 
@@ -30,7 +30,7 @@ After it finishes:
 
 1. Set your terminal font to [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) so prompt icons render correctly.
 2. Open a new terminal and run `p10k configure` to pick your prompt style.
-3. The setup installs [Kitty](https://sw.kovidgoyal.net/kitty/) as the default terminal with a starter config. Press `Ctrl+Shift+F2` to edit it. Ghostty and iTerm2 are good alternatives.
+3. The setup installs [Ghostty](https://ghostty.org) as the default terminal with a starter config. Edit `~/.config/ghostty/config` and reload with `Ctrl+Shift+,`.
 
 The installer backs up your existing config. To roll back: `bash rollback.sh`
 
@@ -66,7 +66,7 @@ cd ~/.config/  # then press ↓ — opens directory menu, arrow keys to select
 cd ~/.c        # then press ↑ — history search for older matches; ↓ for newer
 ..             # go up one directory
 z zsh          # jump to ~/repos/zshkit by keyword
-z kitty        # jump to ~/.config/kitty
+z ghostty      # jump to ~/.config/ghostty
 ```
 
 ![zoxide jump by keyword](assets/zoxide.gif)
@@ -130,7 +130,7 @@ ncdu         # interactive drill-down
 
 - [SETUP_DETAILS.md](SETUP_DETAILS.md) — install details, customization, rollback
 - [USAGE_GUIDE.md](USAGE_GUIDE.md) — all aliases, keybindings, Zellij, fzf, VPN, EC2
-- [KITTY.md](KITTY.md) — Kitty keybindings, split-screen layouts, tabs, session files, hint picker
+- [GHOSTTY.md](GHOSTTY.md) — Ghostty keybindings, tabs, splits, search, and config reference
 - [AGENTS.md](AGENTS.md) — notes for AI coding agents
 
 ## Updating
@@ -139,4 +139,4 @@ ncdu         # interactive drill-down
 git pull && bash setup_zsh.sh
 ```
 
-Re-running `setup_zsh.sh` also updates Kitty to the latest upstream release.
+Re-running `setup_zsh.sh` is safe — it skips already-installed components.

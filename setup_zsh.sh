@@ -49,19 +49,13 @@ ZSHRC_TEMPLATE="$SCRIPT_DIR/.zshrc.template.sh"
 ZELLIJ_METRICS_TEMPLATE="$SCRIPT_DIR/zellij-metrics.sh"
 ZELLIJ_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/zellij/config.kdl.template"
 ZELLIJ_LAYOUT_TEMPLATE="$SCRIPT_DIR/templates/zellij/layouts/default.kdl"
-KITTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/kitty/kitty.conf.template"
-KITTY_OPEN_ACTIONS_TEMPLATE="$SCRIPT_DIR/templates/kitty/open-actions.conf.template"
-KITTY_QUICK_ACCESS_TEMPLATE="$SCRIPT_DIR/templates/kitty/quick-access-terminal.conf.template"
-KITTY_THEME_TEMPLATE="$SCRIPT_DIR/templates/kitty/current-theme.conf.template"
+GHOSTTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/ghostty/config.template"
 P10K_TEMPLATE="$SCRIPT_DIR/templates/p10k.zsh.template"
 VPN_SOURCE_DIR="$SCRIPT_DIR/vpn"
 BACKUP_BASE="$HOME/.zsh_backups"
 BACKUP_DIR="$BACKUP_BASE/$(date +%Y%m%d_%H%M%S)"
-# Set when ~/.config/kitty/kitty.conf is replaced and a backup is created
-KITTY_BACKUP_PATH=""
-KITTY_OPEN_ACTIONS_BACKUP_PATH=""
-KITTY_QUICK_ACCESS_BACKUP_PATH=""
-KITTY_THEME_BACKUP_PATH=""
+# Set when ~/.config/ghostty/config is replaced and a backup is created
+GHOSTTY_BACKUP_PATH=""
 # Set when ~/.p10k.zsh is replaced and a backup is created
 P10K_BACKUP_PATH=""
 STEP=0
@@ -238,25 +232,25 @@ install_home_p10k_zsh() {
     return 0
 }
 
-# Install a Kitty config file from a zshkit template into ~/.config/kitty/.
+# Install the Ghostty config from a zshkit template into ~/.config/ghostty/.
 # Backs up an existing file into $BACKUP_DIR and records the backup path in
-# KITTY_LAST_BACKUP_PATH for the caller to store.
-install_home_kitty_template() {
+# GHOSTTY_LAST_BACKUP_PATH for the caller to store.
+install_home_ghostty_template() {
     local src="$1"
     local target="$2"
     local display_target="$3"
     local tmp
 
-    KITTY_LAST_BACKUP_PATH=""
+    GHOSTTY_LAST_BACKUP_PATH=""
     if [ ! -f "$src" ]; then
-        echo "  ✗ Missing Kitty template: $src"
+        echo "  ✗ Missing Ghostty template: $src"
         return 1
     fi
 
     tmp=$(mktemp)
     if ! cp "$src" "$tmp"; then
         rm -f "$tmp"
-        echo "  ✗ Failed to read Kitty template"
+        echo "  ✗ Failed to read Ghostty template"
         return 1
     fi
 
@@ -265,8 +259,8 @@ install_home_kitty_template() {
     if [ -f "$target" ]; then
         if [ "$ZSHKIT_YES" -eq 0 ] && [ -t 0 ]; then
             printf "  %s already exists. Replace with zshkit template? [y/N] " "$display_target"
-            read -r _kitty_reply </dev/tty
-            case "$_kitty_reply" in
+            read -r _ghostty_reply </dev/tty
+            case "$_ghostty_reply" in
                 [Yy]|[Yy][Ee][Ss]) ;;
                 *)
                     rm -f "$tmp"
@@ -280,13 +274,13 @@ install_home_kitty_template() {
             echo "  ✗ Failed to create backup directory: $BACKUP_DIR"
             return 1
         fi
-        KITTY_LAST_BACKUP_PATH="$BACKUP_DIR/$(basename "$target")"
-        if ! cp "$target" "$KITTY_LAST_BACKUP_PATH"; then
+        GHOSTTY_LAST_BACKUP_PATH="$BACKUP_DIR/$(basename "$target")"
+        if ! cp "$target" "$GHOSTTY_LAST_BACKUP_PATH"; then
             rm -f "$tmp"
             echo "  ✗ Failed to back up $display_target"
             return 1
         fi
-        echo "  ✓ Backup → $KITTY_LAST_BACKUP_PATH"
+        echo "  ✓ Backup → $GHOSTTY_LAST_BACKUP_PATH"
     fi
 
     if ! mv "$tmp" "$target"; then
@@ -298,48 +292,15 @@ install_home_kitty_template() {
     return 0
 }
 
-install_home_kitty_conf() {
-    KITTY_BACKUP_PATH=""
-    if ! install_home_kitty_template \
-        "$KITTY_CONFIG_TEMPLATE" \
-        "$HOME/.config/kitty/kitty.conf" \
-        "~/.config/kitty/kitty.conf"; then
+install_home_ghostty_conf() {
+    GHOSTTY_BACKUP_PATH=""
+    if ! install_home_ghostty_template \
+        "$GHOSTTY_CONFIG_TEMPLATE" \
+        "$HOME/.config/ghostty/config" \
+        "~/.config/ghostty/config"; then
         return 1
     fi
-    KITTY_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
-}
-
-install_home_kitty_open_actions() {
-    KITTY_OPEN_ACTIONS_BACKUP_PATH=""
-    if ! install_home_kitty_template \
-        "$KITTY_OPEN_ACTIONS_TEMPLATE" \
-        "$HOME/.config/kitty/open-actions.conf" \
-        "~/.config/kitty/open-actions.conf"; then
-        return 1
-    fi
-    KITTY_OPEN_ACTIONS_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
-}
-
-install_home_kitty_quick_access_conf() {
-    KITTY_QUICK_ACCESS_BACKUP_PATH=""
-    if ! install_home_kitty_template \
-        "$KITTY_QUICK_ACCESS_TEMPLATE" \
-        "$HOME/.config/kitty/quick-access-terminal.conf" \
-        "~/.config/kitty/quick-access-terminal.conf"; then
-        return 1
-    fi
-    KITTY_QUICK_ACCESS_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
-}
-
-install_home_kitty_theme() {
-    KITTY_THEME_BACKUP_PATH=""
-    if ! install_home_kitty_template \
-        "$KITTY_THEME_TEMPLATE" \
-        "$HOME/.config/kitty/current-theme.conf" \
-        "~/.config/kitty/current-theme.conf"; then
-        return 1
-    fi
-    KITTY_THEME_BACKUP_PATH="$KITTY_LAST_BACKUP_PATH"
+    GHOSTTY_BACKUP_PATH="$GHOSTTY_LAST_BACKUP_PATH"
 }
 
 template_must_exist() {
@@ -404,66 +365,36 @@ download_to_file() {
     return 1
 }
 
-install_or_update_kitty() {
-    local installer_url="https://sw.kovidgoyal.net/kitty/installer.sh"
-    local kitty_bin kitten_bin
-
-    step "Installing Kitty (official upstream release)..."
-
-    # Skip download if the installed version is already the latest.
-    local _latest_ver _installed_ver
-    _latest_ver=$(curl -fsSLI "https://github.com/kovidgoyal/kitty/releases/latest" \
-        2>/dev/null | grep -i '^location:' | sed 's|.*/tag/v||' | tr -d '[:space:]\r')
-    _installed_ver=$(kitty --version 2>/dev/null | awk '{print $2}')
-    if [ -n "$_latest_ver" ] && [ "$_installed_ver" = "$_latest_ver" ]; then
-        echo "  ✓ Kitty $_installed_ver is already the latest version — skipping download"
-        return 0
-    fi
-
-    if ! curl -fsSL "$installer_url" | sh /dev/stdin launch=n; then
-        echo "  ✗ Failed to install Kitty from the official installer"
-        exit 1
-    fi
+install_ghostty() {
+    step "Installing Ghostty..."
 
     if [ "$IS_MACOS" -eq 1 ]; then
-        kitty_bin="/Applications/kitty.app/Contents/MacOS/kitty"
-        kitten_bin="/Applications/kitty.app/Contents/MacOS/kitten"
+        if brew list --cask ghostty &>/dev/null 2>&1; then
+            echo "  ✓ Ghostty is already installed via Homebrew"
+        else
+            if ! brew install --cask ghostty; then
+                echo "  ✗ Failed to install Ghostty via Homebrew"
+                exit 1
+            fi
+            echo "  ✓ Ghostty installed"
+        fi
     else
-        kitty_bin="$HOME/.local/kitty.app/bin/kitty"
-        kitten_bin="$HOME/.local/kitty.app/bin/kitten"
-    fi
-
-    if [ ! -x "$kitty_bin" ] || [ ! -x "$kitten_bin" ]; then
-        echo "  ✗ Kitty installed, but expected binaries were not found"
-        echo "    kitty:  $kitty_bin"
-        echo "    kitten: $kitten_bin"
-        exit 1
-    fi
-
-    mkdir -p "$HOME/.local/bin"
-    ln -sf "$kitty_bin" "$HOME/.local/bin/kitty"
-    ln -sf "$kitten_bin" "$HOME/.local/bin/kitten"
-    export PATH="$HOME/.local/bin:$PATH"
-    echo "  ✓ Installed/updated Kitty and refreshed ~/.local/bin symlinks"
-
-    # Mirror the upstream Linux integration so the launcher and icon point at
-    # the current Kitty install instead of an older distro package.
-    if [ "$IS_MACOS" -eq 0 ]; then
-        mkdir -p "$HOME/.local/share/applications" "$HOME/.config"
-        if [ -f "$HOME/.local/kitty.app/share/applications/kitty.desktop" ]; then
-            cp "$HOME/.local/kitty.app/share/applications/kitty.desktop" \
-                "$HOME/.local/share/applications/kitty.desktop"
+        if command -v ghostty &>/dev/null; then
+            echo "  ✓ Ghostty is already installed — skipping"
+            return 0
         fi
-        if [ -f "$HOME/.local/kitty.app/share/applications/kitty-open.desktop" ]; then
-            cp "$HOME/.local/kitty.app/share/applications/kitty-open.desktop" \
-                "$HOME/.local/share/applications/kitty-open.desktop"
+        # Ubuntu: snap is officially listed on ghostty.org and works across Ubuntu versions.
+        if command -v snap &>/dev/null; then
+            if ! snap install ghostty --classic; then
+                echo "  ✗ Failed to install Ghostty via snap"
+                exit 1
+            fi
+            echo "  ✓ Ghostty installed via snap"
+        else
+            echo "  ⚠ snap not found — install Ghostty manually:"
+            echo "    snap: snap install ghostty --classic"
+            echo "    .deb: bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)\""
         fi
-        sed -i "s|Icon=kitty|Icon=$HOME/.local/kitty.app/share/icons/hicolor/256x256/apps/kitty.png|g" \
-            "$HOME/.local/share/applications"/kitty*.desktop 2>/dev/null || true
-        sed -i "s|Exec=kitty|Exec=$HOME/.local/kitty.app/bin/kitty|g" \
-            "$HOME/.local/share/applications"/kitty*.desktop 2>/dev/null || true
-        printf 'kitty.desktop\n' > "$HOME/.config/xdg-terminals.list"
-        echo "  ✓ Installed Linux desktop integration for Kitty"
     fi
 }
 
@@ -1166,30 +1097,26 @@ else
 fi
 chmod 600 "$SSH_CONFIG" 2>/dev/null || true
 
-# ── Kitty install ────────────────────────────────────────────────────
+# ── Ghostty install ───────────────────────────────────────────────────
 
-# Install Kitty from upstream so we get current features even when distro or
-# Homebrew packages lag behind. Skip over SSH because it is a local GUI app.
+# Ghostty is a local GUI app — skip over SSH.
 if [ -z "${SSH_CONNECTION:-}" ]; then
-    install_or_update_kitty
+    install_ghostty
 else
-    step "Installing Kitty (official upstream release)..."
-    echo "  - Skipping Kitty install in SSH session (GUI app for local machine)"
+    step "Installing Ghostty..."
+    echo "  - Skipping Ghostty install in SSH session (GUI app for local machine)"
 fi
 
-# ── Kitty defaults ───────────────────────────────────────────────────
+# ── Ghostty defaults ──────────────────────────────────────────────────
 
-if [ -z "${SSH_CONNECTION:-}" ] && command -v kitty &>/dev/null; then
-    step "Installing Kitty config..."
-    if ! install_home_kitty_conf \
-        || ! install_home_kitty_open_actions \
-        || ! install_home_kitty_quick_access_conf \
-        || ! install_home_kitty_theme; then
+if [ -z "${SSH_CONNECTION:-}" ]; then
+    step "Installing Ghostty config..."
+    if ! install_home_ghostty_conf; then
         exit 1
     fi
 else
-    step "Installing Kitty config..."
-    echo "  - Skipping Kitty config (kitty is not installed locally in this session)"
+    step "Installing Ghostty config..."
+    echo "  - Skipping Ghostty config in SSH session"
 fi
 
 # ── MesloLGS NF (Powerlevel10k recommended font) ─────────────────────
@@ -1472,16 +1399,11 @@ echo ""
 echo "Next steps:"
 echo ""
 echo "  1. Add personal exports/tokens to ~/.zshrc.local"
-if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$KITTY_BACKUP_PATH" ] \
-    || [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] || [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ] \
-    || [ -n "$KITTY_THEME_BACKUP_PATH" ]; then
+if [ -n "$BACKUP_PATH" ] || [ -n "$P10K_BACKUP_PATH" ] || [ -n "$GHOSTTY_BACKUP_PATH" ]; then
     echo "     Previous file(s) backed up under: $BACKUP_DIR"
     [ -n "$BACKUP_PATH" ] && echo "       - .zshrc → $BACKUP_PATH"
     [ -n "$P10K_BACKUP_PATH" ] && echo "       - .p10k.zsh → $P10K_BACKUP_PATH"
-    [ -n "$KITTY_BACKUP_PATH" ] && echo "       - kitty.conf → $KITTY_BACKUP_PATH"
-    [ -n "$KITTY_OPEN_ACTIONS_BACKUP_PATH" ] && echo "       - open-actions.conf → $KITTY_OPEN_ACTIONS_BACKUP_PATH"
-    [ -n "$KITTY_QUICK_ACCESS_BACKUP_PATH" ] && echo "       - quick-access-terminal.conf → $KITTY_QUICK_ACCESS_BACKUP_PATH"
-    [ -n "$KITTY_THEME_BACKUP_PATH" ] && echo "       - current-theme.conf → $KITTY_THEME_BACKUP_PATH"
+    [ -n "$GHOSTTY_BACKUP_PATH" ] && echo "       - ghostty/config → $GHOSTTY_BACKUP_PATH"
 fi
 echo "     Optional VPN helper:"
 echo "       - Edit $(vpn_managed_dir)/vpn-credentials.txt"
@@ -1491,8 +1413,8 @@ echo "  2. Start a new terminal (or run: exec zsh)"
 echo ""
 echo "  3. Set your terminal font to 'MesloLGS NF' (recommended by Powerlevel10k — see https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts)"
 echo ""
-echo "  4. If you're using Kitty, press Ctrl+Shift+F2 to open ~/.config/kitty/kitty.conf"
-echo "     and Ctrl+Shift+F5 to reload it after edits."
+echo "  4. Open ~/.config/ghostty/config to customize Ghostty."
+echo "     Reload changes with Ctrl+Shift+, (Cmd+Shift+, on macOS) without restarting."
 echo ""
 echo "  5. Run: p10k configure   (same as the banner above — guided Powerlevel10k wizard;"
 echo "     saves to ~/.p10k.zsh. Re-run setup_zsh.sh to restore the repo template default.)"
@@ -1500,13 +1422,11 @@ echo ""
 echo "  6. Zellij: plugin permissions are pre-seeded by setup; if prompted, focus the status bar and press 'y' (or use ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 next run to approve manually)."
 echo ""
 if [ "$IS_MACOS" -eq 1 ]; then
-    echo "  7. Use Kitty (installed above) as your main terminal. Ghostty and iTerm2 are also"
-    echo "     worth trying if you want alternatives with OSC 52 support."
-    echo "     Clipboard copy in Zellij works well in all three."
+    echo "  7. Use Ghostty (installed above) as your main terminal."
+    echo "     Ghostty supports OSC 52, so Zellij clipboard copy works over SSH."
 else
-    echo "  7. Use Kitty (installed above) as your main terminal. Ghostty and iTerm2 are also"
-    echo "     worth trying if you want alternatives with OSC 52 support."
-    echo "     Clipboard copy in Zellij works well in all three."
+    echo "  7. Use Ghostty (installed above) as your main terminal."
+    echo "     Ghostty supports OSC 52, so Zellij clipboard copy works over SSH."
     echo "     With GNOME Terminal or other terminals that lack OSC 52, use Shift+drag then Ctrl+Shift+C instead."
 fi
 echo ""

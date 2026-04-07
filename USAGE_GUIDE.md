@@ -88,16 +88,15 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `rm` | Safer remove (`rm -I`) |
 | `mkdir` | Verbose parent-create (`mkdir -pv`) |
 | `grep` | Colorized grep |
-| `rg PATTERN [PATH]` | Ripgrep with Kitty hyperlinks enabled so file results are clickable in Kitty |
+| `rg PATTERN [PATH]` | Ripgrep with hyperlinks enabled so file results are clickable in Ghostty |
 | `h` | `history` |
 | `path` | Print one `PATH` entry per line |
 | `myip` | Public IP (`curl ifconfig.me`) |
 | `localip` | First local IP |
-| `clipcopy` | Copy stdin to the system clipboard using Kitty's clipboard kitten |
-| `clippaste` | Print current clipboard contents using Kitty's clipboard kitten |
-| `hg` | Run Kitty's hyperlinked grep kitten |
-| `icat [PATH]` | Preview images inline in Kitty |
-| `kqa` | Launch Kitty's quick-access terminal (`kitten quick-access-terminal --detach`) |
+| `clipcopy` | Copy stdin to the system clipboard (uses OSC 52; works over SSH in Ghostty) |
+| `clippaste` | Print current clipboard contents |
+| `hg` | Hyperlinked grep — clickable file results in Ghostty |
+| `icat [PATH]` | Preview images inline (Ghostty supports sixel/kitty graphics protocol) |
 | `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=10`, keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
@@ -124,9 +123,9 @@ Practical notes:
 - `ducks` gives a fast top-level size summary for the current directory; `ncdu` is the better choice when you want to drill down through a directory tree and find what is using space.
 - `micro` is configured as the Zellij scrollback editor (the editor that opens when you press `e` in scroll mode). To also use it as your shell `$EDITOR`, add `export EDITOR=micro` to `~/.zshrc.local`.
 
-## Kitty
+## Ghostty
 
-See [KITTY.md](KITTY.md) for the full Kitty reference: keybindings, split-screen layouts, tabs, session files, hint picker, and the quick-access terminal.
+See [GHOSTTY.md](GHOSTTY.md) for the full Ghostty reference: keybindings, tabs, splits, search, and config options.
 
 ## Disk Usage
 
@@ -382,7 +381,7 @@ Zellij captures all mouse events so it can handle pane focus, scroll, and border
 | Clipboard — Linux Wayland | `wl-copy` (`wl-clipboard` package, installed by setup) |
 | Clipboard — Linux X11 | `xclip` (installed by setup) |
 
-> **OSC 52 requirement:** Clipboard copy over SSH requires a terminal that supports OSC 52 — Kitty, iTerm2, Ghostty, WezTerm, or Alacritty. The setup installs Kitty automatically on both Linux and macOS. Ghostty and iTerm2 are still good alternatives to try. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
+> **OSC 52 requirement:** Clipboard copy over SSH requires a terminal that supports OSC 52 — Ghostty, iTerm2, WezTerm, or Alacritty. The setup installs Ghostty automatically on both Linux and macOS. See [SETUP_DETAILS.md](SETUP_DETAILS.md#recommended-terminal-emulator) for the full comparison table.
 >
 > **GNOME Terminal / terminals without OSC 52:** `Shift+drag` to select, then `Ctrl+Shift+C` to copy.
 
@@ -425,7 +424,7 @@ Format: `● session @ host` (icon on left)
 
 When using `zjs` to SSH into a remote, the tab title updates immediately to `session @ host` before the remote prompt appears.
 
-Kitty's own automatic tab title updates are disabled (`shell_integration enabled no-title`) since zshkit manages titles directly. To restore Kitty's default behaviour, change this line in `~/.config/kitty/kitty.conf`.
+Ghostty's shell integration is set to `detect`, which lets zshkit manage tab titles directly via OSC 2.
 
 ## References
 

@@ -1,0 +1,42 @@
+# ghostty config — zshkit starter
+# Edit this file directly. Reload with Ctrl+Shift+, (Cmd+Shift+, on macOS).
+# Browse all options: https://ghostty.org/docs/config/reference
+# Browse built-in themes: ghostty +list-themes
+
+# Match the Nerd Font installed by zshkit so prompt icons render cleanly.
+font-family = "MesloLGS NF"
+font-size = 14
+
+# Catppuccin Macchiato — a built-in theme.
+theme = Catppuccin Macchiato
+
+# Retain generous scrollback history (bytes).
+scrollback-limit = 50000000
+
+# Keep the terminal quiet — use visual bell in the tab bar instead.
+audio-bell = false
+
+# Cursor appearance.
+cursor-style = block
+cursor-style-blink = false
+
+# Breathing room around the terminal grid.
+window-padding-x = 4
+window-padding-y = 4
+
+# Hide the pointer while typing.
+mouse-hide-while-typing = true
+
+# Skip the "close terminal?" confirmation dialog.
+confirm-close-surface = false
+
+# Shell integration enables jump-to-prompt shortcuts (Ctrl+Shift+Page Up/Down).
+shell-integration = detect
+
+# Optional appearance tweaks:
+# background-opacity = 0.95
+# window-decoration = false
+
+# Optional font alternatives:
+# font-family = "JetBrainsMono Nerd Font"
+# font-family = "FiraCode Nerd Font"
