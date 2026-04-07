@@ -21,10 +21,13 @@ zshkit treats Kitty as the default terminal and installs a few managed files und
 
 ## Tabs
 
+The tab bar is drawn in the terminal grid. zshkit adds margin and an activity marker; **middle-click** a tab to close on many builds. For a custom look, see [discussion #4447](https://github.com/kovidgoyal/kitty/discussions/4447).
+
 | Linux | macOS | Action |
 |-------|-------|--------|
 | `Ctrl+Shift+T` | `Cmd+Shift+T` | New tab in the current working directory |
 | `Ctrl+Shift+Q` | `Cmd+W` | Close current tab |
+| `Ctrl+Shift+E` | `Ctrl+Shift+E` | Tab list (`select_tab`) — searchable overlay to jump tabs |
 | `Ctrl+Shift+Right` or `Ctrl+Tab` | `Shift+Cmd+]` or `Ctrl+Tab` | Next tab |
 | `Ctrl+Shift+Left` or `Ctrl+Shift+Tab` | `Shift+Cmd+[` or `Ctrl+Shift+Tab` | Previous tab |
 | `Alt+1` – `Alt+9` | `Alt+1` – `Alt+9` | Jump directly to tab 1–9 |
