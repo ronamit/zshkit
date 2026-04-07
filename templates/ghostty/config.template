@@ -13,9 +13,6 @@ theme = Catppuccin Macchiato
 # Retain generous scrollback history (bytes).
 scrollback-limit = 50000000
 
-# Keep the terminal quiet — use visual bell in the tab bar instead.
-audio-bell = false
-
 # Cursor appearance.
 cursor-style = block
 cursor-style-blink = false
