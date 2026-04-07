@@ -12,12 +12,9 @@
 #                 On Linux, unattended runs still need non-interactive sudo.
 #
 # Optional environment (security / maintenance):
-#   ZSHKIT_SKIP_BINARY_SHA256=1
-#       Skip SHA256 checks on downloaded Zellij/carapace archives and WASM plugins.
-#       Use only if you bump *_VERSION without updating the pinned hashes in this file.
-#   ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1
-#       Pre-write ~/.cache/zellij/permissions.kdl so plugins skip the interactive prompt.
-#       Default is off: approve RunCommands etc. inside Zellij the first time (safer).
+#   ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1
+#       Do not pre-write ~/.cache/zellij/permissions.kdl — approve plugins inside Zellij (status bar → y).
+#       Default seeds permissions so zjstatus runs without a prompt (same as pre–Apr 2026 zshkit).
 # ======================================================================
 
 # Fail on undefined variables and pipe errors.
@@ -43,15 +40,6 @@ ZELLIJ_VERSION="${ZELLIJ_VERSION:-v0.44.0}"
 ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-v0.22.0}"
 ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-v0.3.1}"
 CARAPACE_VERSION="${CARAPACE_VERSION:-v1.6.4}"
-
-# Expected SHA256 (lowercase hex) for downloaded release assets. Update when bumping *_VERSION.
-# Verified against GitHub release binaries (not the same as `git archive`).
-_ZELLIJ_SHA256_X86_64="7e981d50c98ec13ad6cc882e8ca4da32544dd6b69fd0d1b2b753eb597847adb3"
-_ZELLIJ_SHA256_AARCH64="dd60edef434b413529060ba46135c7ed2e4d41c92d640ce51558df031875bb2c"
-_ZJSTATUS_WASM_SHA256="4de426d20b1cbf861272e927aeeb5b49d92c17f0e2bb9d173f85bf7f0154dd53"
-_ZELLIJ_ATTENTION_WASM_SHA256="4209337ab61a731448ec733362f3ef699a905bbb5c0112a93a6d616360fd722f"
-_CARAPACE_SHA256_AMD64="885ee9f90ab759c60e50d8123966c4edabb426c5cac531253c8d75a30145eff2"
-_CARAPACE_SHA256_ARM64="17293dcadaebb615984042019125ed2fe932af1bfb48fc2b916c1e67249e748b"
 
 SSH_CONFIG="$HOME/.ssh/config"
 SSH_MARKER_BEGIN="# >>> zshkit ssh defaults >>>"
@@ -414,38 +402,6 @@ download_to_file() {
     fi
 
     return 1
-}
-
-# Verify file SHA256; respects ZSHKIT_SKIP_BINARY_SHA256=1 for local version bumps.
-_zshkit_verify_sha256() {
-    local file="$1" expected="$2"
-    case "${ZSHKIT_SKIP_BINARY_SHA256:-0}" in
-        1|yes|true|on) return 0 ;;
-    esac
-    if [ ! -f "$file" ]; then
-        echo "  ✗ Cannot verify SHA256: missing file $file"
-        return 1
-    fi
-    if [ -z "$expected" ]; then
-        echo "  ✗ Internal error: empty expected SHA256"
-        return 1
-    fi
-    local actual
-    if command -v sha256sum &>/dev/null; then
-        actual=$(sha256sum -- "$file" | awk '{print $1}')
-    elif command -v shasum &>/dev/null; then
-        actual=$(shasum -a 256 -- "$file" | awk '{print $1}')
-    else
-        echo "  ✗ Need sha256sum or shasum to verify downloads (or set ZSHKIT_SKIP_BINARY_SHA256=1)"
-        return 1
-    fi
-    if [ "$actual" != "$expected" ]; then
-        echo "  ✗ SHA256 mismatch: $file"
-        echo "    expected: $expected"
-        echo "    actual:   $actual"
-        return 1
-    fi
-    return 0
 }
 
 install_or_update_kitty() {
@@ -1012,13 +968,7 @@ if [ "$_carapace_installed_version" != "${CARAPACE_VERSION#v}" ]; then
 
         _carapace_tar="${TMPDIR:-/tmp}/carapace.tar.gz"
         _carapace_url="https://github.com/carapace-sh/carapace-bin/releases/download/${CARAPACE_VERSION}/carapace-bin_${CARAPACE_VERSION#v}_linux_${_carapace_arch}.tar.gz"
-        _carapace_expected=""
-        case "$_carapace_arch" in
-            amd64) _carapace_expected="$_CARAPACE_SHA256_AMD64" ;;
-            arm64) _carapace_expected="$_CARAPACE_SHA256_ARM64" ;;
-        esac
         if download_to_file "$_carapace_url" "$_carapace_tar" \
-            && _zshkit_verify_sha256 "$_carapace_tar" "$_carapace_expected" \
             && tar -xzf "$_carapace_tar" -C "$HOME/.local/bin" carapace \
             && chmod +x "$HOME/.local/bin/carapace" \
             && [ -x "$HOME/.local/bin/carapace" ]; then
@@ -1051,19 +1001,13 @@ if [ "$IS_MACOS" -eq 0 ] && [ "$_zellij_installed_version" != "${ZELLIJ_VERSION#
 
     _zellij_tar="${TMPDIR:-/tmp}/zellij.tar.gz"
     _zellij_url="https://github.com/zellij-org/zellij/releases/download/${ZELLIJ_VERSION}/zellij-${_zellij_arch}.tar.gz"
-    _zellij_expected=""
-    case "$_zellij_arch" in
-        x86_64-unknown-linux-musl) _zellij_expected="$_ZELLIJ_SHA256_X86_64" ;;
-        aarch64-unknown-linux-musl) _zellij_expected="$_ZELLIJ_SHA256_AARCH64" ;;
-    esac
     if download_to_file "$_zellij_url" "$_zellij_tar" \
-        && _zshkit_verify_sha256 "$_zellij_tar" "$_zellij_expected" \
         && tar -xzf "$_zellij_tar" -C "$HOME/.local/bin" zellij \
         && chmod +x "$HOME/.local/bin/zellij" \
         && [ -x "$HOME/.local/bin/zellij" ]; then
         echo "  ✓ Installed Zellij ${ZELLIJ_VERSION}"
     else
-        echo "  ✗ Failed to download or verify Zellij ${ZELLIJ_VERSION} for ${_zellij_arch}"
+        echo "  ✗ Failed to download Zellij ${ZELLIJ_VERSION} for ${_zellij_arch}"
         rm -f "$_zellij_tar"
         rm -f "$HOME/.local/bin/zellij"
         exit 1
@@ -1111,11 +1055,10 @@ fi
 step "Installing Zellij status plugin (zjstatus)..."
 _zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
 
-if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" \
-    && _zshkit_verify_sha256 "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" "$_ZJSTATUS_WASM_SHA256"; then
+if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
     echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
 else
-    echo "  ✗ Failed to download or verify zjstatus ${ZJSTATUS_VERSION}"
+    echo "  ✗ Failed to download zjstatus ${ZJSTATUS_VERSION}"
     rm -f "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
     exit 1
 fi
@@ -1130,37 +1073,37 @@ _ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 step "Installing Zellij attention plugin (zellij-attention)..."
 _attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
 
-if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" \
-    && _zshkit_verify_sha256 "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" "$_ZELLIJ_ATTENTION_WASM_SHA256"; then
+if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
     echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
 else
-    echo "  ✗ Failed to download or verify zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
+    echo "  ✗ Failed to download zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
     rm -f "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
     exit 1
 fi
 
-# Optional: pre-seed ~/.cache/zellij/permissions.kdl (skips Zellij's interactive plugin prompts).
-# Default off — a compromised WASM + RunCommands grant is dangerous; approve inside Zellij unless you trust this flow.
-case "${ZSHKIT_SEED_ZELLIJ_PERMISSIONS:-0}" in
+# Pre-seed ~/.cache/zellij/permissions.kdl so zjstatus works without an interactive prompt (RunCommands).
+# Zellij may change this cache format or path in future versions.
+# Set ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 to skip (you approve plugins in Zellij instead).
+case "${ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED:-0}" in
     1|yes|true|on)
+        echo "  ✓ Zellij plugin permissions: not pre-seeded (ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED — approve in Zellij if prompted)"
+        ;;
+    *)
         mkdir -p "$ZELLIJ_CACHE_DIR"
         if [ ! -f "$PERM_FILE" ] || ! grep -qF "$ZJSTATUS_PERM_KEY" "$PERM_FILE"; then
-            echo "  ! Seeding Zellij permissions cache for zjstatus (ZSHKIT_SEED_ZELLIJ_PERMISSIONS)"
+            echo "  ! Seeding Zellij permissions cache for zjstatus"
             printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n    RunCommands\n}\n' \
                 "$ZJSTATUS_PERM_KEY" >> "$PERM_FILE"
         else
             echo "  ✓ Zellij permissions for zjstatus already seeded"
         fi
         if [ ! -f "$PERM_FILE" ] || ! grep -qF "$_ATTENTION_PERM_KEY" "$PERM_FILE"; then
-            echo "  ! Seeding Zellij permissions cache for zellij-attention (ZSHKIT_SEED_ZELLIJ_PERMISSIONS)"
+            echo "  ! Seeding Zellij permissions cache for zellij-attention"
             printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
                 "$_ATTENTION_PERM_KEY" >> "$PERM_FILE"
         else
             echo "  ✓ Zellij permissions for zellij-attention already seeded"
         fi
-        ;;
-    *)
-        echo "  ✓ Zellij plugin permissions: not pre-seeded (approve prompts in Zellij, or set ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1 to restore old behavior)"
         ;;
 esac
 
@@ -1177,8 +1120,8 @@ render_template_to_file \
     "__ZJSTATUS_PLUGIN_URL__" "$ZJSTATUS_PLUGIN_URL"
 echo "  ✓ Wrote $ZELLIJ_LAYOUTS_DIR/default.kdl"
 
-echo "    First Zellij launch: approve plugin permissions when prompted (status bar: focus and press 'y')."
-echo "    Zero-touch seeding: ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1 bash setup_zsh.sh (see script header)."
+echo "    Zellij permissions for bundled plugins are pre-seeded by setup (see script header to skip)."
+echo "    If a prompt still appears after a plugin update or cache reset, focus the status bar and press 'y'."
 
 # ── SSH keepalive defaults ───────────────────────────────────────────
 
@@ -1554,7 +1497,7 @@ echo ""
 echo "  5. Run: p10k configure   (same as the banner above — guided Powerlevel10k wizard;"
 echo "     saves to ~/.p10k.zsh. Re-run setup_zsh.sh to restore the repo template default.)"
 echo ""
-echo "  6. Zellij: approve plugin permissions on first load (status bar → 'y'), unless you used ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1."
+echo "  6. Zellij: plugin permissions are pre-seeded by setup; if prompted, focus the status bar and press 'y' (or use ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 next run to approve manually)."
 echo ""
 if [ "$IS_MACOS" -eq 1 ]; then
     echo "  7. Use Kitty (installed above) as your main terminal. Ghostty and iTerm2 are also"

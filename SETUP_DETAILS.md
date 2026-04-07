@@ -19,9 +19,9 @@ bash setup_zsh.sh
 
 ### Security notes
 
-- **Pinned downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are checked against SHA256 hashes in `setup_zsh.sh`. If you change `ZELLIJ_VERSION`, `CARAPACE_VERSION`, etc., update those hashes or set `ZSHKIT_SKIP_BINARY_SHA256=1` (disables verification).
+- **Release downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are fetched over HTTPS from pinned GitHub release URLs (`*_VERSION` variables in `setup_zsh.sh`). There is no checksum verification in the script; mitigate supply-chain risk by auditing versions, mirroring artifacts, or installing equivalent packages from your distro.
 - **curl \| sh:** Oh My Zsh, Kitty, `uv`, and `navi` still use upstream install scripts over HTTPS (standard trade-off: convenience vs. supply-chain review). Mitigate by pinning versions where this repo does, auditing scripts before upgrades, or installing those tools via distro packages instead.
-- **Zellij plugin permissions:** By default the installer does **not** pre-write `~/.cache/zellij/permissions.kdl`. Approve plugins inside Zellij once; use `ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1` only if you accept the risk of auto-granting `RunCommands` to bundled WASM.
+- **Zellij plugin permissions:** The installer pre-writes `~/.cache/zellij/permissions.kdl` for bundled `zjstatus` and `zellij-attention` so the status bar works without an interactive prompt (auto-grants `RunCommands` for zjstatus). Set `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` when running `setup_zsh.sh` if you prefer to approve inside Zellij instead.
 - **direnv:** The template enables `direnv` only if the binary exists; new `.envrc` files still require `direnv allow` before they run.
 
 ## What The Setup Script Does
@@ -66,7 +66,7 @@ The setup writes or manages these locations:
 | `~/.zshenv` | `skip_global_compinit=1` added to avoid completion conflicts |
 | `~/.bashrc` | Zsh auto-launch fallback block appended (only if not already present) |
 | `~/.terminfo/` | User-local terminfo entries for Ghostty, Kitty, and WezTerm |
-| `~/.cache/zellij/permissions.kdl` | Written by Zellij when you approve plugins; optional pre-seed if `ZSHKIT_SEED_ZELLIJ_PERMISSIONS=1` (see `setup_zsh.sh` header) |
+| `~/.cache/zellij/permissions.kdl` | Pre-seeded by setup for bundled plugins; Zellij may extend it when you approve others. Skip pre-seed with `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` (see `setup_zsh.sh` header) |
 
 The script preserves `~/.zshrc.local`, backs up existing managed files before overwriting them, and skips `chsh` over SSH so the default shell is only changed when it is safe to do so.
 
