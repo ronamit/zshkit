@@ -5,14 +5,17 @@ zshkit treats Ghostty as the default terminal and installs a starter config at `
 ## Installation
 
 **macOS:**
+
 ```bash
 brew install --cask ghostty
 ```
 
 **Ubuntu / Linux:**
+
 ```bash
 snap install ghostty --classic
 ```
+
 Alternative (community `.deb` for Ubuntu): `bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"`
 
 ## Config
@@ -21,11 +24,29 @@ Config file: `~/.config/ghostty/config`
 
 Reload at runtime with `Ctrl+Shift+,` (Linux) or `Cmd+Shift+,` (macOS). Some options only take effect for new windows.
 
+```bash
+ghostty +list-themes               # browse all built-in themes (100+)
+ghostty +list-fonts                # list available fonts
+ghostty +list-keybinds --default   # show all default shortcuts
+ghostty +validate-config           # check config for errors
 ```
-ghostty +list-themes    # browse built-in themes
-ghostty +list-fonts     # list available fonts
-ghostty +list-keybinds --default  # show all default shortcuts
-```
+
+### Changing the theme
+
+Set `theme = <name>` in your config using the exact name from `ghostty +list-themes`. Some popular ones:
+
+| Theme | Style |
+|-------|-------|
+| `Catppuccin Mocha` | Dark, muted purple (default) |
+| `Catppuccin Macchiato` | Dark, slightly warmer |
+| `Catppuccin Latte` | Light |
+| `Tokyo Night` | Dark blue |
+| `Dracula` | Dark purple |
+| `nord` | Dark arctic blue |
+| `Gruvbox dark` | Dark warm |
+| `One Dark` | Dark |
+
+You can also set separate light/dark themes: `theme = light:GitHub Light,dark:Catppuccin Mocha`
 
 ## Tabs
 

@@ -7,8 +7,11 @@
 font-family = "MesloLGS NF"
 font-size = 14
 
-# Catppuccin Macchiato — a built-in theme.
-theme = Catppuccin Macchiato
+# Built-in theme. Run: ghostty +list-themes   to browse all options.
+theme = Catppuccin Mocha
+
+# Force dark window chrome to match dark themes.
+window-theme = dark
 
 # Retain generous scrollback history (bytes).
 scrollback-limit = 50000000
@@ -21,17 +24,30 @@ cursor-style-blink = false
 window-padding-x = 4
 window-padding-y = 4
 
+# Dim inactive split panes so the focused one stands out.
+unfocused-split-opacity = 0.7
+
+# Auto-copy selected text to the system clipboard.
+copy-on-select = clipboard
+
 # Hide the pointer while typing.
 mouse-hide-while-typing = true
 
 # Skip the "close terminal?" confirmation dialog.
 confirm-close-surface = false
 
+# Open new windows in the same process (faster; Linux).
+gtk-single-instance = true
+
+# Restore window layout on next launch.
+window-save-state = always
+
 # Shell integration enables jump-to-prompt shortcuts (Ctrl+Shift+Page Up/Down).
 shell-integration = detect
 
 # Optional appearance tweaks:
 # background-opacity = 0.95
+# background-blur = true
 # window-decoration = false
 
 # Optional font alternatives:
