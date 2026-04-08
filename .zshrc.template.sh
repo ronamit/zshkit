@@ -1041,12 +1041,7 @@ _TAB_ERROR='⚠'     # last command failed
 #
 _tab_title_context() {
     local host="${HOST%%.*}"
-    if [[ -n "${ZELLIJ:-}" ]]; then
-        # Inside Zellij: Zellij prepends "{tab_index} | " to the outer window title
-        # automatically, so we send just the hostname. The tab label ends up as
-        # "{index} | hostname ●" with the icon consistently on the right.
-        echo "$host"
-    elif [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
+    if [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
         echo "${ZELLIJ_SESSION_NAME} @ ${host}"
     else
         echo "$host"
