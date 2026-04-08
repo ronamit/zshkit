@@ -372,6 +372,10 @@ if command -v kitten &>/dev/null; then
     alias clipcopy='kitten clipboard'
     alias clippaste='kitten clipboard --get-clipboard'
     alias icat='kitten icat'
+elif [[ "$TERM_PROGRAM" == "ghostty" || -n "${ZELLIJ:-}" ]]; then
+    # OSC 52 clipboard — works in Ghostty locally and through Zellij over SSH.
+    clipcopy()  { printf '\e]52;c;'; base64 | tr -d '\n'; printf '\a'; }
+    clippaste() { printf '\e]52;c;?\a'; }
 fi
 # Ghostty supports OSC 8 hyperlinks natively; hg wraps rg with clickable paths.
 if command -v rg &>/dev/null && [[ "$TERM_PROGRAM" == "ghostty" ]]; then
@@ -469,7 +473,7 @@ sshv() {
     fi
     local -a original_args=("$@")
     # Reset local terminal input modes before connecting so stale SSH/app state
-    # doesn't leak raw mouse or Kitty keyboard escape sequences into the shell.
+    # doesn't leak raw mouse or Kitty/Ghostty keyboard escape sequences into the shell.
     _zshkit_reset_terminal_input_modes
 
     local has_timeout=0
@@ -965,7 +969,7 @@ zj() {
     else
         zellij attach --create "$session"
         local zj_rc=$?
-        # Zellij can leave mouse or Kitty keyboard modes enabled after an abrupt
+        # Zellij can leave mouse or Kitty/Ghostty keyboard modes enabled after an abrupt
         # exit, which causes raw escape sequences to leak into the shell prompt.
         _zshkit_reset_terminal_input_modes
         return $zj_rc
@@ -1024,8 +1028,9 @@ zjs() {
 }
 
 # ── Terminal tab title ────────────────────────────────────────────────
-# Keeps the tab name set to "session @ host <symbol>" (or "host <symbol>"
-# outside Zellij) and updates it as commands run.
+# Keeps the tab name set to "host <symbol>" and updates it as commands run.
+# Inside Zellij, Zellij prepends the tab index ("1 | host ●"), so the session
+# name is implicit. Outside Zellij, the full title is set via OSC 2.
 #
 # Inside Zellij : uses `zellij action rename-tab` (run in background).
 # Outside Zellij: uses OSC 2 — supported by Ghostty, WezTerm, iTerm2, etc.
@@ -1042,16 +1047,20 @@ _TAB_RUNNING='↻'   # command in progress
 _TAB_DONE='●'      # last command succeeded
 _TAB_ERROR='⚠'     # last command failed
 #
-_tab_title_context() {
-    printf '%s' "${HOST%%.*}"
-}
+# Cache the short hostname once — it never changes in a session.
+_ZSHKIT_HOST="${HOST%%.*}"
+#
 _tab_title_set() {
     [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
     [[ -z "${_ZSHKIT_TAB_FROZEN:-}" ]]      || return 0
-    # OSC 2 works in both cases:
-    # - inside Zellij: Zellij intercepts it and sets the tab name (prepending "N | ")
-    # - outside Zellij: the terminal (Ghostty, WezTerm, etc.) sets the window/tab title
-    printf '\e]2;%s\a' "$1"
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        # rename-tab marks the tab as explicitly named so Zellij won't auto-override
+        # it with the foreground process name (which causes "zjs host session" to appear).
+        zellij action rename-tab "$1" &!
+    else
+        # Outside Zellij: OSC 2 sets the terminal window/tab title (Ghostty, etc.)
+        printf '\e]2;%s\a' "$1"
+    fi
 }
 # Freeze auto-updates for this pane (e.g. after a manual Zellij tab rename).
 tab-freeze() {
@@ -1060,30 +1069,36 @@ tab-freeze() {
 }
 tab-thaw() {
     unset _ZSHKIT_TAB_FROZEN
-    _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
+    _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
 }
-_tab_title_preexec() {
-    _tab_title_set "$(_tab_title_context) $_TAB_RUNNING"
-}
+_tab_title_running=0
 _tab_title_last_result=0
+_tab_title_preexec() {
+    _tab_title_running=1
+    _tab_title_set "$_ZSHKIT_HOST $_TAB_RUNNING"
+}
 _tab_title_precmd() {
     _tab_title_last_result=$?
+    _tab_title_running=0
     if (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$(_tab_title_context) $_TAB_DONE"
+        _tab_title_set "$_ZSHKIT_HOST $_TAB_DONE"
     else
-        _tab_title_set "$(_tab_title_context) $_TAB_ERROR"
+        _tab_title_set "$_ZSHKIT_HOST $_TAB_ERROR"
     fi
 }
 _tab_title_zle_init() {
-    _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
+    _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
 }
 zle -N zle-line-init _tab_title_zle_init
 # Re-send on SIGWINCH — Zellij fires this when a client attaches.
+# Restores the correct symbol: ↻ if a command was running, ○/⚠ if at prompt.
 TRAPWINCH() {
-    if (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
+    if (( _tab_title_running )); then
+        _tab_title_set "$_ZSHKIT_HOST $_TAB_RUNNING"
+    elif (( _tab_title_last_result == 0 )); then
+        _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
     else
-        _tab_title_set "$(_tab_title_context) $_TAB_ERROR"
+        _tab_title_set "$_ZSHKIT_HOST $_TAB_ERROR"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec
