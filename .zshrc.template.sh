@@ -1009,8 +1009,6 @@ zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
 
-    # Set terminal tab title immediately (local Ghostty tab, before SSH connects)
-    _tab_title_set "${host%%.*} $_TAB_RUNNING"
 
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
