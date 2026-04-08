@@ -1053,13 +1053,10 @@ _tab_title_context() {
     fi
 }
 _tab_title_set() {
-    # When inside Zellij, OSC 2 is intercepted and never reaches the outer terminal.
-    # Wrap in a DCS tmux passthrough so Zellij forwards it to the outer terminal.
-    if [[ -n "${ZELLIJ:-}" ]]; then
-        printf '\ePtmux;\e\e]2;%s\a\e\\' "$1"
-    else
-        printf '\e]2;%s\a' "$1"
-    fi
+    # Plain OSC 2 works in both cases:
+    # - inside Zellij: Zellij intercepts it and sets the tab name
+    # - outside Zellij: the terminal (e.g. Ghostty) sets the window/tab title
+    printf '\e]2;%s\a' "$1"
 }
 _tab_title_preexec() {
     _tab_title_set "$(_tab_title_context) $_TAB_RUNNING"
