@@ -214,7 +214,7 @@ if (( _refresh_ssh_hosts_cache )); then
             grep -i '^Host ' ~/.ssh/config | awk '{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}'
         fi
     } | grep -vE '^\s*$' | sort -u >| "${_ssh_cache_file}.tmp" \
-        && mv -- "${_ssh_cache_file}.tmp" "$_ssh_cache_file"
+        && command mv -- "${_ssh_cache_file}.tmp" "$_ssh_cache_file"
 fi
 _ssh_hosts=()
 [[ -r "$_ssh_cache_file" ]] && _ssh_hosts=(${(f)"$(cat "$_ssh_cache_file")"})
@@ -1009,8 +1009,8 @@ zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
 
-    # Set terminal tab title immediately, bypassing Zellij interception if nested
-    _tab_title_set "$session @ ${host%%.*}"
+    # Set terminal tab title immediately (local Ghostty tab, before SSH connects)
+    _tab_title_set "${host%%.*} $_TAB_RUNNING"
 
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
@@ -1045,12 +1045,7 @@ _TAB_DONE='●'      # last command succeeded
 _TAB_ERROR='⚠'     # last command failed
 #
 _tab_title_context() {
-    local host="${HOST%%.*}"
-    if [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
-        printf '%s @ %s' "$ZELLIJ_SESSION_NAME" "$host"
-    else
-        printf '%s' "$host"
-    fi
+    printf '%s' "${HOST%%.*}"
 }
 _tab_title_set() {
     [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
