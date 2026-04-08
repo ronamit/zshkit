@@ -1028,14 +1028,13 @@ zjs() {
 }
 
 # ── Terminal tab title ────────────────────────────────────────────────
-# Keeps the tab name set to "host <symbol>" and updates it as commands run.
-# Inside Zellij, Zellij prepends the tab index ("1 | host ●"), so the session
-# name is implicit. Outside Zellij, the full title is set via OSC 2.
-#
-# Inside Zellij : uses `zellij action rename-tab` (run in background).
-# Outside Zellij: uses OSC 2 — supported by Ghostty, WezTerm, iTerm2, etc.
-# On re-attach  : SIGWINCH (sent by Zellij when a client connects) refreshes
-#                 the title automatically, so detach/reattach stays in sync.
+# Sets the tab title to "host <symbol>" via OSC 2 and updates it as commands run.
+# Works in both contexts:
+# - Inside Zellij : Zellij intercepts OSC 2 and uses it as the tab label;
+#                   Ghostty displays it with a "N | " tab-index prefix.
+# - Outside Zellij: Ghostty uses OSC 2 directly as the window/tab title.
+# On re-attach    : SIGWINCH (sent by Zellij when a client connects) refreshes
+#                   the title so detach/reattach always shows the correct state.
 #
 # Disable globally : set ZSHKIT_TAB_TITLES=0 in ~/.zshrc.local
 # Freeze one pane  : run `tab-freeze` after manually renaming a Zellij tab;
@@ -1048,19 +1047,17 @@ _TAB_DONE='●'      # last command succeeded
 _TAB_ERROR='⚠'     # last command failed
 #
 # Cache the short hostname once — it never changes in a session.
-_ZSHKIT_HOST="${HOST%%.*}"
+# Use HOSTNAME (always set in zsh) with HOST as fallback.
+_ZSHKIT_HOST="${${HOSTNAME:-$HOST}%%.*}"
 #
 _tab_title_set() {
     [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
     [[ -z "${_ZSHKIT_TAB_FROZEN:-}" ]]      || return 0
-    if [[ -n "${ZELLIJ:-}" ]]; then
-        # rename-tab marks the tab as explicitly named so Zellij won't auto-override
-        # it with the foreground process name (which causes "zjs host session" to appear).
-        zellij action rename-tab "$1" &!
-    else
-        # Outside Zellij: OSC 2 sets the terminal window/tab title (Ghostty, etc.)
-        printf '\e]2;%s\a' "$1"
-    fi
+    # OSC 2 works in both contexts:
+    # - Inside Zellij: Zellij intercepts it and uses it as its tab label,
+    #   which Ghostty then displays (with a "N | " tab-index prefix).
+    # - Outside Zellij: Ghostty uses it directly as the window/tab title.
+    printf '\e]2;%s\a' "$1"
 }
 # Freeze auto-updates for this pane (e.g. after a manual Zellij tab rename).
 tab-freeze() {

@@ -103,7 +103,7 @@ See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 
 ## Terminal Tab Titles
 
-zshkit keeps the tab name set to `session @ host <symbol>` (or `host <symbol>` outside Zellij) and updates it as commands run:
+zshkit sets the Ghostty tab title to `host <symbol>` and updates it as commands run:
 
 | Symbol | State |
 |--------|-------|
@@ -112,7 +112,7 @@ zshkit keeps the tab name set to `session @ host <symbol>` (or `host <symbol>` o
 | `●` | Last command succeeded |
 | `⚠` | Last command failed |
 
-Inside Zellij the tab is renamed via `zellij action rename-tab`. Outside Zellij, OSC 2 sets the terminal window/tab title (Ghostty, WezTerm, iTerm2, etc.). On re-attach, Zellij sends `SIGWINCH` to pane processes, which triggers a title refresh automatically — so the correct title is always restored when you reconnect to a detached session.
+Tab titles work via OSC 2 in both contexts. Inside Zellij, Zellij intercepts OSC 2 and uses it as the tab label (Ghostty displays it with a `N |` tab-index prefix). Outside Zellij, Ghostty uses OSC 2 directly. On re-attach, Zellij sends SIGWINCH which triggers a title refresh automatically.
 
 **Disabling and freezing:**
 
