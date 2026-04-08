@@ -1024,16 +1024,20 @@ zjs() {
     return $zjs_rc
 }
 
-# Show status symbols in the terminal tab title based on command state.
-# Uses OSC 2 escape sequences — supported by Ghostty, WezTerm, iTerm2,
-# Windows Terminal, and most modern terminals.
-# Format: "host ●"  (Zellij prepends "session | tab_index | " automatically)
-# preexec:       fires after Enter, before the command runs.
-# precmd:        fires before each prompt (after command finishes).
-# zle-line-init: fires when ZLE starts (cursor at prompt).
-# TRAPWINCH:     re-sends title on SIGWINCH (Zellij fires this on client attach).
+# ── Terminal tab title ────────────────────────────────────────────────
+# Keeps the tab name set to "session @ host <symbol>" (or "host <symbol>"
+# outside Zellij) and updates it as commands run.
 #
-# ── Symbols (change here to restyle all states at once) ──────────────
+# Inside Zellij : uses `zellij action rename-tab` (run in background).
+# Outside Zellij: uses OSC 2 — supported by Ghostty, WezTerm, iTerm2, etc.
+# On re-attach  : SIGWINCH (sent by Zellij when a client connects) refreshes
+#                 the title automatically, so detach/reattach stays in sync.
+#
+# Disable globally : set ZSHKIT_TAB_TITLES=0 in ~/.zshrc.local
+# Freeze one pane  : run `tab-freeze` after manually renaming a Zellij tab;
+#                    `tab-thaw` re-enables auto-updates for that pane.
+#
+# ── Symbols (edit here to restyle all states at once) ─────────────────
 _TAB_WAITING='○'   # ZLE ready, waiting for input
 _TAB_RUNNING='↻'   # command in progress
 _TAB_DONE='●'      # last command succeeded
@@ -1042,21 +1046,28 @@ _TAB_ERROR='⚠'     # last command failed
 _tab_title_context() {
     local host="${HOST%%.*}"
     if [[ -n "${ZELLIJ_SESSION_NAME:-}" ]]; then
-        echo "${ZELLIJ_SESSION_NAME} @ ${host}"
+        printf '%s @ %s' "$ZELLIJ_SESSION_NAME" "$host"
     else
-        echo "$host"
+        printf '%s' "$host"
     fi
 }
 _tab_title_set() {
+    [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
+    [[ -z "${_ZSHKIT_TAB_FROZEN:-}" ]]      || return 0
     if [[ -n "${ZELLIJ:-}" ]]; then
-        # Zellij intercepts OSC 2 but does not use it to rename tabs.
-        # The CLI is the correct mechanism. Run in background to avoid
-        # adding latency to every prompt/preexec.
         zellij action rename-tab "$1" &!
     else
-        # Outside Zellij: plain OSC 2 sets the terminal tab/window title.
         printf '\e]2;%s\a' "$1"
     fi
+}
+# Freeze auto-updates for this pane (e.g. after a manual Zellij tab rename).
+tab-freeze() {
+    _ZSHKIT_TAB_FROZEN=1
+    echo "Tab title frozen. Run tab-thaw to re-enable."
+}
+tab-thaw() {
+    unset _ZSHKIT_TAB_FROZEN
+    _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
 }
 _tab_title_preexec() {
     _tab_title_set "$(_tab_title_context) $_TAB_RUNNING"
@@ -1074,8 +1085,7 @@ _tab_title_zle_init() {
     _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
 }
 zle -N zle-line-init _tab_title_zle_init
-# Re-send title on SIGWINCH: Zellij fires SIGWINCH when a client attaches,
-# which refreshes the tab title in sessions that were previously detached.
+# Re-send on SIGWINCH — Zellij fires this when a client attaches.
 TRAPWINCH() {
     if (( _tab_title_last_result == 0 )); then
         _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
