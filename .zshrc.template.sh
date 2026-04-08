@@ -108,6 +108,7 @@ zmodload -i zsh/complist
 # Disable magic-functions (URL-paste escaping) which hooks into self-insert and adds latency.
 DISABLE_AUTO_UPDATE="true"
 DISABLE_MAGIC_FUNCTIONS="true"
+DISABLE_AUTO_TITLE="true"    # zshkit manages tab titles itself
 
 # Wrap compinit so it runs exactly once with caching, then becomes a no-op.
 # OMZ calls compinit early via compfix.zsh (which also defines compdef for plugins).
@@ -1054,11 +1055,10 @@ _tab_title_context() {
 _tab_title_set() {
     [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
     [[ -z "${_ZSHKIT_TAB_FROZEN:-}" ]]      || return 0
-    if [[ -n "${ZELLIJ:-}" ]]; then
-        zellij action rename-tab "$1" &!
-    else
-        printf '\e]2;%s\a' "$1"
-    fi
+    # OSC 2 works in both cases:
+    # - inside Zellij: Zellij intercepts it and sets the tab name (prepending "N | ")
+    # - outside Zellij: the terminal (Ghostty, WezTerm, etc.) sets the window/tab title
+    printf '\e]2;%s\a' "$1"
 }
 # Freeze auto-updates for this pane (e.g. after a manual Zellij tab rename).
 tab-freeze() {
