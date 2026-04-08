@@ -1053,10 +1053,15 @@ _tab_title_context() {
     fi
 }
 _tab_title_set() {
-    # Plain OSC 2 works in both cases:
-    # - inside Zellij: Zellij intercepts it and sets the tab name
-    # - outside Zellij: the terminal (e.g. Ghostty) sets the window/tab title
-    printf '\e]2;%s\a' "$1"
+    if [[ -n "${ZELLIJ:-}" ]]; then
+        # Zellij intercepts OSC 2 but does not use it to rename tabs.
+        # The CLI is the correct mechanism. Run in background to avoid
+        # adding latency to every prompt/preexec.
+        zellij action rename-tab "$1" &!
+    else
+        # Outside Zellij: plain OSC 2 sets the terminal tab/window title.
+        printf '\e]2;%s\a' "$1"
+    fi
 }
 _tab_title_preexec() {
     _tab_title_set "$(_tab_title_context) $_TAB_RUNNING"
