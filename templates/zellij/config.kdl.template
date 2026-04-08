@@ -11,7 +11,7 @@ show_release_notes false
 // "select all" (e.g. in VSCode terminal) to flash and disappear.
 // No copy_command is set — Zellij uses OSC 52 by default, which works both
 // locally and over SSH (as long as your local terminal supports OSC 52,
-// e.g. Ghostty, Kitty, WezTerm, Alacritty, iTerm2).
+// e.g. Ghostty, WezTerm, Alacritty, iTerm2, Kitty).
 copy_on_select false
 
 // mouse_mode is kept true (the Zellij default). Setting it to false breaks mouse scroll

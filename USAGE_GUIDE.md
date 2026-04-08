@@ -222,14 +222,14 @@ In interactive shells, `sshv`:
 
 - adds `ConnectTimeout=10` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
 - adds `ServerAliveInterval=15` and `ServerAliveCountMax=3` unless any argument contains `ServerAliveInterval` — so idle-but-dead TCP paths are detected instead of hanging forever; override with `-o ServerAliveInterval=…` / `-o ServerAliveCountMax=…` as needed
-- resets terminal input modes before and after — prevents raw mouse and Kitty keyboard escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
+- resets terminal input modes before and after — prevents raw mouse and Kitty keyboard protocol escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
 - on exit code `255`, retries the same SSH command **once** only if the session lasted longer than 5 seconds (avoids a second password prompt on quick auth or DNS failures)
 - if stdin or stdout is not a TTY (scripts, pipes), returns the exit code immediately — no auto-retry, no VPN hint
 - otherwise, on failure, prints a hint to run `vpn-connect` and the exact reconnect command (unless `_SSHV_NO_HINTS=1`)
 
 The VPN helper commands are installed by `setup_zsh.sh`. They use managed per-user locations instead of `~/vpn/`, and they print setup instructions if your credentials or `.ovpn` config are still missing. For the exact paths and setup steps, see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 
-`ssh-fix-colors user@host` installs your local `$TERM` terminfo on the remote so colors and cursor keys work correctly. This is only needed for remotes where `setup_zsh.sh` hasn't been run — the setup script installs terminfo for common modern terminals (Ghostty, Kitty, WezTerm) automatically.
+`ssh-fix-colors user@host` installs your local `$TERM` terminfo on the remote so colors and cursor keys work correctly. This is only needed for remotes where `setup_zsh.sh` hasn't been run — the setup script installs terminfo for Ghostty, Kitty, and WezTerm automatically.
 
 If SSH still misbehaves, run [`diagnose_ssh.sh`](diagnose_ssh.sh) from the repo root:
 
@@ -411,7 +411,7 @@ Claude Code hooks in `~/.claude/settings.json` wire up the notifications automat
 
 ### Terminal Tab Titles
 
-zshkit sets terminal tab titles via OSC 2 escape sequences, supported by Kitty, Ghostty, WezTerm, iTerm2, and most modern terminals.
+zshkit sets terminal tab titles via OSC 2 escape sequences, supported by Ghostty, WezTerm, iTerm2, and most modern terminals.
 
 Format: `● session @ host` (icon on left)
 

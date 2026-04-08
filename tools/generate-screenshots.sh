@@ -75,7 +75,7 @@ fi
 
 # ── Pre-seed zoxide database so z-jump demo works ─────────────────────
 if command -v zoxide &>/dev/null; then
-    zoxide add "$HOME/repos/zshkit" "$HOME/.config/kitty" "$HOME/.config/zellij" \
+    zoxide add "$HOME/repos/zshkit" "$HOME/.config/ghostty" "$HOME/.config/zellij" \
                "$HOME/repos/aidoc-cloud-infra" 2>/dev/null || true
     echo "==> zoxide: pre-seeded demo directories"
 fi

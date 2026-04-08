@@ -44,8 +44,13 @@ fi
 # Reset terminal input modes that commonly leak after abrupt app/SSH exits.
 _zshkit_reset_terminal_input_modes() {
     [[ -o interactive && -t 1 ]] || return 0
-    printf '\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
-    if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
+    # \e[?1l  — DECCKM: restore normal cursor keys (prevents raw 29A / OA leakage)
+    # \e[?1000l–?1015l — disable all mouse reporting modes
+    # \e[?2004l — disable bracketed paste
+    printf '\e[?1l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
+    # Pop Kitty keyboard protocol stack — covers Kitty and Ghostty (which uses
+    # TERM_PROGRAM=ghostty rather than KITTY_WINDOW_ID / TERM=xterm-kitty).
+    if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" || "$TERM_PROGRAM" == "ghostty" ]]; then
         printf '\e[<u'
     fi
 }
@@ -337,7 +342,9 @@ alias rm='rm -I'         # Prompt only for >3 files or recursive deletes
 alias mkdir='mkdir -pv'
 
 if command -v rg &>/dev/null; then
-    if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
+    if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
+        alias rg='rg --hyperlink-format=osc8'
+    elif [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" ]]; then
         alias rg='rg --hyperlink-format=kitty'
     fi
 fi
@@ -363,9 +370,13 @@ alias path='echo "$PATH" | tr ":" "\n"'
 if command -v kitten &>/dev/null; then
     alias clipcopy='kitten clipboard'
     alias clippaste='kitten clipboard --get-clipboard'
-    alias hg='kitten hyperlinked-grep'
     alias icat='kitten icat'
-    alias kqa='kitten quick-access-terminal --detach'
+fi
+# Ghostty supports OSC 8 hyperlinks natively; hg wraps rg with clickable paths.
+if command -v rg &>/dev/null && [[ "$TERM_PROGRAM" == "ghostty" ]]; then
+    alias hg='rg --hyperlink-format=osc8'
+elif command -v kitten &>/dev/null; then
+    alias hg='kitten hyperlinked-grep'
 fi
 
 # Safety nets for recursive operations (GNU only; macOS BSD chown/chmod lack these)
@@ -997,7 +1008,7 @@ zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
 
-    # Set Kitty tab title immediately, bypassing Zellij interception if nested
+    # Set terminal tab title immediately, bypassing Zellij interception if nested
     _tab_title_set "$session @ ${host%%.*}"
 
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
@@ -1013,14 +1024,21 @@ zjs() {
     return $zjs_rc
 }
 
-# Show ▶/✓/✗ in the terminal tab title based on command state.
-# Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
+# Show status symbols in the terminal tab title based on command state.
+# Uses OSC 2 escape sequences — supported by Ghostty, WezTerm, iTerm2,
 # Windows Terminal, and most modern terminals.
 # Format: "host ●"  (Zellij prepends "session | tab_index | " automatically)
-# preexec:      fires after Enter, before the command runs — show ▶ (running).
-# precmd:       fires before each prompt (after command finishes) — show ✔ (success) or ✖ (failure).
-# zle-line-init: fires when ZLE starts (cursor at prompt) — show · (waiting for input).
-# TRAPWINCH:    re-sends title on SIGWINCH (Zellij fires this on client attach).
+# preexec:       fires after Enter, before the command runs.
+# precmd:        fires before each prompt (after command finishes).
+# zle-line-init: fires when ZLE starts (cursor at prompt).
+# TRAPWINCH:     re-sends title on SIGWINCH (Zellij fires this on client attach).
+#
+# ── Symbols (change here to restyle all states at once) ──────────────
+_TAB_WAITING='○'   # ZLE ready, waiting for input
+_TAB_RUNNING='↻'   # command in progress
+_TAB_DONE='●'      # last command succeeded
+_TAB_ERROR='⚠'     # last command failed
+#
 _tab_title_context() {
     local host="${HOST%%.*}"
     if [[ -n "${ZELLIJ:-}" ]]; then
@@ -1036,7 +1054,7 @@ _tab_title_context() {
 }
 _tab_title_set() {
     # When inside Zellij, OSC 2 is intercepted and never reaches the outer terminal.
-    # Wrap in a DCS tmux passthrough so Zellij forwards it to Kitty.
+    # Wrap in a DCS tmux passthrough so Zellij forwards it to the outer terminal.
     if [[ -n "${ZELLIJ:-}" ]]; then
         printf '\ePtmux;\e\e]2;%s\a\e\\' "$1"
     else
@@ -1044,28 +1062,28 @@ _tab_title_set() {
     fi
 }
 _tab_title_preexec() {
-    _tab_title_set "$(_tab_title_context) ▶"
+    _tab_title_set "$(_tab_title_context) $_TAB_RUNNING"
 }
 _tab_title_last_result=0
 _tab_title_precmd() {
     _tab_title_last_result=$?
     if (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$(_tab_title_context) ✔"
+        _tab_title_set "$(_tab_title_context) $_TAB_DONE"
     else
-        _tab_title_set "$(_tab_title_context) ✖"
+        _tab_title_set "$(_tab_title_context) $_TAB_ERROR"
     fi
 }
 _tab_title_zle_init() {
-    _tab_title_set "$(_tab_title_context) ·"
+    _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
 }
 zle -N zle-line-init _tab_title_zle_init
 # Re-send title on SIGWINCH: Zellij fires SIGWINCH when a client attaches,
 # which refreshes the tab title in sessions that were previously detached.
 TRAPWINCH() {
     if (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$(_tab_title_context) ·"
+        _tab_title_set "$(_tab_title_context) $_TAB_WAITING"
     else
-        _tab_title_set "$(_tab_title_context) ✖"
+        _tab_title_set "$(_tab_title_context) $_TAB_ERROR"
     fi
 }
 add-zsh-hook preexec _tab_title_preexec

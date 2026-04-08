@@ -22,7 +22,7 @@ Type@150ms "z zsh"
 Enter
 Sleep 1.5s
 
-Type@150ms "z kitty"
+Type@150ms "z ghostty"
 Enter
 Sleep 1.5s
 
