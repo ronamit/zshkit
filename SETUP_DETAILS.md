@@ -12,15 +12,22 @@ bash setup_zsh.sh
 
 - Linux: requires `apt-get` (Ubuntu/Debian family).
 - macOS: requires [Homebrew](https://brew.sh).
-- The script is safe to re-run.
+- The script is safe to re-run — already-installed components are skipped automatically.
+- The script prompts before each install step. Pass `--yes` / `-y` to auto-confirm all prompts (non-interactive mode).
 - `bash setup_zsh.sh --yes` skips prompts, but on Linux it still needs non-interactive `sudo` for apt/terminfo. Prefer running interactively (type your password when `sudo` runs) instead of enabling blanket passwordless `sudo` for your user.
+
+**Pinning versions:** Tool versions are resolved from GitHub at runtime. Override any of them with env vars:
+
+```bash
+ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
+```
 
 > **Local and remote:** Run the installer on every machine you work on — local and remote. Your local install gives you the shell and tools. Running it on a remote machine is what makes `zj` sessions persist there across SSH disconnects.
 
 ### Security notes
 
-- **Release downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are fetched over HTTPS from pinned GitHub release URLs (`*_VERSION` variables in `setup_zsh.sh`). There is no checksum verification in the script; mitigate supply-chain risk by auditing versions, mirroring artifacts, or installing equivalent packages from your distro.
-- **curl \| sh:** Oh My Zsh, `uv`, and `navi` still use upstream install scripts over HTTPS (standard trade-off: convenience vs. supply-chain review). Mitigate by pinning versions where this repo does, auditing scripts before upgrades, or installing those tools via distro packages instead.
+- **Release downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are fetched over HTTPS from the latest GitHub release. Versions are resolved at runtime via the GitHub API and can be pinned by setting `ZELLIJ_VERSION`, `ZJSTATUS_VERSION`, `ZELLIJ_ATTENTION_VERSION`, or `CARAPACE_VERSION` in your environment before running the script. There is no checksum verification; mitigate supply-chain risk by auditing versions, mirroring artifacts, or installing equivalent packages from your distro.
+- **curl \| sh:** Oh My Zsh, `uv`, and `navi` still use upstream install scripts over HTTPS (standard trade-off: convenience vs. supply-chain review). Mitigate by auditing scripts before each run or installing those tools via distro packages instead.
 - **Zellij plugin permissions:** The installer pre-writes `~/.cache/zellij/permissions.kdl` for bundled `zjstatus` and `zellij-attention` so the status bar works without an interactive prompt (auto-grants `RunCommands` for zjstatus). Set `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` when running `setup_zsh.sh` if you prefer to approve inside Zellij instead.
 - **direnv:** The template enables `direnv` only if the binary exists; new `.envrc` files still require `direnv allow` before they run.
 

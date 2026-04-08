@@ -8,7 +8,7 @@
 # - macOS: uses Homebrew (install from https://brew.sh if missing).
 #
 # Usage:  bash setup_zsh.sh [--yes|-y]
-#   --yes / -y   auto-confirm all prompts (replace existing configs without asking)
+#   --yes / -y   skip all confirmation prompts (replace existing configs, install all tools without asking)
 #                 On Linux, unattended runs still need non-interactive sudo.
 #
 # Optional environment (security / maintenance):
@@ -36,10 +36,12 @@ fi
 
 # ── Globals ──────────────────────────────────────────────────────────
 
-ZELLIJ_VERSION="${ZELLIJ_VERSION:-v0.44.0}"
-ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-v0.22.0}"
-ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-v0.3.1}"
-CARAPACE_VERSION="${CARAPACE_VERSION:-v1.6.4}"
+# Pin specific versions with env vars; leave unset to auto-fetch latest from GitHub.
+# e.g. ZELLIJ_VERSION=v0.44.0 bash setup_zsh.sh
+ZELLIJ_VERSION="${ZELLIJ_VERSION:-}"
+ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-}"
+ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-}"
+CARAPACE_VERSION="${CARAPACE_VERSION:-}"
 
 SSH_CONFIG="$HOME/.ssh/config"
 SSH_MARKER_BEGIN="# >>> zshkit ssh defaults >>>"
@@ -74,6 +76,37 @@ BREW_FORMULAS_TO_INSTALL=()
 # ── Helpers ──────────────────────────────────────────────────────────
 
 step() { STEP=$((STEP + 1)); echo ""; echo "[$STEP] $1"; }
+
+# Fetch the latest release tag from a GitHub repo (e.g. "zellij-org/zellij").
+# Prints the tag (e.g. "v0.44.0") to stdout, or $2 if the API call fails.
+gh_latest_version() {
+    local repo="$1" fallback="$2"
+    local tag
+    tag=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" 2>/dev/null \
+        | grep -m1 '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')
+    if [ -n "$tag" ]; then
+        echo "$tag"
+    else
+        echo "  ⚠ Could not fetch latest version for ${repo}, using fallback ${fallback}" >&2
+        echo "$fallback"
+    fi
+}
+
+# Prompt the user to confirm before installing a tool.
+# In --yes mode or non-interactive shells, proceeds automatically.
+# Returns 1 if the user declines.
+confirm_install() {
+    local msg="$1"
+    [ "$ZSHKIT_YES" -eq 1 ] && return 0
+    [ -t 0 ] || return 0
+    printf "  %s [y/N] " "$msg"
+    local _ci_reply
+    read -r _ci_reply </dev/tty
+    case "$_ci_reply" in
+        [Yy]|[Yy][Ee][Ss]) return 0 ;;
+        *) echo "  - Skipped"; return 1 ;;
+    esac
+}
 
 require_noninteractive_sudo_for_yes_mode() {
     [ "$IS_MACOS" -eq 1 ] && return 0
@@ -371,7 +404,7 @@ install_ghostty() {
     if [ "$IS_MACOS" -eq 1 ]; then
         if brew list --cask ghostty &>/dev/null 2>&1; then
             echo "  ✓ Ghostty is already installed via Homebrew"
-        else
+        elif confirm_install "Install Ghostty (Homebrew cask)?"; then
             if ! brew install --cask ghostty; then
                 echo "  ✗ Failed to install Ghostty via Homebrew"
                 exit 1
@@ -385,11 +418,13 @@ install_ghostty() {
         fi
         # Ubuntu: snap is officially listed on ghostty.org and works across Ubuntu versions.
         if command -v snap &>/dev/null; then
-            if ! snap install ghostty --classic; then
-                echo "  ✗ Failed to install Ghostty via snap"
-                exit 1
+            if confirm_install "Install Ghostty (snap)?"; then
+                if ! snap install ghostty --classic; then
+                    echo "  ✗ Failed to install Ghostty via snap"
+                    exit 1
+                fi
+                echo "  ✓ Ghostty installed via snap"
             fi
-            echo "  ✓ Ghostty installed via snap"
         else
             echo "  ⚠ snap not found — install Ghostty manually:"
             echo "    snap: snap install ghostty --classic"
@@ -429,12 +464,14 @@ flush_brew_installs() {
         echo "  ✓ All Homebrew packages already installed"
         return 0
     fi
-    echo "  Installing: ${BREW_FORMULAS_TO_INSTALL[*]}"
-    if brew install "${BREW_FORMULAS_TO_INSTALL[@]}"; then
-        BREW_FORMULAS_TO_INSTALL=()
-    else
-        echo "  ✗ brew install failed for: ${BREW_FORMULAS_TO_INSTALL[*]}"
-        exit 1
+    echo "  Formulas to install: ${BREW_FORMULAS_TO_INSTALL[*]}"
+    if confirm_install "Install these Homebrew formulas?"; then
+        if brew install "${BREW_FORMULAS_TO_INSTALL[@]}"; then
+            BREW_FORMULAS_TO_INSTALL=()
+        else
+            echo "  ✗ brew install failed for: ${BREW_FORMULAS_TO_INSTALL[*]}"
+            exit 1
+        fi
     fi
 }
 
@@ -443,7 +480,7 @@ clone_if_missing() {
     step "$label"
     if [ -d "$dir" ]; then
         echo "  ✓ $name already installed"
-    else
+    elif confirm_install "Install $name?"; then
         if git clone --depth=1 "$url" "$dir"; then
             echo "  ✓ $name installed"
         else
@@ -579,6 +616,18 @@ fi
 
 require_noninteractive_sudo_for_yes_mode
 
+# ── Resolve latest tool versions from GitHub ─────────────────────────
+
+step "Resolving latest tool versions from GitHub..."
+[ -z "$ZELLIJ_VERSION" ]           && ZELLIJ_VERSION=$(gh_latest_version "zellij-org/zellij" "v0.44.0")
+[ -z "$ZJSTATUS_VERSION" ]         && ZJSTATUS_VERSION=$(gh_latest_version "dj95/zjstatus" "v0.22.0")
+[ -z "$ZELLIJ_ATTENTION_VERSION" ] && ZELLIJ_ATTENTION_VERSION=$(gh_latest_version "KiryuuLight/zellij-attention" "v0.3.1")
+[ -z "$CARAPACE_VERSION" ]         && CARAPACE_VERSION=$(gh_latest_version "carapace-sh/carapace-bin" "v1.6.4")
+echo "  Zellij:            $ZELLIJ_VERSION"
+echo "  zjstatus:          $ZJSTATUS_VERSION"
+echo "  zellij-attention:  $ZELLIJ_ATTENTION_VERSION"
+echo "  carapace-bin:      $CARAPACE_VERSION"
+
 # ── Bootstrap: zsh, curl, git ────────────────────────────────────────
 
 step "Installing core dependencies (zsh, curl, git)..."
@@ -612,7 +661,7 @@ fi
 step "Installing Oh My Zsh..."
 if [ -d "$HOME/.oh-my-zsh" ]; then
     echo "  ✓ Oh My Zsh already installed"
-else
+elif confirm_install "Install Oh My Zsh?"; then
     if sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
         echo "  ✓ Oh My Zsh installed"
     else
@@ -766,13 +815,15 @@ if ! command -v xclip &>/dev/null && ! command -v wl-copy &>/dev/null; then
 fi
 
 if [ "${#APT_PACKAGES_TO_INSTALL[@]}" -gt 0 ]; then
-    echo "  Installing: ${APT_PACKAGES_TO_INSTALL[*]}"
-    apt_update_once
-    if sudo apt-get install -y "${APT_PACKAGES_TO_INSTALL[@]}"; then
-        echo "  ✓ Packages installed"
-    else
-        echo "  ✗ Failed to install one or more packages"
-        exit 1
+    echo "  Packages to install: ${APT_PACKAGES_TO_INSTALL[*]}"
+    if confirm_install "Install these apt packages?"; then
+        apt_update_once
+        if sudo apt-get install -y "${APT_PACKAGES_TO_INSTALL[@]}"; then
+            echo "  ✓ Packages installed"
+        else
+            echo "  ✗ Failed to install one or more packages"
+            exit 1
+        fi
     fi
 else
     echo "  ✓ All packages already present"
@@ -846,21 +897,25 @@ fi
 
 # yazi often not in apt on older Ubuntu/Debian; try snap if still missing (--classic required)
 if ! command -v yazi &>/dev/null && command -v snap &>/dev/null; then
-    echo "  Installing yazi via snap (not in apt)..."
-    if sudo snap install yazi --classic 2>/dev/null; then
-        echo "  ✓ yazi installed via snap"
-    else
-        echo "  - yazi snap install failed or skipped; install manually: sudo snap install yazi --classic"
+    if confirm_install "Install yazi (snap, not in apt)?"; then
+        echo "  Installing yazi via snap..."
+        if sudo snap install yazi --classic 2>/dev/null; then
+            echo "  ✓ yazi installed via snap"
+        else
+            echo "  - yazi snap install failed; install manually: sudo snap install yazi --classic"
+        fi
     fi
 fi
 
 # uv: not in apt; install via the official installer to ~/.local/bin/uv
 if ! command -v uv &>/dev/null; then
-    echo "  Installing uv Python package manager..."
-    if curl -LsSf https://astral.sh/uv/install.sh | sh; then
-        echo "  ✓ uv installed"
-    else
-        echo "  ⚠ uv install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    if confirm_install "Install uv Python package manager?"; then
+        echo "  Installing uv Python package manager..."
+        if curl -LsSf https://astral.sh/uv/install.sh | sh; then
+            echo "  ✓ uv installed"
+        else
+            echo "  ⚠ uv install failed — install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
+        fi
     fi
 else
     echo "  ✓ uv already installed"
@@ -868,11 +923,13 @@ fi
 
 # navi: not in apt; install via the official installer to ~/.local/bin/navi
 if ! command -v navi &>/dev/null; then
-    echo "  Installing navi interactive cheatsheet tool..."
-    if BIN_DIR="$HOME/.local/bin" bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install) 2>/dev/null; then
-        echo "  ✓ navi installed"
-    else
-        echo "  ⚠ navi install failed — install manually: BIN_DIR=~/.local/bin bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)"
+    if confirm_install "Install navi interactive cheatsheet tool?"; then
+        echo "  Installing navi interactive cheatsheet tool..."
+        if BIN_DIR="$HOME/.local/bin" bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install) 2>/dev/null; then
+            echo "  ✓ navi installed"
+        else
+            echo "  ⚠ navi install failed — install manually: BIN_DIR=~/.local/bin bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)"
+        fi
     fi
 else
     echo "  ✓ navi already installed"
@@ -883,34 +940,34 @@ fi
 _carapace_installed_version="$(carapace --version 2>/dev/null | awk '{print $2}')"
 if [ "$_carapace_installed_version" != "${CARAPACE_VERSION#v}" ]; then
     step "Installing carapace-bin ${CARAPACE_VERSION}..."
-    mkdir -p "$HOME/.local/bin"
-
-    if [ "$IS_MACOS" -eq 1 ]; then
-        install_brew_formula_if_missing carapace carapace-sh/carapace/carapace
-    else
-        case "$(uname -m)" in
-            x86_64|amd64) _carapace_arch="amd64" ;;
-            aarch64|arm64) _carapace_arch="arm64" ;;
-            *)
-                echo "  ✗ Unsupported architecture for carapace auto-install: $(uname -m)"
-                exit 1
-                ;;
-        esac
-
-        _carapace_tar="${TMPDIR:-/tmp}/carapace.tar.gz"
-        _carapace_url="https://github.com/carapace-sh/carapace-bin/releases/download/${CARAPACE_VERSION}/carapace-bin_${CARAPACE_VERSION#v}_linux_${_carapace_arch}.tar.gz"
-        if download_to_file "$_carapace_url" "$_carapace_tar" \
-            && tar -xzf "$_carapace_tar" -C "$HOME/.local/bin" carapace \
-            && chmod +x "$HOME/.local/bin/carapace" \
-            && [ -x "$HOME/.local/bin/carapace" ]; then
-            echo "  ✓ Installed carapace-bin ${CARAPACE_VERSION}"
+    if confirm_install "Install carapace-bin ${CARAPACE_VERSION}?"; then
+        mkdir -p "$HOME/.local/bin"
+        if [ "$IS_MACOS" -eq 1 ]; then
+            install_brew_formula_if_missing carapace carapace-sh/carapace/carapace
         else
-            echo "  ✗ Failed to download carapace-bin ${CARAPACE_VERSION} for ${_carapace_arch}"
+            case "$(uname -m)" in
+                x86_64|amd64) _carapace_arch="amd64" ;;
+                aarch64|arm64) _carapace_arch="arm64" ;;
+                *)
+                    echo "  ✗ Unsupported architecture for carapace auto-install: $(uname -m)"
+                    exit 1
+                    ;;
+            esac
+            _carapace_tar="${TMPDIR:-/tmp}/carapace.tar.gz"
+            _carapace_url="https://github.com/carapace-sh/carapace-bin/releases/download/${CARAPACE_VERSION}/carapace-bin_${CARAPACE_VERSION#v}_linux_${_carapace_arch}.tar.gz"
+            if download_to_file "$_carapace_url" "$_carapace_tar" \
+                && tar -xzf "$_carapace_tar" -C "$HOME/.local/bin" carapace \
+                && chmod +x "$HOME/.local/bin/carapace" \
+                && [ -x "$HOME/.local/bin/carapace" ]; then
+                echo "  ✓ Installed carapace-bin ${CARAPACE_VERSION}"
+            else
+                echo "  ✗ Failed to download carapace-bin ${CARAPACE_VERSION} for ${_carapace_arch}"
+                rm -f "$_carapace_tar"
+                rm -f "$HOME/.local/bin/carapace"
+                exit 1
+            fi
             rm -f "$_carapace_tar"
-            rm -f "$HOME/.local/bin/carapace"
-            exit 1
         fi
-        rm -f "$_carapace_tar"
     fi
 else
     echo "  ✓ carapace-bin ${CARAPACE_VERSION} already installed"
@@ -919,31 +976,31 @@ fi
 _zellij_installed_version="$(zellij --version 2>/dev/null | awk '{print $2}')"
 if [ "$IS_MACOS" -eq 0 ] && [ "$_zellij_installed_version" != "${ZELLIJ_VERSION#v}" ]; then
     step "Installing Zellij ${ZELLIJ_VERSION}..."
-    mkdir -p "$HOME/.local/bin"
-
-    case "$(uname -m)" in
-        x86_64|amd64) _zellij_arch="x86_64-unknown-linux-musl" ;;
-        aarch64|arm64) _zellij_arch="aarch64-unknown-linux-musl" ;;
-        *)
-            echo "  ✗ Unsupported Linux architecture for Zellij auto-install: $(uname -m)"
+    if confirm_install "Install Zellij ${ZELLIJ_VERSION}?"; then
+        mkdir -p "$HOME/.local/bin"
+        case "$(uname -m)" in
+            x86_64|amd64) _zellij_arch="x86_64-unknown-linux-musl" ;;
+            aarch64|arm64) _zellij_arch="aarch64-unknown-linux-musl" ;;
+            *)
+                echo "  ✗ Unsupported Linux architecture for Zellij auto-install: $(uname -m)"
+                exit 1
+                ;;
+        esac
+        _zellij_tar="${TMPDIR:-/tmp}/zellij.tar.gz"
+        _zellij_url="https://github.com/zellij-org/zellij/releases/download/${ZELLIJ_VERSION}/zellij-${_zellij_arch}.tar.gz"
+        if download_to_file "$_zellij_url" "$_zellij_tar" \
+            && tar -xzf "$_zellij_tar" -C "$HOME/.local/bin" zellij \
+            && chmod +x "$HOME/.local/bin/zellij" \
+            && [ -x "$HOME/.local/bin/zellij" ]; then
+            echo "  ✓ Installed Zellij ${ZELLIJ_VERSION}"
+        else
+            echo "  ✗ Failed to download Zellij ${ZELLIJ_VERSION} for ${_zellij_arch}"
+            rm -f "$_zellij_tar"
+            rm -f "$HOME/.local/bin/zellij"
             exit 1
-            ;;
-    esac
-
-    _zellij_tar="${TMPDIR:-/tmp}/zellij.tar.gz"
-    _zellij_url="https://github.com/zellij-org/zellij/releases/download/${ZELLIJ_VERSION}/zellij-${_zellij_arch}.tar.gz"
-    if download_to_file "$_zellij_url" "$_zellij_tar" \
-        && tar -xzf "$_zellij_tar" -C "$HOME/.local/bin" zellij \
-        && chmod +x "$HOME/.local/bin/zellij" \
-        && [ -x "$HOME/.local/bin/zellij" ]; then
-        echo "  ✓ Installed Zellij ${ZELLIJ_VERSION}"
-    else
-        echo "  ✗ Failed to download Zellij ${ZELLIJ_VERSION} for ${_zellij_arch}"
+        fi
         rm -f "$_zellij_tar"
-        rm -f "$HOME/.local/bin/zellij"
-        exit 1
     fi
-    rm -f "$_zellij_tar"
 fi
 
 # ── Ubuntu tool-name symlinks (Linux only) ────────────────────────────
@@ -984,14 +1041,15 @@ else
 fi
 
 step "Installing Zellij status plugin (zjstatus)..."
-_zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
-
-if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
-    echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
-else
-    echo "  ✗ Failed to download zjstatus ${ZJSTATUS_VERSION}"
-    rm -f "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
-    exit 1
+if confirm_install "Install zjstatus ${ZJSTATUS_VERSION}?"; then
+    _zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
+    if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
+        echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
+    else
+        echo "  ✗ Failed to download zjstatus ${ZJSTATUS_VERSION}"
+        rm -f "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
+        exit 1
+    fi
 fi
 
 ZELLIJ_CACHE_DIR="$HOME/.cache/zellij"
@@ -1002,14 +1060,15 @@ ZJSTATUS_PERM_KEY="file:$PLUGIN_ABSOLUTE_PATH"
 _ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 
 step "Installing Zellij attention plugin (zellij-attention)..."
-_attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
-
-if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
-    echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
-else
-    echo "  ✗ Failed to download zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
-    rm -f "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
-    exit 1
+if confirm_install "Install zellij-attention ${ZELLIJ_ATTENTION_VERSION}?"; then
+    _attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
+    if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
+        echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
+    else
+        echo "  ✗ Failed to download zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
+        rm -f "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
+        exit 1
+    fi
 fi
 
 # Pre-seed ~/.cache/zellij/permissions.kdl so zjstatus works without an interactive prompt (RunCommands).
@@ -1127,7 +1186,7 @@ _MESLO_FILES=("MesloLGS NF Regular.ttf" "MesloLGS NF Bold.ttf" "MesloLGS NF Ital
 
 if has_meslo_nerd_font; then
     echo "  ✓ MesloLGS NF already installed"
-else
+elif confirm_install "Install MesloLGS NF font (recommended by Powerlevel10k)?"; then
     if [ "$IS_MACOS" -eq 1 ]; then
         FONT_DIR="$HOME/Library/Fonts"
     else
