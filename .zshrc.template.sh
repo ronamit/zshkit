@@ -1017,8 +1017,9 @@ zjs() {
 # Uses OSC 2 escape sequences — supported by Kitty, Ghostty, WezTerm, iTerm2,
 # Windows Terminal, and most modern terminals.
 # Format: "host ●"  (Zellij prepends "session | tab_index | " automatically)
-# preexec: fires after Enter, before the command runs — show ◌ (in progress).
-# precmd:  fires before each prompt (after command finishes) — show ● (success) or ⚠ (failure).
+# preexec:  fires after Enter, before the command runs — show ◌ (in progress).
+# precmd:   fires before each prompt (after command finishes) — show ● (success) or ⚠ (failure).
+# TRAPWINCH: re-sends title on SIGWINCH (Zellij fires this on client attach).
 _tab_title_context() {
     local host="${HOST%%.*}"
     if [[ -n "${ZELLIJ:-}" ]]; then
@@ -1044,9 +1045,19 @@ _tab_title_set() {
 _tab_title_preexec() {
     _tab_title_set "$(_tab_title_context) ◌"
 }
+_tab_title_last_result=0
 _tab_title_precmd() {
-    local result=$?
-    if (( result == 0 )); then
+    _tab_title_last_result=$?
+    if (( _tab_title_last_result == 0 )); then
+        _tab_title_set "$(_tab_title_context) ●"
+    else
+        _tab_title_set "$(_tab_title_context) ⚠"
+    fi
+}
+# Re-send title on SIGWINCH: Zellij fires SIGWINCH when a client attaches,
+# which refreshes the tab title in sessions that were previously detached.
+TRAPWINCH() {
+    if (( _tab_title_last_result == 0 )); then
         _tab_title_set "$(_tab_title_context) ●"
     else
         _tab_title_set "$(_tab_title_context) ⚠"
