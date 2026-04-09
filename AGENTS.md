@@ -12,25 +12,85 @@ Default behavior:
 - then explain what changed
 
 Do not ask for approval for routine repo-local work.
-Pause only for big directional decisions or high-risk actions.
+Pause only for meaningful design decisions, unclear requirements that materially affect the outcome, or high-risk actions.
 
 Never commit, push, merge, release, or deploy without approval.
 
 ---
 
-## Core Principles
+## Project-Specific Operating Notes
 
-- Prefer simple, maintainable solutions.
-- Make the smallest change that fully solves the problem.
-- Follow existing patterns before introducing new ones.
-- Optimize for clarity, reversibility, and easy review.
-- Be explicit about assumptions and uncertainty.
+<!--
+Fill these in for each project.
+
+## Setup
+
+- Primary setup command: `...`
+- Install dependencies: `...`
+- Activate virtualenv / toolchain: `...`
+
+## Common Commands
+
+- Run app locally: `...`
+- Run targeted tests: `...`
+- Run full test suite: `...`
+- Run lint: `...`
+- Run typecheck: `...`
+- Run build: `...`
+
+## Repo Structure
+
+- Main application entrypoints: `...`
+- Core directories: `...`
+- Tests live in: `...`
+- Generated files / codegen paths: `...`
+
+## Local Conventions
+
+- Preferred test framework: `...`
+- Preferred style / formatter: `...`
+- Preferred patterns to follow: `...`
+- Files or areas that should not be changed unless asked: `...`
+
+## Environment Notes
+
+- Assume network access is: allowed / disallowed / ask first
+- Assume cloud / production access is: disallowed unless explicitly approved
+- External services commonly used in development: `...`
+
+## Validation Expectations
+
+- For small changes, usually run: `...`
+- For medium changes, usually run: `...`
+- For risky changes, usually run: `...`
+-->
 
 ---
 
-## What You May Do Without Asking
+## Working Style
 
-You may proceed without approval when the work is clearly within the stated goal and easily reversible.
+Prefer simple, maintainable solutions.
+
+Aim for changes that are:
+
+- minimal
+- clear
+- reversible
+- easy to review
+- consistent with existing patterns
+
+Avoid speculative abstractions and unnecessary rewrites.
+Do not expand scope unless required to solve the requested problem.
+
+Be explicit about assumptions and uncertainty.
+
+---
+
+## Default Execution Modes
+
+### Do
+
+Proceed without approval when the work is clearly within the request, repo-local, and easily reversible.
 
 This includes:
 
@@ -39,40 +99,27 @@ This includes:
 - running local tests, linters, typecheckers, and builds that stay within the workspace
 - making small-to-medium repo-local code changes that follow existing patterns
 - updating nearby tests and docs required by the change
-- refactoring for clarity when behavior does not materially change
+- doing behavior-preserving refactors for clarity
 
 For these cases: implement first, then explain.
 
----
+### Plan then do
 
-## When to Present a Plan First
-
-Present a concise plan and wait for approval before implementing when the change is big, cross-cutting, or materially ambiguous.
+Present a concise plan before implementing when the work is complex, cross-cutting, or materially ambiguous, but still within normal repo-local development.
 
 Use a plan-first workflow when the work involves:
 
 - multiple subsystems or directories with non-obvious coordination
 - many coordinated edits across the codebase
-- a new abstraction, shared pattern, or architectural decision
+- a new abstraction, shared pattern, or architectural choice
 - a complex refactor or migration
 - behavior changes with meaningful product or UX tradeoffs
-- unclear requirements where reasonable choices would lead to different outcomes
+- requirements that allow multiple reasonable implementations with different outcomes
 
-Big does not mean "more than one file".
+Big does not mean "more than one file."
 Big means coordination, risk, or meaningful design choice.
 
-### Plan format
-
-1. Understanding
-2. Proposed approach
-3. Files / areas likely affected
-4. Risks and tradeoffs
-5. Validation plan
-6. Open questions, if any
-
----
-
-## When to Stop and Ask for Approval
+### Ask first
 
 Always ask before:
 
@@ -89,53 +136,99 @@ Always ask before:
 
 ---
 
+## Plan Format
+
+When presenting a plan, use:
+
+1. Understanding
+2. Proposed approach
+3. Files / areas likely affected
+4. Risks and tradeoffs
+5. Validation plan
+6. Open questions, if any
+
+Keep it concise.
+
+---
+
 ## Handling Uncertainty
 
 - State assumptions briefly and proceed when the assumption is low-risk and easily reversible.
 - Ask only when missing information would materially change behavior, scope, or risk.
 - Do not invent facts about the codebase or environment.
+- If you could not inspect something, run something, or verify something, say so plainly.
+- Do not claim completion or confidence beyond what was actually verified.
+
+---
+
+## Before Editing
+
+Before making changes:
+
+1. Inspect the relevant files and nearby context.
+2. Identify the existing pattern to follow.
+3. Check whether tests already cover the relevant behavior.
+4. Confirm the requested scope and avoid incidental cleanup unless it is necessary.
 
 ---
 
 ## Implementation Rules
 
 - Change only what is necessary.
-- Avoid speculative abstractions.
+- Follow existing patterns before introducing new ones.
 - Keep naming simple and obvious.
 - Preserve unrelated code and ongoing work.
-- If reality diverges from the plan, explain what changed.
-
-If the divergence stays within the same risk and scope envelope: adjust and continue.
-
-If the divergence changes architecture, risk, external behavior, or scope: pause and ask.
-
-### Clean Code and Data Structure Preferences
-
-- Prefer clearer data structures over ad-hoc nested dict/string plumbing.
-- When validation or schema checks are non-trivial, prefer typed models (`pydantic`, `dataclass`, or `TypedDict`) if they simplify code already being touched.
-- Centralize repeated keys, labels, status strings, and magic numbers as named constants.
-- Replace repetitive conversion/normalization blocks with small helper functions.
+- Prefer small helper functions over repeated conversion or normalization blocks when that improves clarity.
+- Centralize repeated keys, labels, status strings, and magic numbers as named constants when already touching that logic.
+- Prefer clearer data structures over ad-hoc nested dict / string plumbing.
+- When validation or schema checks are non-trivial, prefer typed models (`pydantic`, `dataclass`, or `TypedDict`) if they simplify code already being changed.
 - Keep compatibility aliases only when required; mark intent clearly and avoid duplicating business logic.
-- Do not introduce new abstractions unless they remove real duplication or reduce bug risk.
-- Functions: one responsibility; keep them small and focused.
-- Comments: explain *why*, not *what*. Prefer clear naming over comments. Document APIs and non-obvious logic.
-- Group related code together; maintain a logical hierarchy within files.
-- Depend on abstractions, not concrete implementations (inject dependencies; avoid coupling high-level modules to low-level ones).
-- Design interfaces to be small and focused — don't force callers to depend on methods they don't use.
+- Comments should explain *why*, not *what*. Prefer clear naming over comments.
+- Group related code together and maintain a logical hierarchy within files.
+- Keep interfaces small and focused.
 
-### Tests
+If reality diverges from the original plan but stays within the same scope/risk envelope, adjust and continue.
 
-- **Bug fixes:** write a failing test that reproduces the bug before touching the implementation.
-- **New behavior (TDD):** write the test → confirm it fails → implement → confirm it passes.
-- **Refactoring:** confirm tests cover current behavior; add them if missing; then refactor without modifying the tests.
-- Tests should be readable and cover edge cases.
+If the divergence changes architecture, risk, external behavior, or scope, pause and ask.
 
-### Dependencies
+---
+
+## Refactoring
+
+Refactoring should normally be behavior-preserving and local to the task.
+
+Prefer refactors that:
+
+- reduce duplication
+- improve readability
+- simplify control flow
+- clarify data flow
+- lower bug risk in touched code
+
+Do not perform broad architectural cleanup unless explicitly requested or clearly required to complete the task.
+
+---
+
+## Tests
+
+Use good judgment and the repo's existing testing style.
+
+- **Bug fixes:** prefer adding or updating a test that reproduces the bug before changing the implementation, when feasible.
+- **New behavior:** prefer adding or updating tests first when the workflow and test suite support it.
+- **Refactoring:** confirm existing behavior is covered; add tests if needed; then refactor without intentionally changing behavior.
+
+If test-first is not practical, say why and use the narrowest meaningful validation available.
+
+Tests should be readable and cover important edge cases relevant to the change.
+
+---
+
+## Dependencies
 
 - Prefer established libraries for auth, validation, parsing, HTTP, testing, date handling, and file operations.
 - Evaluate candidates on maintenance activity, documentation, and license.
-- Write custom code only when: no suitable library exists, performance or security constraints apply, or requirements are highly specific.
-- Always ask before adding or upgrading dependencies (see above).
+- Write custom code only when no suitable library exists, requirements are highly specific, or performance/security constraints require it.
+- Always ask before adding or upgrading dependencies.
 
 ---
 
@@ -150,6 +243,18 @@ After making changes:
 5. If you could not verify something, say so clearly.
 
 Prefer targeted checks over expensive blanket runs when appropriate.
+
+---
+
+## After Editing
+
+Before finishing:
+
+1. Re-check that the change matches the request.
+2. Remove accidental or unrelated edits.
+3. Run appropriate validation.
+4. Note assumptions, limitations, and anything not verified.
+5. Summarize the result at the right level of detail.
 
 ---
 
@@ -186,7 +291,13 @@ For non-trivial changes, provide:
 
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`, `build`, `revert`
 
-Rules: imperative mood; subject under 50 chars; capitalize; no trailing period.
+Rules:
+
+- imperative mood
+- subject under 50 chars
+- capitalize
+- no trailing period
+
 Footer for issue references: `Closes #123`, `Fixes #456`.
 Breaking changes: append `!` to the type or add `BREAKING CHANGE:` in the footer.
 
@@ -201,6 +312,7 @@ Done means:
 - verification was performed when possible
 - unintended edits were removed
 - the result is explained at the appropriate level of detail
+- uncertainty and incomplete verification are stated plainly
 
 ---
 
