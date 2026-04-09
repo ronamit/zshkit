@@ -101,34 +101,6 @@ Edit `~/.config/ghostty/config` directly. Reload with `Ctrl+Shift+,` (Linux) or 
 
 See [USAGE_GUIDE.md](USAGE_GUIDE.md) for the full clipboard behavior details.
 
-## Terminal Tab Titles
-
-zshkit sets the Ghostty tab title to `host <symbol>` and updates it as commands run:
-
-| Symbol | State |
-|--------|-------|
-| `○` | Waiting for input |
-| `↻` | Command running |
-| `●` | Last command succeeded |
-| `⚠` | Last command failed |
-
-Tab titles work via OSC 2 in both contexts. Inside Zellij, Zellij intercepts OSC 2 and uses it as the tab label (Ghostty displays it with a `N |` tab-index prefix). Outside Zellij, Ghostty uses OSC 2 directly. On re-attach, Zellij sends SIGWINCH which triggers a title refresh automatically.
-
-**Disabling and freezing:**
-
-```bash
-# Disable globally — add to ~/.zshrc.local
-export ZSHKIT_TAB_TITLES=0
-
-# Freeze one pane after manually renaming a Zellij tab
-tab-freeze   # stops auto-updates for this shell only
-tab-thaw     # re-enables and immediately restores the managed title
-```
-
-Use `tab-freeze` when you want a custom name to stick in a specific Zellij tab without the shell overwriting it. All other panes are unaffected.
-
-**Changing the symbols:** edit the `_TAB_WAITING` / `_TAB_RUNNING` / `_TAB_DONE` / `_TAB_ERROR` constants near the top of the tab title block in [.zshrc.template.sh](.zshrc.template.sh).
-
 ## After Install
 
 1. Set your terminal font to [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) (recommended by Powerlevel10k) so prompt icons render correctly before you see the new shell for the first time.

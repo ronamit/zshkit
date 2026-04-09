@@ -280,7 +280,7 @@ Main session command:
 | Command | Does |
 |---------|------|
 | `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. When starting fresh with no name, defaults to current directory name. |
-| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. Sets the terminal tab title immediately to `session @ host`. |
+| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. |
 | `zjclean` | Delete all sessions and their scrollback/resurrection history — lists each session with its age before confirming |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |
@@ -408,23 +408,6 @@ zshkit installs [zellij-attention](https://github.com/KiryuuLight/zellij-attenti
 The icon clears automatically when you focus the pane. This works alongside the existing `zjstatus` bar — no tab bar changes needed.
 
 Claude Code hooks in `~/.claude/settings.json` wire up the notifications automatically. When Claude finishes, the terminal tab title also updates to show `✅ claude done`.
-
-### Terminal Tab Titles
-
-zshkit sets terminal tab titles via OSC 2 escape sequences, supported by Ghostty, WezTerm, iTerm2, and most modern terminals.
-
-Format: `● session @ host` (icon on left)
-
-| State | Title |
-|-------|-------|
-| Command running | `◌ main @ myserver` |
-| Command succeeded | `● main @ myserver` |
-| Command failed | `⚠ main @ myserver` |
-| Outside Zellij | `● hostname` |
-
-When using `zjs` to SSH into a remote, the tab title updates immediately to `session @ host` before the remote prompt appears.
-
-Ghostty's shell integration is set to `detect`, which lets zshkit manage tab titles directly via OSC 2.
 
 ## References
 

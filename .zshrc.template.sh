@@ -108,7 +108,6 @@ zmodload -i zsh/complist
 # Disable magic-functions (URL-paste escaping) which hooks into self-insert and adds latency.
 DISABLE_AUTO_UPDATE="true"
 DISABLE_MAGIC_FUNCTIONS="true"
-DISABLE_AUTO_TITLE="true"    # zshkit manages tab titles itself
 
 # Wrap compinit so it runs exactly once with caching, then becomes a no-op.
 # OMZ calls compinit early via compfix.zsh (which also defines compdef for plugins).
@@ -1027,79 +1026,6 @@ zjs() {
     return $zjs_rc
 }
 
-# ── Terminal tab title ────────────────────────────────────────────────
-# Sets the tab title to "host <symbol>" via OSC 2 and updates it as commands run.
-# Works in both contexts:
-# - Inside Zellij : Zellij intercepts OSC 2 and uses it as the tab label;
-#                   Ghostty displays it with a "N | " tab-index prefix.
-# - Outside Zellij: Ghostty uses OSC 2 directly as the window/tab title.
-# On re-attach    : SIGWINCH (sent by Zellij when a client connects) refreshes
-#                   the title so detach/reattach always shows the correct state.
-#
-# Disable globally : set ZSHKIT_TAB_TITLES=0 in ~/.zshrc.local
-# Freeze one pane  : run `tab-freeze` after manually renaming a Zellij tab;
-#                    `tab-thaw` re-enables auto-updates for that pane.
-#
-# ── Symbols (edit here to restyle all states at once) ─────────────────
-_TAB_WAITING='○'   # ZLE ready, waiting for input
-_TAB_RUNNING='↻'   # command in progress
-_TAB_DONE='●'      # last command succeeded
-_TAB_ERROR='⚠'     # last command failed
-#
-# Cache the short hostname once — it never changes in a session.
-# Use HOSTNAME (always set in zsh) with HOST as fallback.
-_ZSHKIT_HOST="${${HOSTNAME:-$HOST}%%.*}"
-#
-_tab_title_set() {
-    [[ "${ZSHKIT_TAB_TITLES:-1}" == "1" ]] || return 0
-    [[ -z "${_ZSHKIT_TAB_FROZEN:-}" ]]      || return 0
-    # OSC 2 works in both contexts:
-    # - Inside Zellij: Zellij intercepts it and uses it as its tab label,
-    #   which Ghostty then displays (with a "N | " tab-index prefix).
-    # - Outside Zellij: Ghostty uses it directly as the window/tab title.
-    printf '\e]2;%s\a' "$1"
-}
-# Freeze auto-updates for this pane (e.g. after a manual Zellij tab rename).
-tab-freeze() {
-    _ZSHKIT_TAB_FROZEN=1
-    echo "Tab title frozen. Run tab-thaw to re-enable."
-}
-tab-thaw() {
-    unset _ZSHKIT_TAB_FROZEN
-    _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
-}
-_tab_title_running=0
-_tab_title_last_result=0
-_tab_title_preexec() {
-    _tab_title_running=1
-    _tab_title_set "$_ZSHKIT_HOST $_TAB_RUNNING"
-}
-_tab_title_precmd() {
-    _tab_title_last_result=$?
-    _tab_title_running=0
-    if (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$_ZSHKIT_HOST $_TAB_DONE"
-    else
-        _tab_title_set "$_ZSHKIT_HOST $_TAB_ERROR"
-    fi
-}
-_tab_title_zle_init() {
-    _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
-}
-zle -N zle-line-init _tab_title_zle_init
-# Re-send on SIGWINCH — Zellij fires this when a client attaches.
-# Restores the correct symbol: ↻ if a command was running, ○/⚠ if at prompt.
-TRAPWINCH() {
-    if (( _tab_title_running )); then
-        _tab_title_set "$_ZSHKIT_HOST $_TAB_RUNNING"
-    elif (( _tab_title_last_result == 0 )); then
-        _tab_title_set "$_ZSHKIT_HOST $_TAB_WAITING"
-    else
-        _tab_title_set "$_ZSHKIT_HOST $_TAB_ERROR"
-    fi
-}
-add-zsh-hook preexec _tab_title_preexec
-add-zsh-hook precmd  _tab_title_precmd
 
 # Auto-fetch git remotes in the background so the p10k prompt ahead/behind
 # counts stay current. Runs at most once per 60 seconds per repo.

@@ -99,6 +99,15 @@ Always ask before:
 - Preserve unrelated code and ongoing work.
 - If reality diverges from the plan, explain what changed.
 
+### Clean Code and Data Structure Preferences
+
+- Prefer clearer data structures over ad-hoc nested dict/string plumbing.
+- When validation or schema checks are non-trivial, prefer typed models (`pydantic`, `dataclass`, or `TypedDict`) if they simplify code already being touched.
+- Centralize repeated keys, labels, and status strings as local constants.
+- Replace repetitive conversion/normalization blocks with small helper functions.
+- Keep compatibility aliases only when required; mark intent clearly and avoid duplicating business logic.
+- Do not introduce new abstractions unless they remove real duplication or reduce bug risk.
+
 If the divergence stays within the same risk and scope envelope:
 - adjust and continue.
 
