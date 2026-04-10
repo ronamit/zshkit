@@ -1459,8 +1459,8 @@ zle -N _tab_accept_or_complete
 
 # Auto-show completion list while typing (for manageable candidate sets).
 # Configurable: 1/on/true/yes enables; 0/off/false/no disables.
-# Default is enabled for immediate `cd`/path candidate previews while typing.
-: "${ZSH_AUTOLIST_ON_TYPE:=1}"
+# Default is OFF — safer for pasting multiline commands. Opt in via ~/.zshrc.local.
+: "${ZSH_AUTOLIST_ON_TYPE:=0}"
 # When typing `cd ` + space with an empty argument, auto-open early only when
 # local directory count is small (keeps this useful but non-spammy).
 : "${ZSH_AUTOLIST_CD_EMPTY_MAX:=20}"
@@ -1514,6 +1514,8 @@ _should_autolist_empty_cd_arg() {
 _maybe_auto_list_choices() {
     # Only while typing at end-of-line; avoid noisy redraws.
     (( _auto_list_in_paste )) && return
+    # Never fire for multiline buffers (e.g. continued commands after paste).
+    [[ "$BUFFER" == *$'\n'* ]] && return
     (( KEYS_QUEUED_COUNT > 0 )) && return
     (( CURSOR == ${#BUFFER} )) || return
     [[ "$LBUFFER" == "$_auto_list_last_buffer" ]] && return
@@ -1635,12 +1637,21 @@ _accept_line_with_autolist_reset() {
 zle -N _accept_line_with_autolist_reset
 
 _bracketed_paste_with_autolist() {
+    local _old_autolist="${ZSH_AUTOLIST_ON_TYPE:-0}"
     _auto_list_in_paste=1
-    zle .bracketed-paste
-    _auto_list_in_paste=0
+    ZSH_AUTOLIST_ON_TYPE=0
     _history_scroll_active=0
     _auto_list_last_buffer=""
-    zle reset-prompt  # force clean redraw to clear async-prompt rendering artifacts
+    unset POSTDISPLAY
+
+    zle .bracketed-paste
+
+    _auto_list_in_paste=0
+    ZSH_AUTOLIST_ON_TYPE="$_old_autolist"
+    _history_scroll_active=0
+    _auto_list_last_buffer=""
+    zle -I
+    zle redisplay
 }
 zle -N _bracketed_paste_with_autolist
 
@@ -1667,7 +1678,7 @@ _backward_delete_char_with_autolist() {
 zle -N _backward_delete_char_with_autolist
 
 _autolist_is_enabled() {
-    local _v="${ZSH_AUTOLIST_ON_TYPE:-1}"
+    local _v="${ZSH_AUTOLIST_ON_TYPE:-0}"
     _v="${_v:l}"
     [[ "$_v" == "1" || "$_v" == "on" || "$_v" == "true" || "$_v" == "yes" ]]
 }

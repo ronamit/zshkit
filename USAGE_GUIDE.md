@@ -23,7 +23,13 @@ Behavior summary:
 
 **History search:** press `↑` to find older commands that start with what you've typed so far. Keep pressing `↑` to go further back; once in history search mode, `↓` moves forward to newer matches.
 
-**Completion menu:** options appear automatically below the prompt as you type (powered by the built-in auto-list engine and [carapace](https://carapace.sh) for rich flag/arg descriptions). Completion menus are grouped by type with headers, and matching is case-insensitive. Auto-`cd` is enabled — type a directory name and press `Enter` to enter it.
+**Completion menu:** powered by the built-in auto-list engine and [carapace](https://carapace.sh) for rich flag/arg descriptions. Completion menus are grouped by type with headers, and matching is case-insensitive. Auto-`cd` is enabled — type a directory name and press `Enter` to enter it.
+
+By default, completion popups do **not** appear automatically while typing (safer for pasting multiline commands). To opt into live popups while typing, add this to `~/.zshrc.local`:
+
+```zsh
+export ZSH_AUTOLIST_ON_TYPE=1
+```
 
 **Workflow:**
 

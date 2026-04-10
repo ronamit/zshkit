@@ -504,8 +504,9 @@ create_zshrc_local_template() {
     cat > "$HOME/.zshrc.local" << 'EOF'
 # ~/.zshrc.local — Personal settings (not managed by setup_zsh.sh)
 # Add exports, tokens, and machine-specific overrides here.
-# Toggle live auto-list while typing (cd/path suggestions):
-# export ZSH_AUTOLIST_ON_TYPE=1   # 1=on (default), 0=off
+# Live auto-list while typing (cd/path suggestions) — off by default (safer for multiline paste):
+# export ZSH_AUTOLIST_ON_TYPE=0   # 0=off (default, recommended for pasting long commands)
+# export ZSH_AUTOLIST_ON_TYPE=1   # 1=on — opt in for live completion popups while typing
 # Auto-open `cd ` list only when local dir count is small:
 # export ZSH_AUTOLIST_CD_EMPTY_MAX=20
 # Min characters before auto-list (reduces lag on slow filesystems):
