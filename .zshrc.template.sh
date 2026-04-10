@@ -1636,11 +1636,7 @@ zle -N _accept_line_with_autolist_reset
 
 _bracketed_paste_with_autolist() {
     _auto_list_in_paste=1
-    if (( $+widgets[autosuggest-bracketed-paste] )); then
-        zle autosuggest-bracketed-paste
-    else
-        zle .bracketed-paste
-    fi
+    zle .bracketed-paste
     _auto_list_in_paste=0
     _history_scroll_active=0
     _auto_list_last_buffer=""
