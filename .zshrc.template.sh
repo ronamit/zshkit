@@ -717,6 +717,172 @@ vm() {
     esac
 }
 
+# ── Remote mount helper (SSHFS) ──────────────────────────────────────
+# Mount remote directories over SSH for local browsing and drag-and-drop.
+# Mount points live under ~/mnt/<host>/ mirroring the remote path structure.
+#
+# Usage:
+#   rmount <host> [remote_path]  mount remote path (default: home dir) at ~/mnt/<host>[/path]
+#   rmount ls                    list active rmount mounts
+#   rmount umount <host> [path]  unmount; omit path to unmount the host home mount
+#   rmount open <host> [path]    mount and open in file manager
+#
+# Hosts from ~/.ssh/config are tab-completed.
+# Requires: sshfs (installed by setup_zsh.sh).
+rmount() {
+    local mnt_base="$HOME/mnt"
+
+    if ! command -v sshfs &>/dev/null; then
+        echo "rmount: sshfs is not installed."
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            echo "  Install: brew install --cask macfuse && brew install sshfs"
+            echo "  Note: macFUSE requires kernel extension approval in System Settings → Privacy & Security."
+        else
+            echo "  Install: sudo apt install sshfs"
+        fi
+        return 1
+    fi
+
+    local subcmd="${1:-}"
+
+    case "$subcmd" in
+        ls|list)
+            if [[ "$(uname -s)" == "Darwin" ]]; then
+                mount | grep -E "macfuse|sshfs" | grep "$mnt_base" | awk '{print $3 " ← " $1}' | sort
+            else
+                grep "fuse.sshfs" /proc/mounts 2>/dev/null | awk '{print $2 " ← " $1}' | grep "$mnt_base" | sort
+            fi
+            return 0
+            ;;
+        umount|unmount)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "usage: rmount umount <host> [remote_path]"
+                return 1
+            fi
+            local host="$1" rpath="${2:-}"
+            local mnt_dir
+            if [[ -z "$rpath" ]]; then
+                mnt_dir="$mnt_base/$host"
+            else
+                mnt_dir="$mnt_base/$host/${rpath#/}"
+            fi
+            if [[ ! -d "$mnt_dir" ]]; then
+                echo "rmount: no mount directory at $mnt_dir"
+                return 1
+            fi
+            local rc=0
+            if [[ "$(uname -s)" == "Darwin" ]]; then
+                umount "$mnt_dir" 2>/dev/null || { diskutil unmount "$mnt_dir" 2>/dev/null; rc=$?; }
+            else
+                fusermount -u "$mnt_dir" 2>/dev/null || { umount "$mnt_dir" 2>/dev/null; rc=$?; }
+            fi
+            if (( rc == 0 )); then
+                echo "rmount: unmounted $mnt_dir"
+                rmdir "$mnt_dir" 2>/dev/null
+            else
+                echo "rmount: failed to unmount $mnt_dir (rc=$rc)"
+            fi
+            return $rc
+            ;;
+        open)
+            shift
+            local _do_open=1
+            local host="${1:-}" rpath="${2:-}"
+            ;;
+        -h|--help|"")
+            echo "usage:"
+            echo "  rmount <host> [remote_path]  mount (default: home dir)"
+            echo "  rmount ls                    list active mounts"
+            echo "  rmount umount <host> [path]  unmount"
+            echo "  rmount open  <host> [path]   mount + open in file manager"
+            [[ -z "$subcmd" ]] && return 0 || return 1
+            ;;
+        *)
+            # First arg is the host
+            local _do_open=0
+            local host="$subcmd" rpath="${2:-}"
+            ;;
+    esac
+
+    if [[ -z "${host:-}" ]]; then
+        echo "rmount: missing host"
+        echo "  usage: rmount <host> [remote_path]"
+        return 1
+    fi
+
+    local mnt_dir
+    if [[ -z "$rpath" ]]; then
+        mnt_dir="$mnt_base/$host"
+    else
+        mnt_dir="$mnt_base/$host/${rpath#/}"
+    fi
+
+    # Already mounted — just report (and open if requested)
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        mount | grep -qE " $mnt_dir " && {
+            echo "rmount: already mounted at $mnt_dir"
+            (( ${_do_open:-0} )) && _open_default "$mnt_dir"
+            return 0
+        }
+    else
+        grep -q " $mnt_dir " /proc/mounts 2>/dev/null && {
+            echo "rmount: already mounted at $mnt_dir"
+            (( ${_do_open:-0} )) && _open_default "$mnt_dir"
+            return 0
+        }
+    fi
+
+    mkdir -p "$mnt_dir"
+
+    local remote_spec
+    if [[ -z "$rpath" ]]; then
+        remote_spec="${host}:"          # sshfs treats empty path as home dir
+    else
+        remote_spec="${host}:${rpath}"
+    fi
+
+    echo "rmount: mounting $remote_spec → $mnt_dir"
+    sshfs "$remote_spec" "$mnt_dir" \
+        -o reconnect \
+        -o ServerAliveInterval=15 \
+        -o ServerAliveCountMax=3 \
+        -o ConnectTimeout=10
+    local rc=$?
+
+    if (( rc == 0 )); then
+        echo "rmount: mounted at $mnt_dir"
+        (( ${_do_open:-0} )) && _open_default "$mnt_dir"
+    else
+        echo "rmount: failed to mount $remote_spec"
+        rmdir "$mnt_dir" 2>/dev/null
+        return $rc
+    fi
+}
+
+# Tab-completion for rmount: subcommands + SSH hostnames from ~/.ssh/config
+_rmount_hosts() {
+    local -a hosts
+    [[ -r ~/.ssh/config ]] && hosts=(${(f)"$(awk '/^[Hh]ost /{for(i=2;i<=NF;i++) if($i !~ /[*?!]/) print $i}' ~/.ssh/config 2>/dev/null)"})
+    compadd -a hosts
+}
+_rmount_completion() {
+    local state
+    case $CURRENT in
+        2)
+            _alternative \
+                'subcommands:subcommand:((ls\:"list active mounts" umount\:"unmount a mount" open\:"mount and open in file manager"))' \
+                'hosts:SSH host:_rmount_hosts'
+            ;;
+        3)
+            case $words[2] in
+                umount|unmount|open) _rmount_hosts ;;
+            esac
+            ;;
+    esac
+}
+compdef _rmount_completion rmount
+
 # ── Aliases: Git (extras beyond Oh My Zsh git plugin) ────────────────
 
 alias glog='git log --oneline --decorate --graph'

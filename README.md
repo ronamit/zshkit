@@ -10,6 +10,7 @@ A single install script that sets up a fast, opinionated shell environment on an
 | SSH into a remote host and attach to a Zellij session | `zjs host [session]` | [Zellij](https://zellij.dev/) |
 | Jump instantly to a frequent directory | `z <name>` | [zoxide](https://github.com/ajeetdsouza/zoxide) |
 | Fuzzy-search history or insert a file path | `Ctrl+R` / `Ctrl+T` | [fzf](https://github.com/junegunn/fzf) |
+| Mount remote files locally | `rmount host [path]` | [sshfs](https://github.com/libfuse/sshfs) |
 | Interactively browse disk usage | `ncdu` | [ncdu](https://dev.yorhel.nl/ncdu) |
 | Syntax-highlighted prompt with git status | _(always on)_ | [Powerlevel10k](https://github.com/romkatv/powerlevel10k) |
 | History suggestions as you type | _(always on)_ | [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) |
@@ -95,6 +96,20 @@ vm stop         # stop the instance           (AWS)
 ```
 
 Optional — see [SETUP_DETAILS.md](SETUP_DETAILS.md) for configuration.
+
+## Remote File Browsing (SSHFS)
+
+`rmount` mounts a remote directory over SSH so you can browse, open, and drag-and-drop files as if they were local. Mount points mirror the remote path under `~/mnt/<host>/`.
+
+```bash
+rmount myserver              # mount home dir → ~/mnt/myserver
+rmount myserver /data/proj   # mount specific path → ~/mnt/myserver/data/proj
+rmount open myserver         # mount + open in file manager
+rmount ls                    # list active mounts
+rmount umount myserver       # unmount
+```
+
+Hosts in `~/.ssh/config` are tab-completed. Requires `sshfs` (installed by `setup_zsh.sh`; macOS also needs the `macfuse` cask — see [SETUP_DETAILS.md](SETUP_DETAILS.md)).
 
 ## SSH
 

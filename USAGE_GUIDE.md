@@ -9,7 +9,7 @@ Daily guide for how this shell setup behaves once installed: shortcuts, helper c
 alias
 
 # List custom functions from this config
-functions | rg '^(ff|ftext|ports|f|mkcd|zj|zjclean|ducks|gbr|branch_bye|pr|sshv|ssh-fix-colors|vpn-connect|vpn-disconnect|vpn-status|vm|_venv_auto_activate)\b'
+functions | rg '^(ff|ftext|ports|f|mkcd|zj|zjclean|ducks|gbr|branch_bye|pr|sshv|ssh-fix-colors|vpn-connect|vpn-disconnect|vpn-status|vm|rmount|_venv_auto_activate)\b'
 
 # Show active key bindings
 bindkey | less
@@ -97,6 +97,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `clippaste` | Print current clipboard contents |
 | `hg` | Hyperlinked grep — clickable file results in Ghostty |
 | `icat [PATH]` | Preview images inline (Ghostty supports sixel/kitty graphics protocol) |
+| `rmount HOST [PATH]` | Mount `HOST:PATH` (default: home dir) at `~/mnt/HOST[/PATH]` over SSHFS for local browsing and drag-and-drop |
 | `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=10`, keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
@@ -213,6 +214,28 @@ layout python3          # direnv stdlib: creates and activates a venv
 ```
 
 `direnv allow` must be re-run after each edit to the `.envrc` file (intentional security check).
+
+## Remote File Browsing with rmount (SSHFS)
+
+`rmount` mounts a remote directory over SSH so files appear locally under `~/mnt/<host>/`. Once mounted, you can open files in any local app, drag-and-drop them, and browse with your file manager — without copying anything.
+
+```bash
+rmount myserver                # mount home dir → ~/mnt/myserver
+rmount myserver /data/proj     # mount specific path → ~/mnt/myserver/data/proj
+rmount open myserver           # mount + open in file manager immediately
+rmount open myserver /results  # mount specific path + open
+rmount ls                      # list active rmount mounts
+rmount umount myserver         # unmount the home mount for a host
+rmount umount myserver /data   # unmount a specific path
+```
+
+Hosts from `~/.ssh/config` are tab-completed on the host argument.
+
+Mount points mirror the remote path structure: `rmount myserver /some/path` → `~/mnt/myserver/some/path`. The home-dir mount (`rmount myserver`) lands at `~/mnt/myserver` directly.
+
+The connection uses keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3`) and `reconnect` so transient network blips don't unmount the directory mid-work.
+
+**Requirements:** `sshfs` (installed by `setup_zsh.sh`). On macOS, `sshfs` also requires the `macfuse` cask (kernel extension); the installer skips it automatically and prints manual steps — see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 
 ## VPN-Aware SSH Helper
 

@@ -39,12 +39,20 @@ ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
 | Plugins | zsh-autosuggestions, zsh-history-substring-search, fast-syntax-highlighting |
-| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi |
+| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi, sshfs |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |
 | Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/ghostty/config` from **`templates/ghostty/`**, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |
 
-On Linux, CLI tools are installed through apt where possible, with some optional items handled best-effort. `uv` is installed via its official curl installer on Linux (not in apt). On macOS, the same toolchain is installed through Homebrew. **Ghostty is installed via snap on Linux and `brew install --cask ghostty` on macOS.** The script also creates `fd` / `bat` compatibility symlinks on Linux when the system package names are `fdfind` / `batcat`. `direnv` is activated via a hook added to `~/.zshrc` — create a `.envrc` in any project directory to load environment variables automatically when you enter it.
+On Linux, CLI tools are installed through apt where possible, with some optional items handled best-effort. `uv` is installed via its official curl installer on Linux (not in apt). On macOS, the same toolchain is installed through Homebrew. **Ghostty is installed via snap on Linux and `brew install --cask ghostty` on macOS.**
+
+**sshfs on macOS:** SSHFS requires the [macFUSE](https://osxfuse.github.io/) kernel extension (`brew install --cask macfuse`) in addition to the `sshfs` formula. Because macFUSE needs user approval in System Settings → Privacy & Security → Security (allow kernel extension from Benjamin Fleischer), the installer skips the macFUSE cask automatically and prints instructions. Install manually after granting approval:
+
+```bash
+brew install --cask macfuse
+# Reboot or approve the kernel extension in System Settings first, then:
+brew install sshfs
+``` The script also creates `fd` / `bat` compatibility symlinks on Linux when the system package names are `fdfind` / `batcat`. `direnv` is activated via a hook added to `~/.zshrc` — create a `.envrc` in any project directory to load environment variables automatically when you enter it.
 
 ## Files, Paths, and Backups
 

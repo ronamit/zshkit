@@ -728,6 +728,18 @@ if [ "$IS_MACOS" -eq 1 ]; then
     add_brew uv uv
     # Interactive cheatsheet tool with fzf widget
     add_brew navi navi
+    # SSHFS — mount remote filesystems over SSH (requires macFUSE cask)
+    if ! command -v sshfs &>/dev/null; then
+        if ! brew list --cask macfuse &>/dev/null 2>&1; then
+            echo "  ℹ sshfs needs macFUSE (a kernel extension). Skipping auto-install."
+            echo "    To install manually: brew install --cask macfuse && brew install sshfs"
+            echo "    macFUSE requires kernel extension approval in System Settings → Privacy & Security."
+        else
+            add_brew sshfs sshfs
+        fi
+    else
+        echo "  ✓ sshfs already installed"
+    fi
     flush_brew_installs
 else
 
@@ -807,6 +819,9 @@ add_best_effort_pkg_if_missing_cmd direnv direnv
 add_best_effort_pkg_if_missing_cmd gh gh
 # Interactive GPU process monitor
 add_best_effort_pkg_if_missing_cmd nvtop nvtop
+
+# SSHFS — mount remote filesystems over SSH (for rmount helper)
+add_best_effort_pkg_if_missing_cmd sshfs sshfs
 
 # Clipboard helpers (used by micro editor)
 if ! command -v xclip &>/dev/null && ! command -v wl-copy &>/dev/null; then
