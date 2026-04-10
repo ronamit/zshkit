@@ -1711,6 +1711,8 @@ zle -N _accept_line_with_autolist_reset
 _bracketed_paste_with_autofix() {
     local _old_autolist="${ZSH_AUTOLIST_ON_TYPE:-0}"
     local _paste _fixed _count
+    local _lbuf_before="$LBUFFER" _rbuf_before="$RBUFFER"
+    local -i _line_count _char_count _medium_multiline=0 _huge_multiline=0
     _auto_list_in_paste=1
     ZSH_AUTOLIST_ON_TYPE=0
     _history_scroll_active=0
@@ -1719,6 +1721,10 @@ _bracketed_paste_with_autofix() {
 
     # Capture pasted text without inserting so we can inspect and fix it.
     zle .bracketed-paste _paste
+
+    # Strip \r — browser/chat clipboards often produce \r\n. A literal \r in
+    # BUFFER moves the terminal cursor to column 0 during redraw.
+    _paste="${_paste//$'\r'/}"
 
     # Auto-fix \\<newline> -> \<newline> for shell blocks copied from Claude /
     # markdown renderers that escape backslashes for display.
@@ -1732,14 +1738,36 @@ _bracketed_paste_with_autofix() {
         fi
     fi
 
-    # Insert (fixed or original) at cursor position.
-    BUFFER="${LBUFFER}${_paste}${RBUFFER}"
-    CURSOR=$(( ${#LBUFFER} + ${#_paste} ))
+    # Insert (fixed or original) at cursor position and leave execution manual.
+    BUFFER="${_lbuf_before}${_paste}${_rbuf_before}"
+    _line_count=$(( ${#${(f)_paste}} ))
+    _char_count=${#_paste}
+    if [[ "$_paste" == *$'\n'* ]]; then
+        if (( _line_count >= 40 || _char_count > COLUMNS * 32 )); then
+            _huge_multiline=1
+            CURSOR=${#_lbuf_before}
+        elif (( _line_count >= 8 || _char_count > COLUMNS * 8 )); then
+            _medium_multiline=1
+            CURSOR=${#_lbuf_before}
+        else
+            CURSOR=$(( ${#_lbuf_before} + ${#_paste} ))
+        fi
+    else
+        CURSOR=$(( ${#_lbuf_before} + ${#_paste} ))
+    fi
 
     _auto_list_in_paste=0
     ZSH_AUTOLIST_ON_TYPE="$_old_autolist"
     _history_scroll_active=0
     _auto_list_last_buffer=""
+
+    if (( _huge_multiline )); then
+        autoload -Uz edit-command-line
+        (( $+widgets[edit-command-line] )) || zle -N edit-command-line
+        zle edit-command-line
+        return
+    fi
+
     zle -I
     zle redisplay
 }
@@ -1823,6 +1851,16 @@ if (( $+functions[add-zsh-hook] )); then
     add-zsh-hook precmd _reset_terminal_input_modes
     add-zsh-hook -D chpwd _autolist_invalidate_cd_cache 2>/dev/null
     add-zsh-hook chpwd _autolist_invalidate_cd_cache
+    # Ensure our paste auto-fix stays registered. zsh-autosuggestions overrides
+    # bracketed-paste when it loads (via zsh-defer). This precmd hook re-registers
+    # our widget before each prompt so the override can't stick.
+    _ensure_paste_autofix() {
+        [[ "${widgets[bracketed-paste]:-}" == "user:_bracketed_paste_with_autofix" ]] && return
+        (( $+functions[_bracketed_paste_with_autofix] )) && \
+            zle -N bracketed-paste _bracketed_paste_with_autofix
+    }
+    add-zsh-hook -D precmd _ensure_paste_autofix 2>/dev/null
+    add-zsh-hook precmd _ensure_paste_autofix
 fi
 
 if [[ -o interactive ]]; then
@@ -1918,8 +1956,6 @@ fi
 # ── Powerlevel10k config ─────────────────────────────────────────────
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-# Override p10k's continuation prompt with something readable.
-PROMPT2='[continue]> '
 
 # ── Local overrides (not managed by setup script) ────────────────────
 
@@ -1960,7 +1996,9 @@ if [[ -r "$_zsh_defer_plugin" ]]; then
         (( $+widgets[autosuggest-accept] )) && {
             bindkey -M emacs "^ " autosuggest-accept
             bindkey -M viins "^ " autosuggest-accept
-        }'
+        }
+        # Re-register paste auto-fix: zsh-autosuggestions overrides bracketed-paste on load.
+        (( $+functions[_bracketed_paste_with_autofix] )) && zle -N bracketed-paste _bracketed_paste_with_autofix'
 else
     # zsh-defer not available — fall back to synchronous sourcing.
     if (( _zsh_autosuggest_loaded )); then

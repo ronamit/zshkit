@@ -51,7 +51,7 @@ export ZSH_AUTOLIST_ON_TYPE=1
 | `Ctrl+P` | Same as `Up` |
 | `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |
-| `Ctrl+X Ctrl+P` | Literal paste — bypasses all widget logic, use when normal paste triggers the continuation prompt |
+| `Ctrl+X Ctrl+P` | Literal paste — bypasses all paste widget logic and inserts the clipboard exactly as-is |
 
 ### Inside The Completion Menu
 
@@ -65,7 +65,29 @@ export ZSH_AUTOLIST_ON_TYPE=1
 
 ### Long Multiline Commands
 
-**If `[continue]>` appears after you paste, the shell config is not the cause.** Zsh's bracketed paste inserts text literally into the buffer — if the shell still enters continuation mode, the pasted text itself is syntactically broken before zsh even sees it.
+Normal paste uses a custom bracketed-paste widget with three behaviors:
+
+- **Small pastes** insert normally and leave the cursor at the end.
+- **Medium multiline pastes** stay inline in the terminal, but the cursor is placed at the start of the inserted block so you see the top of the command first.
+- **Huge multiline pastes** open in your editor via zsh's built-in `edit-command-line` flow instead of fighting the inline terminal viewport.
+
+Multiline pastes are **review-first**: they do not auto-execute. Paste the block, inspect it, then press `Enter` manually when you're ready to run it.
+
+If a very large pasted block opens in `micro`, that's expected. Review or edit it there, then:
+
+- `Ctrl+S` to save
+- `Ctrl+Q` to quit
+
+When the editor closes, the command returns to your shell buffer for manual execution.
+
+#### About `>....` and `<....`
+
+Those markers come from zsh's line editor viewport, not from Powerlevel10k:
+
+- `>....` means there is hidden content above or before the visible portion of the current edit buffer.
+- `<....` means there is more hidden content further along the visible editing area.
+
+They do **not** mean content was lost, rejected, or auto-executed. They only mean the pasted command is larger than what zsh can comfortably show inline in the current terminal size.
 
 #### Most common cause: double backslash from Claude / markdown
 
@@ -122,6 +144,7 @@ Common causes:
 - trailing space after `\` — `something \` + space breaks continuation
 - a line was dropped during copy
 - CRLF line endings from a browser or Windows clipboard
+- the block is simply too large for inline display — in that case zsh shows viewport markers or opens the editor for review
 
 **Reliable run workflow:**
 
