@@ -512,6 +512,14 @@ create_zshrc_local_template() {
 # Min characters before auto-list (reduces lag on slow filesystems):
 # export ZSH_AUTOLIST_MIN_CHARS=3
 
+# If zsh shows '[continue]>' after a paste, the command is syntactically incomplete
+# (dropped line, broken quote, or backslash with a trailing space). Safe alternative:
+#   cat > /tmp/run.sh <<'EOF'
+#   ...paste your command block...
+#   EOF
+#   bash /tmp/run.sh
+# Or use the built-in helper:  paste-run
+
 # export GITHUB_TOKEN="ghp_xxxxx"
 # export OPENAI_API_KEY="sk-xxxxx"
 # export HF_TOKEN="hf_xxxxx"

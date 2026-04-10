@@ -51,6 +51,7 @@ export ZSH_AUTOLIST_ON_TYPE=1
 | `Ctrl+P` | Same as `Up` |
 | `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |
+| `Ctrl+X Ctrl+P` | Literal paste — bypasses all widget logic, use when normal paste triggers the continuation prompt |
 
 ### Inside The Completion Menu
 
@@ -61,6 +62,35 @@ export ZSH_AUTOLIST_ON_TYPE=1
 | `Enter` | Accept the current selection |
 | `Left` / `Right` | Move between columns in grid-style menus |
 | `Escape` | Cancel the menu and return to editing |
+
+### Long Multiline Commands
+
+Pasting long multiline commands (e.g. training/eval scripts with many `\`-continued lines) directly into the interactive shell editor is fragile. If zsh shows `[continue]>` after you paste, it means the command is syntactically incomplete — a line was dropped, a quote is unbalanced, or a backslash has a trailing space after it.
+
+**Recommended workflow — paste into a temp script:**
+
+```bash
+cat > /tmp/run_cmd.sh <<'EOF'
+# paste your command block here
+EOF
+bash /tmp/run_cmd.sh
+```
+
+Or use the built-in `paste-run` helper:
+
+```bash
+paste-run
+# paste your block, then press Ctrl+D
+# follow the printed instructions to review and run
+```
+
+**Debug hidden characters** (trailing spaces after `\`, CRLFs, weird whitespace):
+
+```bash
+cat /tmp/run_cmd.sh | show-nonascii
+```
+
+**Fallback key for a single paste:** `Ctrl+X Ctrl+P` bypasses all widget logic and pastes literally into the buffer.
 
 ## FZF Keys
 

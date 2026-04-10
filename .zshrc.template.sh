@@ -1231,6 +1231,25 @@ zsetup() {
     bash "$script" && exec zsh
 }
 
+# Safe multiline paste: write a command block to a temp file, then review and run it.
+# Usage: paste-run, paste your command block, press Ctrl+D, then: bash /tmp/paste-run.XXXX.sh
+paste-run() {
+    emulate -L zsh
+    local tmp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/paste-run.XXXXXX.sh")" || return 1
+    echo "Paste your command block, then press Ctrl+D:"
+    cat > "$tmp"
+    chmod +x "$tmp"
+    echo
+    echo "Saved to: $tmp"
+    echo "Review with:  sed -n '1,200p' $tmp"
+    echo "Run with:     bash $tmp"
+}
+
+# Reveal hidden characters in pasted text (trailing spaces, CRLFs, weird whitespace).
+# Usage: pbpaste | show-nonascii   or   cat script.sh | show-nonascii
+show-nonascii() { sed -n 'l'; }
+
 # ── History ──────────────────────────────────────────────────────────
 
 HISTFILE=~/.zsh_history
@@ -1313,6 +1332,10 @@ unsetopt MENU_COMPLETE      # Keep list+menu behavior instead of replacing buffe
 
 # Prompt before printing very large completion lists (prevents terminal spam).
 LISTMAX=20
+
+# Continuation prompt: makes it clear zsh is waiting for more input rather than
+# showing a cryptic '>....' that looks like the command got mangled.
+PROMPT2='[continue]> '
 
 # ── Key bindings ─────────────────────────────────────────────────────
 
@@ -1786,6 +1809,12 @@ if [[ -o interactive ]]; then
 
     # Ctrl+Z: undo last edit on command line
     bindkey '^Z' undo
+
+    # Ctrl+X Ctrl+P: literal paste — bypasses all custom widget logic.
+    # Use when a normal paste triggers continuation prompt or completion popups.
+    _paste_literal() { zle bracketed-paste }
+    zle -N _paste_literal
+    bindkey '^X^P' _paste_literal
 
 fi
 
