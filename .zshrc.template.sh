@@ -1247,61 +1247,6 @@ paste-run() {
     echo "Run with:     bash $tmp"
 }
 
-# Validate pasted shell syntax before running: saves block to a temp file, shows
-# hidden characters (trailing spaces after \, CRLFs, broken quotes), and runs bash -n.
-# Usage: paste-check, paste your block, press Ctrl+D, then inspect output.
-paste-check() {
-    emulate -L zsh
-    local tmp
-    tmp="$(mktemp "${TMPDIR:-/tmp}/paste-check.XXXXXX.sh")" || return 1
-    echo "Paste your command block, then press Ctrl+D:"
-    cat > "$tmp"
-    echo
-    echo "Saved to: $tmp"
-    echo
-    echo "── visible chars (look for trailing spaces after \\, CRLFs shown as \\r) ──"
-    sed -n 'l' "$tmp"
-    echo
-    if bash -n "$tmp" 2>&1; then
-        echo "── bash -n: syntax OK ──"
-        echo "Run with:  bash $tmp"
-    else
-        echo "── bash -n: SYNTAX ERROR (fix the above before running) ──"
-    fi
-}
-
-# Fix double-backslash line continuations in clipboard (e.g. from copying commands
-# out of Claude, markdown renderers, or web pages that escape backslashes).
-# Replaces \\<newline> with \<newline> in-place, then syntax-checks and prints run cmd.
-# Usage: copy your broken command, then run: fix-clipboard-backslashes
-fix-clipboard-backslashes() {
-    emulate -L zsh
-    local tmp="${TMPDIR:-/tmp}/fixed-paste.sh"
-    if command -v wl-paste &>/dev/null; then
-        wl-paste --type text > "$tmp" 2>/dev/null || wl-paste --no-newline > "$tmp" || return 1
-    elif command -v xclip &>/dev/null; then
-        xclip -o -selection clipboard > "$tmp" || return 1
-    elif command -v pbpaste &>/dev/null; then
-        pbpaste > "$tmp" || return 1
-    else
-        echo "fix-clipboard-backslashes: no clipboard tool found (need xclip, wl-paste, or pbpaste)" >&2
-        return 1
-    fi
-    perl -0pi -e 's/\\\\\n/\\\n/g' "$tmp"
-    echo "Fixed script: $tmp"
-    echo "Visible chars:"
-    sed -n 'l' "$tmp" 2>/dev/null || cat "$tmp"
-    echo
-    if bash -n "$tmp" 2>&1; then
-        echo "bash -n: OK — run with:  bash $tmp"
-    else
-        echo "bash -n: SYNTAX ERROR"
-    fi
-}
-
-# Reveal hidden characters in pasted text (trailing spaces, CRLFs, weird whitespace).
-# Usage: pbpaste | show-nonascii   or   cat script.sh | show-nonascii
-show-nonascii() { sed -n 'l'; }
 
 # ── History ──────────────────────────────────────────────────────────
 

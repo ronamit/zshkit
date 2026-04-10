@@ -89,70 +89,22 @@ Those markers come from zsh's line editor viewport, not from Powerlevel10k:
 - `>....` means there is hidden content above or before the visible portion of the current edit buffer.
 - `<....` means there is more hidden content further along the visible editing area.
 
-They do **not** mean content was lost, rejected, or auto-executed. They only mean the pasted command is larger than what zsh can comfortably show inline in the current terminal size.
+They do **not** mean content was lost, rejected, or auto-executed. They only mean the pasted command is larger than what zsh can comfortably show inline in the current terminal size. Use the arrow keys to scroll through the buffer, then press `Enter` to run.
 
-This reads your clipboard, replaces `\\<newline>` with `\<newline>`, syntax-checks with `bash -n`, and tells you the path to run.
+#### Troubleshooting a broken paste
 
-#### Verify the clipboard content
+If the command doesn't run correctly, common causes:
 
-To see exactly what is in the clipboard before pasting (note: use `-l 0` to disable sed's own line-wrapping so you only see real content characters):
-
-```bash
-xclip -o -selection clipboard | sed -n 'l' -l 0   # X11
-wl-paste | sed -n 'l' -l 0                         # Wayland
-pbpaste | sed -n 'l' -l 0                          # macOS
-```
-
-Look for:
-
-- `\\$` — double backslash before newline → use `fix-clipboard-backslashes`
-- `\ $` — single backslash then space before newline → trailing space is breaking continuation
-- `\r$` — CRLF line endings
+- trailing space after `\` — `something \` + space breaks continuation; the space must not be there
+- a line was dropped during copy
 - smart/curly quotes instead of plain `'` or `"`
 
-> Note: without `-l 0`, `sed -n 'l'` wraps long lines with a `\` at column 70 — those wraps are just display formatting, not real content.
-
-#### Other troubleshooting steps
-
-Run `paste-check` for a combined visible-char dump + `bash -n` check:
+Use `paste-run` to bypass ZLE entirely for large or suspect blocks:
 
 ```bash
-paste-check
+paste-run
 # paste your block, press Ctrl+D
-# inspect output, then run: bash /tmp/paste-check.xxxxxx.sh
-```
-
-Test in a clean shell to rule out all config:
-
-```bash
-zsh -f
-```
-
-Then paste the same block. If it works there, a widget is interfering. If it still fails, the content is the problem.
-
-Common causes:
-
-- `\\` at end of continuation lines — command was copied from Claude or a markdown renderer (use `fix-clipboard-backslashes`)
-- trailing space after `\` — `something \` + space breaks continuation
-- a line was dropped during copy
-- CRLF line endings from a browser or Windows clipboard
-- the block is simply too large for inline display — in that case zsh shows viewport markers or opens the editor for review
-
-**Reliable run workflow:**
-
-```bash
-paste-check
-# inspect, then:
-bash /tmp/paste-check.xxxxxx.sh
-```
-
-**Quick alternative:**
-
-```bash
-cat > /tmp/run_cmd.sh <<'EOF'
-# paste here
-EOF
-bash -n /tmp/run_cmd.sh && bash /tmp/run_cmd.sh
+# then: bash /tmp/paste-run.xxxxxx.sh
 ```
 
 ## FZF Keys
