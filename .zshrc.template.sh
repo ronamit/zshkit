@@ -272,11 +272,6 @@ if command -v navi &>/dev/null; then
     unset _navi_cache
 fi
 
-# Bracketed paste: treat pasted multi-line content as a single unit instead of
-# executing each line as it's pasted (fixes the "> ...." prompt on paste).
-autoload -Uz bracketed-paste-magic
-zle -N bracketed-paste bracketed-paste-magic
-
 # run-help: Alt+H or "help <cmd>" shows man for builtins/commands (e.g. help git).
 autoload -Uz run-help
 unalias run-help 2>/dev/null
