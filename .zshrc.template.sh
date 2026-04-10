@@ -1640,6 +1640,7 @@ _bracketed_paste_with_autolist() {
     _auto_list_in_paste=0
     _history_scroll_active=0
     _auto_list_last_buffer=""
+    zle reset-prompt  # force clean redraw to clear async-prompt rendering artifacts
 }
 zle -N _bracketed_paste_with_autolist
 
