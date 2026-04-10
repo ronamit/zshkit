@@ -51,7 +51,6 @@ export ZSH_AUTOLIST_ON_TYPE=1
 | `Ctrl+P` | Same as `Up` |
 | `Ctrl+N` | Same as `Down` |
 | `Ctrl+Z` | Undo last command-line edit |
-| `Ctrl+X Ctrl+P` | Literal paste — bypasses all paste widget logic and inserts the clipboard exactly as-is |
 
 ### Inside The Completion Menu
 
@@ -91,16 +90,6 @@ Those markers come from zsh's line editor viewport, not from Powerlevel10k:
 - `<....` means there is more hidden content further along the visible editing area.
 
 They do **not** mean content was lost, rejected, or auto-executed. They only mean the pasted command is larger than what zsh can comfortably show inline in the current terminal size.
-
-#### Most common cause: double backslash from Claude / markdown
-
-Commands copied from Claude, a markdown renderer, or any tool that escapes backslashes for display will have `\\` at the end of continuation lines instead of `\`. Shell line continuation requires **exactly one** `\` immediately before the newline. With `\\`, the backslash is escaped (producing a literal `\`) and the newline is no longer masked — so each line executes as a separate command.
-
-**Fix it in one step:**
-
-```bash
-fix-clipboard-backslashes
-```
 
 This reads your clipboard, replaces `\\<newline>` with `\<newline>`, syntax-checks with `bash -n`, and tells you the path to run.
 
@@ -165,8 +154,6 @@ cat > /tmp/run_cmd.sh <<'EOF'
 EOF
 bash -n /tmp/run_cmd.sh && bash /tmp/run_cmd.sh
 ```
-
-**Fallback key for a single paste:** `Ctrl+X Ctrl+P` bypasses all widget logic and pastes literally into the buffer.
 
 ## FZF Keys
 

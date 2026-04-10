@@ -1710,47 +1710,37 @@ zle -N _accept_line_with_autolist_reset
 
 _bracketed_paste_with_autofix() {
     local _old_autolist="${ZSH_AUTOLIST_ON_TYPE:-0}"
-    local _paste _fixed _count
+    local _paste
     local _lbuf_before="$LBUFFER" _rbuf_before="$RBUFFER"
-    local -i _line_count _char_count _medium_multiline=0 _huge_multiline=0
+    local -i _line_count _char_count
+
     _auto_list_in_paste=1
     ZSH_AUTOLIST_ON_TYPE=0
     _history_scroll_active=0
     _auto_list_last_buffer=""
     unset POSTDISPLAY
 
-    # Capture pasted text without inserting so we can inspect and fix it.
     zle .bracketed-paste _paste
 
-    # Strip \r — browser/chat clipboards often produce \r\n. A literal \r in
-    # BUFFER moves the terminal cursor to column 0 during redraw.
-    _paste="${_paste//$'\r'/}"
-
-    # Auto-fix \\<newline> -> \<newline> for shell blocks copied from Claude /
-    # markdown renderers that escape backslashes for display.
-    # Conservative: only applies when multiline, at least 2 \\ continuations,
-    # and the paste looks shell-like (contains $, --, or /).
-    if [[ "$_paste" == *$'\n'* ]] && command -v perl &>/dev/null; then
-        _count=$(printf '%s' "$_paste" | perl -0ne '$n += () = /\\\\\n/g; END { print $n }')
-        if (( _count >= 2 )) && [[ "$_paste" == *'$'* || "$_paste" == *'--'* || "$_paste" == *'/'* ]]; then
-            _fixed=$(printf '%s' "$_paste" | perl -0pe 's/\\\\\n/\\\n/g')
-            _paste="$_fixed"
-        fi
-    fi
-
-    # Insert (fixed or original) at cursor position and leave execution manual.
     BUFFER="${_lbuf_before}${_paste}${_rbuf_before}"
-    _line_count=$(( ${#${(f)_paste}} ))
+    _line_count=${#${(f)_paste}}
     _char_count=${#_paste}
+
+    # For multiline pastes, anchor cursor at the start of the inserted block
+    # so the top is visible first. Huge pastes open in the editor instead.
     if [[ "$_paste" == *$'\n'* ]]; then
         if (( _line_count >= 40 || _char_count > COLUMNS * 32 )); then
-            _huge_multiline=1
             CURSOR=${#_lbuf_before}
-        elif (( _line_count >= 8 || _char_count > COLUMNS * 8 )); then
-            _medium_multiline=1
-            CURSOR=${#_lbuf_before}
+            _auto_list_in_paste=0
+            ZSH_AUTOLIST_ON_TYPE="$_old_autolist"
+            _history_scroll_active=0
+            _auto_list_last_buffer=""
+            autoload -Uz edit-command-line
+            (( $+widgets[edit-command-line] )) || zle -N edit-command-line
+            zle edit-command-line
+            return
         else
-            CURSOR=$(( ${#_lbuf_before} + ${#_paste} ))
+            CURSOR=${#_lbuf_before}
         fi
     else
         CURSOR=$(( ${#_lbuf_before} + ${#_paste} ))
@@ -1760,14 +1750,6 @@ _bracketed_paste_with_autofix() {
     ZSH_AUTOLIST_ON_TYPE="$_old_autolist"
     _history_scroll_active=0
     _auto_list_last_buffer=""
-
-    if (( _huge_multiline )); then
-        autoload -Uz edit-command-line
-        (( $+widgets[edit-command-line] )) || zle -N edit-command-line
-        zle edit-command-line
-        return
-    fi
-
     zle -I
     zle redisplay
 }
@@ -1912,16 +1894,6 @@ if [[ -o interactive ]]; then
     # Ctrl+Z: undo last edit on command line
     bindkey '^Z' undo
 
-    # Ctrl+X Ctrl+P: raw literal paste — bypasses auto-fix and widget logic.
-    # Use when you want the exact clipboard content without any rewriting.
-    _paste_literal() {
-        local _paste
-        zle .bracketed-paste _paste
-        BUFFER="${LBUFFER}${_paste}${RBUFFER}"
-        CURSOR=$(( ${#LBUFFER} + ${#_paste} ))
-    }
-    zle -N _paste_literal
-    bindkey '^X^P' _paste_literal
 
 fi
 
