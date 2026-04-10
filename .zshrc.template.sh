@@ -1246,6 +1246,29 @@ paste-run() {
     echo "Run with:     bash $tmp"
 }
 
+# Validate pasted shell syntax before running: saves block to a temp file, shows
+# hidden characters (trailing spaces after \, CRLFs, broken quotes), and runs bash -n.
+# Usage: paste-check, paste your block, press Ctrl+D, then inspect output.
+paste-check() {
+    emulate -L zsh
+    local tmp
+    tmp="$(mktemp "${TMPDIR:-/tmp}/paste-check.XXXXXX.sh")" || return 1
+    echo "Paste your command block, then press Ctrl+D:"
+    cat > "$tmp"
+    echo
+    echo "Saved to: $tmp"
+    echo
+    echo "── visible chars (look for trailing spaces after \\, CRLFs shown as \\r) ──"
+    sed -n 'l' "$tmp"
+    echo
+    if bash -n "$tmp" 2>&1; then
+        echo "── bash -n: syntax OK ──"
+        echo "Run with:  bash $tmp"
+    else
+        echo "── bash -n: SYNTAX ERROR (fix the above before running) ──"
+    fi
+}
+
 # Reveal hidden characters in pasted text (trailing spaces, CRLFs, weird whitespace).
 # Usage: pbpaste | show-nonascii   or   cat script.sh | show-nonascii
 show-nonascii() { sed -n 'l'; }

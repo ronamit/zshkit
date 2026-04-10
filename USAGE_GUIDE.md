@@ -65,29 +65,40 @@ export ZSH_AUTOLIST_ON_TYPE=1
 
 ### Long Multiline Commands
 
-Pasting long multiline commands (e.g. training/eval scripts with many `\`-continued lines) directly into the interactive shell editor is fragile. If zsh shows `[continue]>` after you paste, it means the command is syntactically incomplete — a line was dropped, a quote is unbalanced, or a backslash has a trailing space after it.
+**If `[continue]>` appears after you paste, the shell config is not the cause.** It means zsh received syntactically incomplete text — the problem is in the pasted content itself, not the prompt or widgets.
 
-**Recommended workflow — paste into a temp script:**
+Common causes:
+
+- a line was dropped during copy
+- a backslash has a trailing space after it (e.g. `something \` + space instead of `something \`)
+- a quote was converted to a curly/smart quote by the app you copied from
+- CRLF line endings or hidden whitespace from a browser or chat tool
+- you pasted into an already non-empty prompt line
+
+**Reliable workflow — validate before running:**
+
+```bash
+paste-check
+# paste your block, press Ctrl+D
+# inspect the visible-chars output for \r (CRLF) or trailing spaces after \
+# if bash -n reports OK, run with: bash /tmp/paste-check.xxxxxx.sh
+```
+
+`paste-check` shows every character literally (hidden spaces, `\r`, broken quotes) and syntax-checks with `bash -n` before you run anything.
+
+**Quick alternative — paste into a file manually:**
 
 ```bash
 cat > /tmp/run_cmd.sh <<'EOF'
-# paste your command block here
+# paste here
 EOF
-bash /tmp/run_cmd.sh
+bash -n /tmp/run_cmd.sh && bash /tmp/run_cmd.sh
 ```
 
-Or use the built-in `paste-run` helper:
+**Debug clipboard directly** (Linux):
 
 ```bash
-paste-run
-# paste your block, then press Ctrl+D
-# follow the printed instructions to review and run
-```
-
-**Debug hidden characters** (trailing spaces after `\`, CRLFs, weird whitespace):
-
-```bash
-cat /tmp/run_cmd.sh | show-nonascii
+xclip -o -selection clipboard | show-nonascii
 ```
 
 **Fallback key for a single paste:** `Ctrl+X Ctrl+P` bypasses all widget logic and pastes literally into the buffer.
