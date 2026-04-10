@@ -73,12 +73,15 @@ Normal paste uses a custom bracketed-paste widget with three behaviors:
 
 Multiline pastes are **review-first**: they do not auto-execute. Paste the block, inspect it, then press `Enter` manually when you're ready to run it.
 
-If a very large pasted block opens in `micro`, that's expected. Review or edit it there, then:
+If a very large pasted block opens in your editor, that's expected — zshkit uses whatever `$EDITOR` is set to (defaulting to `micro` if installed, then `nano`, then `vim`). Review or edit it there, save, and quit. When the editor closes, the command returns to your shell buffer for manual execution.
 
-- `Ctrl+S` to save
-- `Ctrl+Q` to quit
+Common save/quit shortcuts:
 
-When the editor closes, the command returns to your shell buffer for manual execution.
+| Editor | Save | Quit |
+|--------|------|------|
+| micro  | `Ctrl+S` | `Ctrl+Q` |
+| nano   | `Ctrl+O` Enter | `Ctrl+X` |
+| vim    | `:w` Enter | `:q` Enter |
 
 #### About `>....` and `<....`
 
