@@ -460,10 +460,10 @@ ssh-fix-colors() {
 # VPN-aware SSH helper.
 # Features:
 #   - Leaves normal `ssh` untouched.
-#   - Adds ConnectTimeout=10 if unset (override with -o ConnectTimeout=…).
-#   - Adds ServerAliveInterval=15 and ServerAliveCountMax=3 if unset (override with
+#   - Adds ConnectTimeout=5 if unset (override with -o ConnectTimeout=…).
+#   - Adds ServerAliveInterval=10 and ServerAliveCountMax=2 if unset (override with
 #     -o ServerAliveInterval=… / ServerAliveCountMax=…) so dead TCP paths fail
-#     instead of hanging; pairs with the duration-gated retry on exit 255.
+#     within ~20s instead of hanging; pairs with the duration-gated retry on exit 255.
 #   - Resets terminal mouse tracking and Kitty keyboard mode before and after every session.
 #   - On failure in interactive shells, offers vpn-connect and retries once.
 sshv() {
@@ -485,9 +485,9 @@ sshv() {
     done
 
     local -a ssh_args=("$@")
-    (( has_timeout )) || ssh_args=(-o ConnectTimeout=10 "${ssh_args[@]}")
-    # Force client to detect dead tunnels (3 missed 15s pings ≈ disconnect).
-    (( has_alive )) || ssh_args=(-o ServerAliveInterval=15 -o ServerAliveCountMax=3 "${ssh_args[@]}")
+    (( has_timeout )) || ssh_args=(-o ConnectTimeout=5 "${ssh_args[@]}")
+    # Force client to detect dead tunnels (2 missed 10s pings ≈ 20s to disconnect).
+    (( has_alive )) || ssh_args=(-o ServerAliveInterval=10 -o ServerAliveCountMax=2 "${ssh_args[@]}")
 
     # Track session duration so exit 255 + short runtime (auth/DNS/config)
     # does not trigger the "connection lost" retry — only longer sessions.

@@ -149,7 +149,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `hg` | Hyperlinked grep — clickable file results in Ghostty |
 | `icat [PATH]` | Preview images inline (Ghostty supports sixel/kitty graphics protocol) |
 | `rmount HOST [PATH]` | Mount `HOST:PATH` (default: home dir) at `~/mnt/HOST[/PATH]` over SSHFS for local browsing and drag-and-drop |
-| `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=10`, keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
+| `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=5`, keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
 | `vpn-status` | Show VPN process, interface, and recent log status |
@@ -284,7 +284,7 @@ Hosts from `~/.ssh/config` are tab-completed on the host argument.
 
 Mount points mirror the remote path structure: `rmount myserver /some/path` → `~/mnt/myserver/some/path`. The home-dir mount (`rmount myserver`) lands at `~/mnt/myserver` directly.
 
-The connection uses keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3`) and `reconnect` so transient network blips don't unmount the directory mid-work.
+The connection uses keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2`) and `reconnect` so transient network blips don't unmount the directory mid-work.
 
 **Requirements:** `sshfs` (installed by `setup_zsh.sh`). On macOS, `sshfs` also requires the `macfuse` cask (kernel extension); the installer skips it automatically and prints manual steps — see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 
@@ -294,8 +294,8 @@ Normal `ssh` is left untouched. Use `sshv` when you want the optional VPN-aware 
 
 In interactive shells, `sshv`:
 
-- adds `ConnectTimeout=10` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
-- adds `ServerAliveInterval=15` and `ServerAliveCountMax=3` unless any argument contains `ServerAliveInterval` — so idle-but-dead TCP paths are detected instead of hanging forever; override with `-o ServerAliveInterval=…` / `-o ServerAliveCountMax=…` as needed
+- adds `ConnectTimeout=5` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
+- adds `ServerAliveInterval=10` and `ServerAliveCountMax=2` unless any argument contains `ServerAliveInterval` — so idle-but-dead TCP paths are detected instead of hanging forever; override with `-o ServerAliveInterval=…` / `-o ServerAliveCountMax=…` as needed
 - resets terminal input modes before and after — prevents raw mouse and Kitty keyboard protocol escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
 - on exit code `255`, retries the same SSH command **once** only if the session lasted longer than 5 seconds (avoids a second password prompt on quick auth or DNS failures)
 - if stdin or stdout is not a TTY (scripts, pipes), returns the exit code immediately — no auto-retry, no VPN hint
