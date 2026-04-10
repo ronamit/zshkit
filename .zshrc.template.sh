@@ -373,8 +373,9 @@ if command -v kitten &>/dev/null; then
     alias icat='kitten icat'
 elif [[ "$TERM_PROGRAM" == "ghostty" || -n "${ZELLIJ:-}" ]]; then
     # OSC 52 clipboard — works in Ghostty locally and through Zellij over SSH.
-    clipcopy()  { printf '\e]52;c;'; base64 | tr -d '\n'; printf '\a'; }
-    clippaste() { printf '\e]52;c;?\a'; }
+    # Use 'function' keyword: protects name from alias expansion at parse time.
+    function clipcopy  { printf '\e]52;c;'; base64 | tr -d '\n'; printf '\a'; }
+    function clippaste { printf '\e]52;c;?\a'; }
 fi
 # Ghostty supports OSC 8 hyperlinks natively; hg wraps rg with clickable paths.
 if command -v rg &>/dev/null && [[ "$TERM_PROGRAM" == "ghostty" ]]; then
@@ -1269,6 +1270,35 @@ paste-check() {
     fi
 }
 
+# Fix double-backslash line continuations in clipboard (e.g. from copying commands
+# out of Claude, markdown renderers, or web pages that escape backslashes).
+# Replaces \\<newline> with \<newline> in-place, then syntax-checks and prints run cmd.
+# Usage: copy your broken command, then run: fix-clipboard-backslashes
+fix-clipboard-backslashes() {
+    emulate -L zsh
+    local tmp="${TMPDIR:-/tmp}/fixed-paste.sh"
+    if command -v wl-paste &>/dev/null; then
+        wl-paste --type text > "$tmp" 2>/dev/null || wl-paste --no-newline > "$tmp" || return 1
+    elif command -v xclip &>/dev/null; then
+        xclip -o -selection clipboard > "$tmp" || return 1
+    elif command -v pbpaste &>/dev/null; then
+        pbpaste > "$tmp" || return 1
+    else
+        echo "fix-clipboard-backslashes: no clipboard tool found (need xclip, wl-paste, or pbpaste)" >&2
+        return 1
+    fi
+    perl -0pi -e 's/\\\\\n/\\\n/g' "$tmp"
+    echo "Fixed script: $tmp"
+    echo "Visible chars:"
+    sed -n 'l' "$tmp" 2>/dev/null || cat "$tmp"
+    echo
+    if bash -n "$tmp" 2>&1; then
+        echo "bash -n: OK — run with:  bash $tmp"
+    else
+        echo "bash -n: SYNTAX ERROR"
+    fi
+}
+
 # Reveal hidden characters in pasted text (trailing spaces, CRLFs, weird whitespace).
 # Usage: pbpaste | show-nonascii   or   cat script.sh | show-nonascii
 show-nonascii() { sed -n 'l'; }
@@ -1355,10 +1385,6 @@ unsetopt MENU_COMPLETE      # Keep list+menu behavior instead of replacing buffe
 
 # Prompt before printing very large completion lists (prevents terminal spam).
 LISTMAX=20
-
-# Continuation prompt: makes it clear zsh is waiting for more input rather than
-# showing a cryptic '>....' that looks like the command got mangled.
-PROMPT2='[continue]> '
 
 # ── Key bindings ─────────────────────────────────────────────────────
 
@@ -1682,15 +1708,33 @@ _accept_line_with_autolist_reset() {
 }
 zle -N _accept_line_with_autolist_reset
 
-_bracketed_paste_with_autolist() {
+_bracketed_paste_with_autofix() {
     local _old_autolist="${ZSH_AUTOLIST_ON_TYPE:-0}"
+    local _paste _fixed _count
     _auto_list_in_paste=1
     ZSH_AUTOLIST_ON_TYPE=0
     _history_scroll_active=0
     _auto_list_last_buffer=""
     unset POSTDISPLAY
 
-    zle .bracketed-paste
+    # Capture pasted text without inserting so we can inspect and fix it.
+    zle .bracketed-paste _paste
+
+    # Auto-fix \\<newline> -> \<newline> for shell blocks copied from Claude /
+    # markdown renderers that escape backslashes for display.
+    # Conservative: only applies when multiline, at least 2 \\ continuations,
+    # and the paste looks shell-like (contains $, --, or /).
+    if [[ "$_paste" == *$'\n'* ]] && command -v perl &>/dev/null; then
+        _count=$(printf '%s' "$_paste" | perl -0ne '$n += () = /\\\\\n/g; END { print $n }')
+        if (( _count >= 2 )) && [[ "$_paste" == *'$'* || "$_paste" == *'--'* || "$_paste" == *'/'* ]]; then
+            _fixed=$(printf '%s' "$_paste" | perl -0pe 's/\\\\\n/\\\n/g')
+            _paste="$_fixed"
+        fi
+    fi
+
+    # Insert (fixed or original) at cursor position.
+    BUFFER="${LBUFFER}${_paste}${RBUFFER}"
+    CURSOR=$(( ${#LBUFFER} + ${#_paste} ))
 
     _auto_list_in_paste=0
     ZSH_AUTOLIST_ON_TYPE="$_old_autolist"
@@ -1699,7 +1743,7 @@ _bracketed_paste_with_autolist() {
     zle -I
     zle redisplay
 }
-zle -N _bracketed_paste_with_autolist
+zle -N _bracketed_paste_with_autofix
 
 _forward_char_with_autolist() {
     zle .forward-char
@@ -1734,7 +1778,7 @@ _apply_autolist_mode() {
         zle -N self-insert _self_insert_with_autolist
         zle -N magic-space _magic_space_with_autolist
         zle -N accept-line _accept_line_with_autolist_reset
-        zle -N bracketed-paste _bracketed_paste_with_autolist
+        zle -N bracketed-paste _bracketed_paste_with_autofix
         zle -N forward-char _forward_char_with_autolist
         zle -N forward-word _forward_word_with_autolist
         zle -N backward-delete-char _backward_delete_char_with_autolist
@@ -1754,15 +1798,12 @@ _apply_autolist_mode() {
         else
             zle -A .accept-line accept-line
         fi
-        if (( $+widgets[autosuggest-bracketed-paste] )); then
-            zle -A autosuggest-bracketed-paste bracketed-paste
-        elif (( $+widgets[.bracketed-paste] )); then
-            zle -A .bracketed-paste bracketed-paste
-        fi
         zle -A .forward-char forward-char
         zle -A .forward-word forward-word
         zle -A .backward-delete-char backward-delete-char
     fi
+    # Always register auto-fix paste handler regardless of autolist mode.
+    zle -N bracketed-paste _bracketed_paste_with_autofix
 }
 
 # Reset history scroll flag at each new prompt so stale state never leaks.
@@ -1833,9 +1874,14 @@ if [[ -o interactive ]]; then
     # Ctrl+Z: undo last edit on command line
     bindkey '^Z' undo
 
-    # Ctrl+X Ctrl+P: literal paste — bypasses all custom widget logic.
-    # Use when a normal paste triggers continuation prompt or completion popups.
-    _paste_literal() { zle bracketed-paste }
+    # Ctrl+X Ctrl+P: raw literal paste — bypasses auto-fix and widget logic.
+    # Use when you want the exact clipboard content without any rewriting.
+    _paste_literal() {
+        local _paste
+        zle .bracketed-paste _paste
+        BUFFER="${LBUFFER}${_paste}${RBUFFER}"
+        CURSOR=$(( ${#LBUFFER} + ${#_paste} ))
+    }
     zle -N _paste_literal
     bindkey '^X^P' _paste_literal
 
@@ -1872,6 +1918,8 @@ fi
 # ── Powerlevel10k config ─────────────────────────────────────────────
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# Override p10k's continuation prompt with something readable.
+PROMPT2='[continue]> '
 
 # ── Local overrides (not managed by setup script) ────────────────────
 

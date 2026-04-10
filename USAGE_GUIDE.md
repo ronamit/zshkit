@@ -65,40 +65,79 @@ export ZSH_AUTOLIST_ON_TYPE=1
 
 ### Long Multiline Commands
 
-**If `[continue]>` appears after you paste, the shell config is not the cause.** It means zsh received syntactically incomplete text — the problem is in the pasted content itself, not the prompt or widgets.
+**If `[continue]>` appears after you paste, the shell config is not the cause.** Zsh's bracketed paste inserts text literally into the buffer — if the shell still enters continuation mode, the pasted text itself is syntactically broken before zsh even sees it.
 
-Common causes:
+#### Most common cause: double backslash from Claude / markdown
 
-- a line was dropped during copy
-- a backslash has a trailing space after it (e.g. `something \` + space instead of `something \`)
-- a quote was converted to a curly/smart quote by the app you copied from
-- CRLF line endings or hidden whitespace from a browser or chat tool
-- you pasted into an already non-empty prompt line
+Commands copied from Claude, a markdown renderer, or any tool that escapes backslashes for display will have `\\` at the end of continuation lines instead of `\`. Shell line continuation requires **exactly one** `\` immediately before the newline. With `\\`, the backslash is escaped (producing a literal `\`) and the newline is no longer masked — so each line executes as a separate command.
 
-**Reliable workflow — validate before running:**
+**Fix it in one step:**
+
+```bash
+fix-clipboard-backslashes
+```
+
+This reads your clipboard, replaces `\\<newline>` with `\<newline>`, syntax-checks with `bash -n`, and tells you the path to run.
+
+#### Verify the clipboard content
+
+To see exactly what is in the clipboard before pasting (note: use `-l 0` to disable sed's own line-wrapping so you only see real content characters):
+
+```bash
+xclip -o -selection clipboard | sed -n 'l' -l 0   # X11
+wl-paste | sed -n 'l' -l 0                         # Wayland
+pbpaste | sed -n 'l' -l 0                          # macOS
+```
+
+Look for:
+
+- `\\$` — double backslash before newline → use `fix-clipboard-backslashes`
+- `\ $` — single backslash then space before newline → trailing space is breaking continuation
+- `\r$` — CRLF line endings
+- smart/curly quotes instead of plain `'` or `"`
+
+> Note: without `-l 0`, `sed -n 'l'` wraps long lines with a `\` at column 70 — those wraps are just display formatting, not real content.
+
+#### Other troubleshooting steps
+
+Run `paste-check` for a combined visible-char dump + `bash -n` check:
 
 ```bash
 paste-check
 # paste your block, press Ctrl+D
-# inspect the visible-chars output for \r (CRLF) or trailing spaces after \
-# if bash -n reports OK, run with: bash /tmp/paste-check.xxxxxx.sh
+# inspect output, then run: bash /tmp/paste-check.xxxxxx.sh
 ```
 
-`paste-check` shows every character literally (hidden spaces, `\r`, broken quotes) and syntax-checks with `bash -n` before you run anything.
+Test in a clean shell to rule out all config:
 
-**Quick alternative — paste into a file manually:**
+```bash
+zsh -f
+```
+
+Then paste the same block. If it works there, a widget is interfering. If it still fails, the content is the problem.
+
+Common causes:
+
+- `\\` at end of continuation lines — command was copied from Claude or a markdown renderer (use `fix-clipboard-backslashes`)
+- trailing space after `\` — `something \` + space breaks continuation
+- a line was dropped during copy
+- CRLF line endings from a browser or Windows clipboard
+
+**Reliable run workflow:**
+
+```bash
+paste-check
+# inspect, then:
+bash /tmp/paste-check.xxxxxx.sh
+```
+
+**Quick alternative:**
 
 ```bash
 cat > /tmp/run_cmd.sh <<'EOF'
 # paste here
 EOF
 bash -n /tmp/run_cmd.sh && bash /tmp/run_cmd.sh
-```
-
-**Debug clipboard directly** (Linux):
-
-```bash
-xclip -o -selection clipboard | show-nonascii
 ```
 
 **Fallback key for a single paste:** `Ctrl+X Ctrl+P` bypasses all widget logic and pastes literally into the buffer.
