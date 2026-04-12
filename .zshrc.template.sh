@@ -889,6 +889,7 @@ compdef _rmount_completion rmount
 alias glog='git log --oneline --decorate --graph'
 alias glp='git log --graph --pretty=format:"%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset" --abbrev-commit'
 alias cdg='cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"'
+alias gnb='git checkout -b'  # git new branch: gnb <branch-name>
 command -v lazygit &>/dev/null && alias lg='lazygit'
 
 # Interactive branch switcher (requires fzf)
