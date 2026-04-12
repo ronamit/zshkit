@@ -1486,6 +1486,8 @@ zle -N _tab_accept_or_complete
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
 typeset -gi _auto_list_in_paste=0
+# Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
+typeset -gF _zshkit_last_selfinsert_rt=0.0
 typeset -g _autolist_cd_cache_pwd=""
 typeset -gi _autolist_cd_cache_count=-1
 typeset -gi _autolist_cd_cache_limit=-1
@@ -1612,7 +1614,13 @@ _maybe_auto_list_choices() {
 zle -N _maybe_auto_list_choices
 
 _self_insert_with_autolist() {
-    (( _auto_list_in_paste || KEYS_QUEUED_COUNT > 0 )) && {
+    local _now=$EPOCHREALTIME
+    # Chars arriving <30ms apart = programmatic injection (e.g. VSCode play button).
+    # Skip autolist to prevent flickering menu and per-char completion lookups.
+    local -i _rapid=$(( (_now - _zshkit_last_selfinsert_rt) < 0.030 ))
+    _zshkit_last_selfinsert_rt=$_now
+
+    (( _auto_list_in_paste || KEYS_QUEUED_COUNT > 0 || _rapid )) && {
         if (( $+widgets[autosuggest-self-insert] )); then
             zle autosuggest-self-insert
         else
