@@ -93,6 +93,7 @@ vm              # SSH in (direct if EC2_SSH_HOST set; via AWS otherwise)
 vm status       # show instance state and IP  (AWS)
 vm start        # start the instance          (AWS)
 vm stop         # stop the instance           (AWS)
+sso             # refresh AWS SSO session
 ```
 
 Optional — see [SETUP_DETAILS.md](SETUP_DETAILS.md) for configuration.

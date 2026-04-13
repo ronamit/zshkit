@@ -24,6 +24,8 @@ Config file: `~/.config/ghostty/config`
 
 Reload at runtime with `Ctrl+Shift+,` (Linux) or `Cmd+Shift+,` (macOS). Some options only take effect for new windows.
 
+zshkit's starter config unbinds `Ctrl+Enter` from Ghostty's default fullscreen toggle to avoid accidental fullscreen switches while working in shells, editors, or TUIs.
+
 ```bash
 ghostty +list-themes               # browse all built-in themes (100+)
 ghostty +list-fonts                # list available fonts
@@ -121,3 +123,5 @@ Jump-to-prompt requires `shell-integration = detect` in your config (set by zshk
 | `Ctrl+Shift+N` | `Cmd+N` | New window |
 | `Ctrl+,` | `Cmd+,` | Open config file |
 | `Ctrl+Shift+,` | `Cmd+Shift+,` | Reload config |
+
+`Ctrl+Enter` is intentionally unbound by zshkit's starter config. Remove `keybind = ctrl+enter=unbind` from `~/.config/ghostty/config` if you want Ghostty's default fullscreen shortcut back.

@@ -179,6 +179,8 @@ Practical notes:
 
 See [GHOSTTY.md](GHOSTTY.md) for the full Ghostty reference: keybindings, tabs, splits, search, and config options.
 
+zshkit's Ghostty starter config intentionally unbinds `Ctrl+Enter` so it doesn't trigger fullscreen by accident.
+
 ## Disk Usage
 
 ```bash
@@ -330,9 +332,15 @@ Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `
 | `vm start` | Start the instance | AWS |
 | `vm stop` | Stop the instance | AWS |
 | `vm ip` | Print public IP | AWS |
-| `vm sso` | Refresh the AWS SSO session | AWS |
 
 `ssh` itself does not route through `vm`; the helper is separate and only for this explicit workflow.
+
+Refresh AWS SSO separately with `sso`.
+
+- `sso` is the short everyday command
+- `aws-login` is the longer equivalent name
+- default profile order: `EC2_AWS_PROFILE` → `AWS_PROFILE` → `default`
+- explicit profile example: `sso my-profile`
 
 ## Zellij Usage and Shortcuts
 

@@ -45,6 +45,9 @@ window-save-state = always
 # Shell integration enables jump-to-prompt shortcuts (Ctrl+Shift+Page Up/Down).
 shell-integration = detect
 
+# Avoid accidental fullscreen toggles when pressing Ctrl+Enter in terminal apps.
+keybind = ctrl+enter=unbind
+
 # Optional appearance tweaks:
 # background-opacity = 0.95
 # background-blur = true
