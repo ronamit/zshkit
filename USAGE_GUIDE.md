@@ -330,6 +330,7 @@ Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `
 | `vm start` | Start the instance | AWS |
 | `vm stop` | Stop the instance | AWS |
 | `vm ip` | Print public IP | AWS |
+| `vm sso` | Refresh the AWS SSO session | AWS |
 
 `ssh` itself does not route through `vm`; the helper is separate and only for this explicit workflow.
 
