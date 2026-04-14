@@ -1083,15 +1083,21 @@ else
 fi
 
 step "Installing Zellij status plugin (zjstatus)..."
-if [ -s "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
+_zjstatus_version_file="$ZELLIJ_PLUGIN_DIR/zjstatus.version"
+if [ -s "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" ] \
+    && [ -f "$_zjstatus_version_file" ] \
+    && [ "$(cat "$_zjstatus_version_file" 2>/dev/null)" = "$ZJSTATUS_VERSION" ] \
+    && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
     echo "  ✓ zjstatus already present — skipping download"
 elif confirm_install "Install zjstatus ${ZJSTATUS_VERSION}?"; then
     _zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
     if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
+        printf '%s\n' "$ZJSTATUS_VERSION" > "$_zjstatus_version_file"
         echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
     else
         echo "  ✗ Failed to download zjstatus ${ZJSTATUS_VERSION} (network timeout or download error)"
         rm -f "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
+        rm -f "$_zjstatus_version_file"
         exit 1
     fi
 fi
@@ -1104,15 +1110,21 @@ ZJSTATUS_PERM_KEY="file:$PLUGIN_ABSOLUTE_PATH"
 _ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 
 step "Installing Zellij attention plugin (zellij-attention)..."
-if [ -s "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
+_attention_version_file="$ZELLIJ_PLUGIN_DIR/zellij-attention.version"
+if [ -s "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" ] \
+    && [ -f "$_attention_version_file" ] \
+    && [ "$(cat "$_attention_version_file" 2>/dev/null)" = "$ZELLIJ_ATTENTION_VERSION" ] \
+    && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
     echo "  ✓ zellij-attention already present — skipping download"
 elif confirm_install "Install zellij-attention ${ZELLIJ_ATTENTION_VERSION}?"; then
     _attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
     if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
+        printf '%s\n' "$ZELLIJ_ATTENTION_VERSION" > "$_attention_version_file"
         echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
     else
         echo "  ✗ Failed to download zellij-attention ${ZELLIJ_ATTENTION_VERSION} (network timeout or download error)"
         rm -f "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
+        rm -f "$_attention_version_file"
         exit 1
     fi
 fi
