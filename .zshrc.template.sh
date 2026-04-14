@@ -1465,6 +1465,8 @@ _cd_tab_complete() {
     _auto_list_last_buffer=""
     zle expand-or-complete
     zle list-choices
+    # Arm so Down immediately enters the menu rather than going to history.
+    _auto_list_last_buffer="$LBUFFER"
 }
 zle -N _cd_tab_complete
 
@@ -1494,10 +1496,14 @@ zle -N _tab_accept_or_complete
 : "${ZSH_AUTOLIST_CD_EMPTY_MAX:=20}"
 # Minimum characters before auto-list triggers (reduces lag on slow filesystems).
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
+# Minimum time between auto-list lookups while typing (reduces repeated work in
+# large dirs / slow completion contexts without affecting manual Tab completion).
+: "${ZSH_AUTOLIST_COOLDOWN_MS:=120}"
 typeset -g _auto_list_last_buffer=""
 typeset -gi _auto_list_in_paste=0
 # Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
 typeset -gF _zshkit_last_selfinsert_rt=0.0
+typeset -gF _zshkit_last_autolist_rt=0.0
 typeset -g _autolist_cd_cache_pwd=""
 typeset -gi _autolist_cd_cache_count=-1
 typeset -gi _autolist_cd_cache_limit=-1
@@ -1506,6 +1512,18 @@ _autolist_invalidate_cd_cache() {
     _autolist_cd_cache_pwd=""
     _autolist_cd_cache_count=-1
     _autolist_cd_cache_limit=-1
+}
+
+_autolist_record_lookup() {
+    _zshkit_last_autolist_rt=$EPOCHREALTIME
+}
+
+_autolist_cooldown_active() {
+    local _raw="${ZSH_AUTOLIST_COOLDOWN_MS:-120}"
+    local -i _ms=120
+    [[ "$_raw" == <-> ]] && _ms=$_raw
+    (( _ms <= 0 )) && return 1
+    (( (_zshkit_last_selfinsert_rt - _zshkit_last_autolist_rt) < (_ms / 1000.0) ))
 }
 
 _should_autolist_empty_cd_arg() {
@@ -1549,29 +1567,69 @@ _maybe_auto_list_choices() {
     (( KEYS_QUEUED_COUNT > 0 )) && return
     (( CURSOR == ${#BUFFER} )) || return
     [[ "$LBUFFER" == "$_auto_list_last_buffer" ]] && return
+    _autolist_cooldown_active && return
 
-    local -a _words _path_popup_cmds
-    local _current _cmd _is_cd_context=0 _is_ssh_context=0 _has_trailing_space=0
-    local -i _is_path_cmd=0 _is_path_like=0
+    local -a _words _path_popup_cmds _path_arg_cmds
+    local _current _cmd _effective_cmd _is_cd_context=0 _is_ssh_context=0 _has_trailing_space=0
+    local -i _is_path_cmd=0 _is_path_like=0 _is_path_arg_cmd=0 _effective_idx=1
+    # Path-oriented commands: popup while typing a path prefix (/, ./, ~/) AND on space.
     _path_popup_cmds=(
         cd pushd popd
         ls cat less more vim nano
         rm cp mv mkdir rmdir touch
         ssh scp rsync
     )
+    # Path-argument commands: popup ONLY while typing an explicit path prefix (e.g. ./, /).
+    # Never triggered on bare trailing space — avoids enumerating huge package databases.
+    # Good for: apt install ./foo.deb, pip install ./pkg, dpkg -i ./foo.deb
+    _path_arg_cmds=(
+        apt apt-get dpkg
+        pip pip3 pipx uv
+    )
     [[ "$LBUFFER" == *[[:space:]] ]] && _has_trailing_space=1
     _words=(${(z)LBUFFER})
     (( ${#_words} )) || return
     _current="${_words[-1]}"
     _cmd="${_words[1]}"
-    (( ${_path_popup_cmds[(Ie)$_cmd]} )) && _is_path_cmd=1
+    # For `sudo ... <cmd>`, skip common sudo flags so wrapped path commands
+    # still get path completions without assuming the command is always $2.
+    _effective_cmd="$_cmd"
+    if [[ "$_cmd" == "sudo" ]]; then
+        _effective_idx=2
+        while (( _effective_idx <= ${#_words} )); do
+            case "${_words[_effective_idx]}" in
+                --)
+                    (( _effective_idx++ ))
+                    break
+                    ;;
+                -u|-g|-h|-p|-r|-t|-C)
+                    (( _effective_idx += 2 ))
+                    continue
+                    ;;
+                -A|-b|-E|-e|-H|-K|-k|-n|-P|-S|-s|-V|-v)
+                    (( _effective_idx++ ))
+                    continue
+                    ;;
+                -*|*=*)
+                    (( _effective_idx++ ))
+                    continue
+                    ;;
+                *)
+                    break
+                    ;;
+            esac
+        done
+        (( _effective_idx <= ${#_words} )) && _effective_cmd="${_words[_effective_idx]}"
+    fi
+    (( ${_path_popup_cmds[(Ie)$_effective_cmd]} )) && _is_path_cmd=1
+    (( ${_path_arg_cmds[(Ie)$_effective_cmd]} ))   && _is_path_arg_cmd=1
 
     # Always allow path completion previews for cd-like commands once an
     # argument has started (e.g., "cd D" should immediately list candidates).
-    if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
+    if [[ "$_effective_cmd" == "cd" || "$_effective_cmd" == "pushd" || "$_effective_cmd" == "popd" ]]; then
         (( ${#_words} >= 2 )) && _is_cd_context=1
     fi
-    if [[ "$_cmd" == "ssh" || "$_cmd" == "scp" || "$_cmd" == "rsync" ]]; then
+    if [[ "$_effective_cmd" == "ssh" || "$_effective_cmd" == "scp" || "$_effective_cmd" == "rsync" ]]; then
         (( ${#_words} >= 2 )) && _is_ssh_context=1
     fi
 
@@ -1582,6 +1640,7 @@ _maybe_auto_list_choices() {
             if (( ${#_words} == 1 )); then
                 if _should_autolist_empty_cd_arg; then
                     _auto_list_last_buffer="$LBUFFER"
+                    _autolist_record_lookup
                     zle list-choices
                 fi
                 return
@@ -1590,12 +1649,15 @@ _maybe_auto_list_choices() {
 
         # Keep command-position noise off in auto mode.
         (( ${#_words} >= 2 )) || return
-        # Restrict auto-popups to path/host oriented commands.
-        if (( ! _is_path_cmd )); then
+
+        # Path-oriented commands: always pop up (next arg is likely a file).
+        if (( _is_path_cmd )); then
+            _auto_list_last_buffer="$LBUFFER"
+            _autolist_record_lookup
+            zle list-choices
             return
         fi
-        _auto_list_last_buffer="$LBUFFER"
-        zle list-choices
+
         return
     fi
 
@@ -1616,8 +1678,9 @@ _maybe_auto_list_choices() {
     [[ "$_current" == */* || "$_current" == .* || "$_current" == ~* || "$_current" == <-> ]] && _is_path_like=1
 
     # Keep it focused to common completion contexts.
-    if (( _is_cd_context || _is_ssh_context || (_is_path_like && _is_path_cmd) )); then
+    if (( _is_cd_context || _is_ssh_context || (_is_path_like && (_is_path_cmd || _is_path_arg_cmd)) )); then
         _auto_list_last_buffer="$LBUFFER"
+        _autolist_record_lookup
         zle list-choices
     fi
 }
