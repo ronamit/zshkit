@@ -1336,6 +1336,7 @@ unset _correct_pref
 setopt INTERACTIVE_COMMENTS # Allow # comments in interactive shell
 setopt GLOB_DOTS            # Include dotfiles in glob patterns
 setopt AUTO_LIST            # Show completion options below prompt on ambiguous matches
+unsetopt ALWAYS_LAST_PROMPT # Keep completion lists below the current prompt line
 setopt AUTO_MENU            # Repeated completion keys cycle through matches
 unsetopt MENU_COMPLETE      # Keep list+menu behavior instead of replacing buffer immediately
 
