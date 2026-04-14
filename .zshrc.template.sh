@@ -435,17 +435,7 @@ vpn-disconnect() { _zshkit_vpn_run vpn-disconnect "$@"; }
 vpn-status() { _zshkit_vpn_run vpn-status "$@"; }
 
 # AWS SSO login shortcut
-aws-login() {
-    if ! command -v aws &>/dev/null; then
-        echo "aws-login: aws CLI not installed."
-        return 1
-    fi
-
-    local profile="${1:-${EC2_AWS_PROFILE:-${AWS_PROFILE:-default}}}"
-    aws sso login --profile "$profile"
-}
-
-sso() { aws-login "$@"; }
+command -v aws &>/dev/null && alias aws-login='aws sso login'
 
 # Push local terminfo to a remote server so SSH preserves full color support.
 # Usage: ssh-fix-colors user@host
