@@ -437,6 +437,21 @@ vpn-status() { _zshkit_vpn_run vpn-status "$@"; }
 # AWS SSO login shortcut
 command -v aws &>/dev/null && alias aws-login='aws sso login'
 
+# Refresh AWS SSO session (checks first; prompts only if expired)
+aws-sso() {
+    if ! command -v aws &>/dev/null; then
+        echo "aws-sso: aws CLI not installed."
+        return 1
+    fi
+    local profile="${EC2_AWS_PROFILE:-${AWS_PROFILE:-default}}"
+    if aws sts get-caller-identity --profile "$profile" &>/dev/null; then
+        echo "AWS session is valid (profile: $profile)."
+        return 0
+    fi
+    echo "AWS session expired. Opening SSO login (profile: $profile)..."
+    aws sso login --profile "$profile"
+}
+
 # Push local terminfo to a remote server so SSH preserves full color support.
 # Usage: ssh-fix-colors user@host
 ssh-fix-colors() {
