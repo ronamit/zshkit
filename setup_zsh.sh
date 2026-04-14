@@ -15,6 +15,8 @@
 #   ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1
 #       Do not pre-write ~/.cache/zellij/permissions.kdl — approve plugins inside Zellij (status bar → y).
 #       Default seeds permissions so zjstatus runs without a prompt (same as pre–Apr 2026 zshkit).
+#   ZSHKIT_FORCE_PLUGIN_DOWNLOAD=1
+#       Re-download bundled Zellij plugins even when the wasm files already exist locally.
 # ======================================================================
 
 # Fail on undefined variables and pipe errors.
@@ -370,6 +372,7 @@ render_template_to_file() {
 download_to_file() {
     local url="$1" dest="$2"
     local curl_bin=""
+    local tmpfile=""
 
     if [ -x /usr/bin/curl ]; then
         curl_bin="/usr/bin/curl"
@@ -377,24 +380,39 @@ download_to_file() {
         curl_bin="$(command -v curl)"
     fi
 
+    tmpfile=$(mktemp) || return 1
+
     if [ -n "$curl_bin" ]; then
-        if "$curl_bin" -fsSL "$url" -o "$dest"; then
-            [ -s "$dest" ] && return 0
-            rm -f "$dest"
+        if "$curl_bin" -fsSL \
+            --connect-timeout 10 \
+            --max-time 120 \
+            --retry 2 \
+            --retry-delay 1 \
+            -o "$tmpfile" "$url"; then
+            if [ -s "$tmpfile" ] && mv "$tmpfile" "$dest"; then
+                return 0
+            fi
+            rm -f "$tmpfile" "$dest"
         else
-            rm -f "$dest"
+            rm -f "$tmpfile" "$dest"
         fi
     fi
 
     if command -v wget &>/dev/null; then
-        if wget -q -O "$dest" "$url"; then
-            [ -s "$dest" ] && return 0
-            rm -f "$dest"
+        if wget -q \
+            --timeout=10 \
+            --tries=2 \
+            -O "$tmpfile" "$url"; then
+            if [ -s "$tmpfile" ] && mv "$tmpfile" "$dest"; then
+                return 0
+            fi
+            rm -f "$tmpfile" "$dest"
         else
-            rm -f "$dest"
+            rm -f "$tmpfile" "$dest"
         fi
     fi
 
+    rm -f "$tmpfile"
     return 1
 }
 
@@ -1065,7 +1083,9 @@ else
 fi
 
 step "Installing Zellij status plugin (zjstatus)..."
-if confirm_install "Install zjstatus ${ZJSTATUS_VERSION}?"; then
+if [ -s "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
+    echo "  ✓ zjstatus already present — skipping download"
+elif confirm_install "Install zjstatus ${ZJSTATUS_VERSION}?"; then
     _zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
     if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
         echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
@@ -1084,7 +1104,9 @@ ZJSTATUS_PERM_KEY="file:$PLUGIN_ABSOLUTE_PATH"
 _ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 
 step "Installing Zellij attention plugin (zellij-attention)..."
-if confirm_install "Install zellij-attention ${ZELLIJ_ATTENTION_VERSION}?"; then
+if [ -s "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
+    echo "  ✓ zellij-attention already present — skipping download"
+elif confirm_install "Install zellij-attention ${ZELLIJ_ATTENTION_VERSION}?"; then
     _attention_url="https://github.com/KiryuuLight/zellij-attention/releases/download/${ZELLIJ_ATTENTION_VERSION}/zellij-attention.wasm"
     if download_to_file "$_attention_url" "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"; then
         echo "  ✓ Installed zellij-attention ${ZELLIJ_ATTENTION_VERSION}"
