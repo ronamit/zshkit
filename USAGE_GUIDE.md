@@ -9,7 +9,7 @@ Daily guide for how this shell setup behaves once installed: shortcuts, helper c
 alias
 
 # List custom functions from this config
-functions | rg '^(ff|ftext|ports|f|mkcd|zj|zjclean|ducks|gbr|branch_bye|pr|sshv|ssh-fix-colors|vpn-connect|vpn-disconnect|vpn-status|vm|rmount|_venv_auto_activate)\b'
+functions | rg '^(ff|ftext|ports|f|mkcd|zj|zjclean|ducks|gbr|branch_bye|pr|sshv|ssh-fix-colors|vpn-connect|vpn-disconnect|vpn-status|vm|aws-sso|rmount|_venv_auto_activate)\b'
 
 # Show active key bindings
 bindkey | less
@@ -335,12 +335,14 @@ Both modes require `EC2_SSH_USER` and `EC2_SSH_KEY`. If nothing is configured, `
 
 `ssh` itself does not route through `vm`; the helper is separate and only for this explicit workflow.
 
-Refresh AWS SSO separately with `sso`.
+### AWS SSO
 
-- `sso` is the short everyday command
-- `aws-login` is the longer equivalent name
-- default profile order: `EC2_AWS_PROFILE` → `AWS_PROFILE` → `default`
-- explicit profile example: `sso my-profile`
+| Command | Does |
+|---------|------|
+| `aws-sso` | Check whether the current AWS session is valid; if expired, open SSO login |
+| `aws-login` | Always open SSO login (`aws sso login`) |
+
+`aws-sso` uses the same profile resolution as `vm`: `EC2_AWS_PROFILE` → `AWS_PROFILE` → `default`. Run it before `vm` commands if you suspect your session has expired, or any time you get AWS auth errors outside of `vm`.
 
 ## Zellij Usage and Shortcuts
 
