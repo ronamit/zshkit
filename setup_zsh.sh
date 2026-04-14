@@ -525,14 +525,10 @@ create_zshrc_local_template() {
 # Live auto-list while typing (cd/path suggestions) — off by default (safer for multiline paste):
 # export ZSH_AUTOLIST_ON_TYPE=0   # 0=off (default, recommended for pasting long commands)
 # export ZSH_AUTOLIST_ON_TYPE=1   # 1=on — opt in for live completion popups while typing
-# Auto-open `cd ` list when local dir count is at most this (default 100 in template):
-# export ZSH_AUTOLIST_CD_EMPTY_MAX=150
+# Auto-open `cd ` list only when local dir count is small:
+# export ZSH_AUTOLIST_CD_EMPTY_MAX=20
 # Min characters before auto-list (reduces lag on slow filesystems):
 # export ZSH_AUTOLIST_MIN_CHARS=3
-# Ask before listing completions when more than this many lines (template default 100):
-# export LISTMAX=200
-# Gray autosuggest hints: max line length (template default 150); unrelated to cd menu size:
-# export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=250
 
 # If zsh shows '[continue]>' after a paste, the command is syntactically incomplete
 # (dropped line, broken quote, or backslash with a trailing space). Safe alternative:

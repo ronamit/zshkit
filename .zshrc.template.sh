@@ -1287,8 +1287,7 @@ setopt HIST_VERIFY
 # match_prev_cmd: prefer history entries that followed the same previous command
 # (e.g. after `git add`, suggest `git commit` over `git log`).
 ZSH_AUTOSUGGEST_STRATEGY=(match_prev_cmd history completion)
-# No gray hints above this line length (cost). Separate from LISTMAX / cd menu size.
-ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=150
+ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=80
 ZSH_AUTOSUGGEST_USE_ASYNC=1
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=244'  # visible ghost text on both light/dark
 # We define custom widgets later, so do one bind pass after all widget changes.
@@ -1340,9 +1339,8 @@ setopt AUTO_LIST            # Show completion options below prompt on ambiguous 
 setopt AUTO_MENU            # Repeated completion keys cycle through matches
 unsetopt MENU_COMPLETE      # Keep list+menu behavior instead of replacing buffer immediately
 
-# Ask before listing when there are more than this many lines (cd/home with
-# many dirs). Raise in ~/.zshrc.local if you want bigger menus without a prompt.
-LISTMAX=100
+# Prompt before printing very large completion lists (prevents terminal spam).
+LISTMAX=20
 
 # ── Key bindings ─────────────────────────────────────────────────────
 
@@ -1465,12 +1463,8 @@ _cd_tab_complete() {
     fi
 
     _auto_list_last_buffer=""
-    local _lbuf_before="$LBUFFER"
     zle expand-or-complete
     zle list-choices
-    # Match _tab_complete_and_autolist: only arm when Tab showed a list, not when
-    # the line changed (unique match inserted).
-    [[ "$LBUFFER" == "$_lbuf_before" ]] && _auto_list_last_buffer="$LBUFFER"
 }
 zle -N _cd_tab_complete
 
@@ -1495,9 +1489,9 @@ zle -N _tab_accept_or_complete
 # Configurable: 1/on/true/yes enables; 0/off/false/no disables.
 # Default is OFF — safer for pasting multiline commands. Opt in via ~/.zshrc.local.
 : "${ZSH_AUTOLIST_ON_TYPE:=0}"
-# When typing `cd ` + space with an empty argument, auto-open only if the
-# directory has at most this many subdirs (glob scan stops once over the limit).
-: "${ZSH_AUTOLIST_CD_EMPTY_MAX:=100}"
+# When typing `cd ` + space with an empty argument, auto-open early only when
+# local directory count is small (keeps this useful but non-spammy).
+: "${ZSH_AUTOLIST_CD_EMPTY_MAX:=20}"
 # Minimum characters before auto-list triggers (reduces lag on slow filesystems).
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
@@ -1515,8 +1509,8 @@ _autolist_invalidate_cd_cache() {
 }
 
 _should_autolist_empty_cd_arg() {
-    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-100}"
-    local -i _max=100
+    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-20}"
+    local -i _max=20
     local -i _count=0
     local _d
 
