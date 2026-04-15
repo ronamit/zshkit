@@ -1,8 +1,13 @@
 simplified_ui true
 pane_frames false
 scroll_buffer_size 100000
-serialize_pane_viewport true
-scrollback_lines_to_serialize 100000
+// serialize_pane_viewport is intentionally disabled. When enabled, Zellij
+// saves pane scrollback to disk and restores it on next attach — including
+// after a remote reboot. This makes reconnecting after a reboot look like
+// the old session (with stuck processes) is still running, which is confusing.
+// To enable session resurrection, uncomment the two lines below:
+// serialize_pane_viewport true
+// scrollback_lines_to_serialize 100000
 show_startup_tips false
 show_release_notes false
 

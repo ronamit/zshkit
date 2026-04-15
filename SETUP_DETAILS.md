@@ -361,6 +361,21 @@ This is an architectural limitation of Zellij — there is no config flag that g
 **Why not disable `mouse_mode`?**  
 Setting `mouse_mode false` breaks mouse scroll entirely — the terminal prints raw escape codes (`^[[B`) instead of scrolling. It was tried and reverted. The Shift+drag friction is the lesser trade-off.
 
+### Session serialization — disabled by default
+
+Zellij's `serialize_pane_viewport` feature saves pane scrollback to disk so sessions can be visually restored after detaching. It is **disabled** in the zshkit default config.
+
+**Why:** When enabled, reconnecting after a **remote machine reboot** shows the old session's scrollback — including any processes that were running before the reboot. This looks like a stuck process is still alive, when in reality the machine just came back up clean. The illusion is confusing and hard to diagnose.
+
+With serialization off, a fresh attach after a reboot always shows a clean terminal, which correctly reflects the machine state.
+
+**To opt in:** Uncomment the two lines in `~/.config/zellij/config.kdl` (or in [templates/zellij/config.kdl.template](templates/zellij/config.kdl.template) to persist across reinstalls):
+
+```kdl
+serialize_pane_viewport true
+scrollback_lines_to_serialize 100000
+```
+
 ## References
 
 - [README.md](README.md)
