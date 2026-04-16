@@ -475,7 +475,7 @@ ssh-fix-colors() {
 # VPN-aware SSH helper.
 # Features:
 #   - Leaves normal `ssh` untouched.
-#   - Adds ConnectTimeout=5 if unset (override with -o ConnectTimeout=…).
+#   - Adds ConnectTimeout=15 if unset (override with -o ConnectTimeout=…).
 #   - Adds ServerAliveInterval=10 and ServerAliveCountMax=2 if unset (override with
 #     -o ServerAliveInterval=… / ServerAliveCountMax=…) so dead TCP paths fail
 #     within ~20s instead of hanging; pairs with the duration-gated retry on exit 255.
@@ -500,7 +500,7 @@ sshv() {
     done
 
     local -a ssh_args=("$@")
-    (( has_timeout )) || ssh_args=(-o ConnectTimeout=5 "${ssh_args[@]}")
+    (( has_timeout )) || ssh_args=(-o ConnectTimeout=15 "${ssh_args[@]}")
     # Force client to detect dead tunnels (2 missed 10s pings ≈ 20s to disconnect).
     (( has_alive )) || ssh_args=(-o ServerAliveInterval=10 -o ServerAliveCountMax=2 "${ssh_args[@]}")
 
@@ -1199,7 +1199,8 @@ zjs() {
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
-    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=5 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
+    printf "Connecting to %s (session: %s)…\n" "$host" "$session"
+    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then

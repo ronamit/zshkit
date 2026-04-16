@@ -76,8 +76,10 @@ z ghostty      # jump to ~/.config/ghostty
 
 ## VPN
 
+Credentials are stored once in a file — connecting only asks for your 2FA authenticator code (or nothing if your VPN doesn't require it). The session runs detached in the background; you can close the terminal and the VPN keeps running.
+
 ```bash
-vpn-connect      # connect in a detached background session
+vpn-connect      # prompt for 2FA code, then connect in a background session
 vpn-disconnect   # disconnect
 vpn-status       # show current status
 ```
