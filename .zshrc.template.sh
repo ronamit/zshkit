@@ -1200,7 +1200,7 @@ zjs() {
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
     printf "Connecting to %s (session: %s)…\n" "$host" "$session"
-    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
+    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; sleep 0.3; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
