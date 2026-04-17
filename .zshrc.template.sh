@@ -491,28 +491,26 @@ sshv() {
     # doesn't leak raw mouse or Kitty/Ghostty keyboard escape sequences into the shell.
     _zshkit_reset_terminal_input_modes
 
-    local has_timeout=0
-    local has_alive=0
+    local has_timeout=0 has_alive=0 connect_timeout=15
     local arg
     for arg in "$@"; do
-        [[ "$arg" == *ConnectTimeout* ]] && has_timeout=1
+        if [[ "$arg" == ConnectTimeout=* ]]; then
+            has_timeout=1; connect_timeout="${arg#ConnectTimeout=}"
+        elif [[ "$arg" == *ConnectTimeout* ]]; then
+            has_timeout=1
+        fi
         [[ "$arg" == *ServerAliveInterval* ]] && has_alive=1
     done
 
     local -a ssh_args=("$@")
-    (( has_timeout )) || ssh_args=(-o ConnectTimeout=15 "${ssh_args[@]}")
+    (( has_timeout )) || ssh_args=(-o ConnectTimeout=${connect_timeout} "${ssh_args[@]}")
     # Force client to detect dead tunnels (2 missed 10s pings ≈ 20s to disconnect).
     (( has_alive )) || ssh_args=(-o ServerAliveInterval=10 -o ServerAliveCountMax=2 "${ssh_args[@]}")
 
-    # Track session duration so exit 255 + short runtime (auth/DNS/config)
-    # does not trigger the "connection lost" retry — only longer sessions.
     local start_time=$SECONDS
     command ssh "${ssh_args[@]}"
     local ssh_rc=$?
     local duration=$(( SECONDS - start_time ))
-    # Reset terminal input modes immediately after SSH exits — the remote
-    # session may have enabled them (e.g. Zellij/tmux/vim) and an abrupt
-    # disconnect won't clean them up.
     _zshkit_reset_terminal_input_modes
     (( ssh_rc == 0 )) && return 0
 
@@ -522,33 +520,27 @@ sshv() {
     fi
 
     # ── One-time auto-retry on connection drop (exit 255) ──
-    # Keepalives surface dead links as 255 after the session is up; gate retry
-    # behind a 5-second minimum to avoid double-prompting on auth/DNS failures.
-    if (( ssh_rc == 255 && duration > 5 )); then
-        # Restore tty line discipline in case SSH left it in raw mode; leave alternate screen if stuck.
+    # Only retry when the session was actually established: duration must exceed
+    # ConnectTimeout, otherwise the host was unreachable (e.g. VPN down) and
+    # an immediate retry would just time out again.
+    if (( ssh_rc == 255 && duration > connect_timeout + 2 )); then
         stty echo icanon 2>/dev/null
         command -v tput &>/dev/null && tput rmcup 2>/dev/null
         local _dur_str
-        if (( duration >= 3600 )); then
-            _dur_str="${$(( duration / 3600 ))}h $(( (duration % 3600) / 60 ))m $(( duration % 60 ))s"
-        elif (( duration >= 60 )); then
+        if (( duration >= 60 )); then
             _dur_str="${$(( duration / 60 ))}m $(( duration % 60 ))s"
         else
             _dur_str="${duration}s"
         fi
         printf "sshv: connection lost (dropped after %s) — retrying once… (Ctrl+C to cancel)\n" "$_dur_str"
-        # Suppress echo before the wait + retry so keystrokes (e.g. arrow keys)
-        # don't get printed as raw escape sequences (^[[B).
-        # ZSH's ZLE will handle any buffered keys correctly after we return.
+        # Suppress echo before the wait + retry so keystrokes don't print as raw escape sequences.
         stty -echo 2>/dev/null
         sleep 1
         _zshkit_reset_terminal_input_modes
 
         # For plain `sshv host` calls (not zjs, which already has `zellij attach
         # session` baked into ssh_args), inject a one-shot smart remote command:
-        # attach to the first existing Zellij session or fall back to a login
-        # shell. Single connection — no extra probe that would fail if VPN/internet
-        # is down.
+        # attach to the first existing Zellij session or fall back to a login shell.
         local -a _retry_args=("${ssh_args[@]}")
         if [[ "${_SSHV_NO_HINTS:-}" != 1 ]]; then
             _retry_args=(-t "${ssh_args[@]}"
@@ -1204,7 +1196,7 @@ zjs() {
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
-        printf "zjs: connection lost (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$zjs_rc"
+        printf "zjs: connection failed (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$zjs_rc"
         printf "  Reconnect with: zjs %s %s\n" "$host" "$session"
     fi
     return $zjs_rc

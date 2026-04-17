@@ -149,7 +149,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `hg` | Hyperlinked grep — clickable file results in Ghostty |
 | `icat [PATH]` | Preview images inline (Ghostty supports sixel/kitty graphics protocol) |
 | `rmount HOST [PATH]` | Mount `HOST:PATH` (default: home dir) at `~/mnt/HOST[/PATH]` over SSHFS for local browsing and drag-and-drop |
-| `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=5`, keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on long-lived exit `255`, VPN hint on other failures |
+| `sshv HOST [ARGS...]` | SSH with default `ConnectTimeout=15`, keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2` unless you set `ServerAliveInterval`), terminal input reset, one auto-retry on established-then-dropped sessions, VPN hint on other failures |
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
 | `vpn-status` | Show VPN process, interface, and recent log status |
@@ -296,10 +296,10 @@ Normal `ssh` is left untouched. Use `sshv` when you want the optional VPN-aware 
 
 In interactive shells, `sshv`:
 
-- adds `ConnectTimeout=5` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
+- adds `ConnectTimeout=15` unless you already pass a `ConnectTimeout` option (override with `-o ConnectTimeout=…`)
 - adds `ServerAliveInterval=10` and `ServerAliveCountMax=2` unless any argument contains `ServerAliveInterval` — so idle-but-dead TCP paths are detected instead of hanging forever; override with `-o ServerAliveInterval=…` / `-o ServerAliveCountMax=…` as needed
 - resets terminal input modes before and after — prevents raw mouse and Kitty keyboard protocol escape codes leaking when tmux, Zellij, vim, or similar apps were running remotely
-- on exit code `255`, retries the same SSH command **once** only if the session lasted longer than 5 seconds (avoids a second password prompt on quick auth or DNS failures)
+- on exit code `255`, retries the same SSH command **once** only if the session lasted longer than `ConnectTimeout` (i.e., connection was established before dropping — avoids retrying when the host is simply unreachable)
 - if stdin or stdout is not a TTY (scripts, pipes), returns the exit code immediately — no auto-retry, no VPN hint
 - otherwise, on failure, prints a hint to run `vpn-connect` and the exact reconnect command (unless `_SSHV_NO_HINTS=1`)
 
