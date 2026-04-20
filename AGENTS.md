@@ -103,6 +103,7 @@ Before editing: confirm scope, inspect the relevant files, identify the existing
 - Group related code; keep interfaces small and focused.
 - Do not introduce abstractions unless they remove real duplication or reduce bug risk.
 - Refactors should be behavior-preserving and local to the task; no broad cleanup unless asked.
+- Avoid stylistic choices that create linter noise or ambiguous formatting when a clearer equivalent exists.
 
 If divergence stays within the same scope/risk envelope, adjust and continue. If it changes architecture, risk, or external behavior, pause and ask.
 
@@ -119,6 +120,13 @@ If divergence stays within the same scope/risk envelope, adjust and continue. If
 - Use `pathlib.Path` over `os.path`; `enumerate()` over `range(len(...))`.
 - Use context managers for file and resource handling.
 - Prefer comprehensions for simple transformations; use loops when the body is complex.
+- Do not rely on implicit string concatenation across adjacent string literals, especially inside parentheses, lists, dicts, returns, logging calls, SQL/query construction, prompts, or test fixtures.
+- When building multi-part strings, prefer one of these explicit forms:
+  - a single triple-quoted string when formatting and indentation are clear
+  - `" ".join([...])` or `"".join([...])` for assembled fragments
+  - explicit `+` only for short, obvious two-part combinations
+  - separate named constants for reusable text blocks
+- Keep long strings readable and linter-safe. If line wrapping is needed, use an explicit pattern rather than adjacent literals.
 
 ---
 
