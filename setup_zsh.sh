@@ -713,10 +713,6 @@ clone_if_missing "fast-syntax-highlighting" \
     "https://github.com/zdharma-continuum/fast-syntax-highlighting.git" \
     "$ZSH_CUSTOM/plugins/fast-syntax-highlighting" "fast-syntax-highlighting"
 
-clone_if_missing "zsh-history-substring-search" \
-    "https://github.com/zsh-users/zsh-history-substring-search.git" \
-    "$ZSH_CUSTOM/plugins/zsh-history-substring-search" "zsh-history-substring-search"
-
 clone_if_missing "zsh-defer" \
     "https://github.com/romkatv/zsh-defer.git" \
     "$ZSH_CUSTOM/plugins/zsh-defer" "zsh-defer"

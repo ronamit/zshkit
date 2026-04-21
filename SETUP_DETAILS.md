@@ -38,7 +38,7 @@ ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
 | Category | Items |
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
-| Plugins | zsh-autosuggestions, zsh-history-substring-search, fast-syntax-highlighting |
+| Plugins | zsh-autosuggestions, fast-syntax-highlighting |
 | CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi, sshfs |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, top `zjstatus` bar, and `~/.local/bin/zellij-metrics` |

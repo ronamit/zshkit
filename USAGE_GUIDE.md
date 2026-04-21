@@ -286,7 +286,7 @@ Hosts from `~/.ssh/config` are tab-completed on the host argument.
 
 Mount points mirror the remote path structure: `rmount myserver /some/path` → `~/mnt/myserver/some/path`. The home-dir mount (`rmount myserver`) lands at `~/mnt/myserver` directly.
 
-The connection uses keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2`) and `reconnect` so transient network blips don't unmount the directory mid-work.
+The connection uses keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3`) and `reconnect` so transient network blips don't unmount the directory mid-work.
 
 **Requirements:** `sshfs` (installed by `setup_zsh.sh`). On macOS, `sshfs` also requires the `macfuse` cask (kernel extension); the installer skips it automatically and prints manual steps — see [SETUP_DETAILS.md](SETUP_DETAILS.md).
 

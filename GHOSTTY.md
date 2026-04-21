@@ -91,7 +91,7 @@ Ghostty calls splits "surfaces". They live inside a tab.
 > **Inside a Zellij session:** `Ctrl+Shift+C` is intercepted by Zellij in some modes. To copy:
 >
 > - **Mouse selection** — zshkit uses `copy_on_select true` by default, so selecting text copies it automatically.
-> Or open the scrollback in text editor and copy from there - see [USAGE_GUIDE.md](USAGE_GUIDE.md#scrollback-in-editor) for more details.
+> Or open the scrollback in text editor and copy from there - see [USAGE_GUIDE.md](USAGE_GUIDE.md#scrollback-search-and-open-in-editor) for more details.
 >
 > `Ctrl+Shift+V` (paste) passes through to the terminal and works normally.
 

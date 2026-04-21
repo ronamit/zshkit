@@ -116,7 +116,7 @@ Hosts in `~/.ssh/config` are tab-completed. Requires `sshfs` (installed by `setu
 
 ## SSH
 
-`sshv` wraps `ssh` with sensible defaults for flaky networks: a 10-second connect timeout, client keepalives (`ServerAliveInterval=15`, `ServerAliveCountMax=3`) unless you set your own `ServerAliveInterval`, and a reset of local terminal input modes so mouse/keyboard modes from remote tmux/Zellij/vim do not leak into the shell after disconnect.
+`sshv` wraps `ssh` with sensible defaults for flaky networks: a 15-second connect timeout, client keepalives (`ServerAliveInterval=10`, `ServerAliveCountMax=2`) unless you set your own `ServerAliveInterval`, and a reset of local terminal input modes so mouse/keyboard modes from remote tmux/Zellij/vim do not leak into the shell after disconnect.
 
 In interactive terminals, if the session exits with code `255` and the session ran longer than `ConnectTimeout` (meaning the connection was actually established before dropping), `sshv` retries the same command once. Failures where the host was never reached — timeout, wrong hostname, VPN down — are not retried; you get a short hint about VPN/reconnect instead. Pass `-o ServerAliveInterval=…` (or any arg containing that text) to skip injecting keepalives. Normal `ssh` is unchanged.
 
