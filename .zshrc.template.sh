@@ -1470,6 +1470,14 @@ _tab_accept_or_complete() {
     # If autosuggestion ghost text is visible, Tab accepts it fully.
     if [[ -n "$POSTDISPLAY" ]]; then
         (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
+        # After accepting ghost text for a cd command, if the result ends in /
+        # immediately show the next level so the user doesn't need a second Tab.
+        local _cmd="${BUFFER%%[[:space:]]*}"
+        if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]] \
+           && [[ "$BUFFER" == */ ]]; then
+            _auto_list_last_buffer="$LBUFFER"
+            zle list-choices
+        fi
         return 0
     fi
     # cd/pushd/popd: deterministic drill-down with / appending.
