@@ -13,8 +13,8 @@
 #
 # Optional environment (security / maintenance):
 #   ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1
-#       Do not pre-write ~/.cache/zellij/permissions.kdl — approve plugins inside Zellij (status bar → y).
-#       Default seeds permissions so zjstatus runs without a prompt (same as pre–Apr 2026 zshkit).
+#       Do not pre-write ~/.cache/zellij/permissions.kdl — approve plugins inside Zellij when prompted.
+#       Default seeds minimal bundled-plugin permissions so setup stays non-interactive.
 #   ZSHKIT_FORCE_PLUGIN_DOWNLOAD=1
 #       Re-download bundled Zellij plugins even when the wasm files already exist locally.
 # ======================================================================
@@ -50,7 +50,6 @@ SSH_MARKER_BEGIN="# >>> zshkit ssh defaults >>>"
 SSH_MARKER_END="# <<< zshkit ssh defaults <<<"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ZSHRC_TEMPLATE="$SCRIPT_DIR/.zshrc.template.sh"
-ZELLIJ_METRICS_TEMPLATE="$SCRIPT_DIR/zellij-metrics.sh"
 ZELLIJ_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/zellij/config.kdl.template"
 ZELLIJ_LAYOUT_TEMPLATE="$SCRIPT_DIR/templates/zellij/layouts/default.kdl"
 GHOSTTY_CONFIG_TEMPLATE="$SCRIPT_DIR/templates/ghostty/config.template"
@@ -1069,15 +1068,6 @@ backup_file_if_exists "$ZELLIJ_LAYOUTS_DIR/default.kdl" "$BACKUP_DIR/zellij_defa
 backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" "$BACKUP_DIR/zjstatus.wasm"
 backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" "$BACKUP_DIR/zellij-attention.wasm"
 
-if [ -f "$ZELLIJ_METRICS_TEMPLATE" ]; then
-    cp "$ZELLIJ_METRICS_TEMPLATE" "$HOME/.local/bin/zellij-metrics"
-    chmod +x "$HOME/.local/bin/zellij-metrics"
-    echo "  ✓ Installed ~/.local/bin/zellij-metrics"
-else
-    echo "  ✗ Missing metrics helper: $ZELLIJ_METRICS_TEMPLATE"
-    exit 1
-fi
-
 step "Installing Zellij status plugin (zjstatus)..."
 if [ -s "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
     echo "  ✓ zjstatus already present — skipping download"
@@ -1113,7 +1103,7 @@ elif confirm_install "Install zellij-attention ${ZELLIJ_ATTENTION_VERSION}?"; th
     fi
 fi
 
-# Pre-seed ~/.cache/zellij/permissions.kdl so zjstatus works without an interactive prompt (RunCommands).
+# Pre-seed ~/.cache/zellij/permissions.kdl for bundled plugins.
 # Zellij may change this cache format or path in future versions.
 # Set ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 to skip (you approve plugins in Zellij instead).
 case "${ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED:-0}" in
@@ -1124,7 +1114,7 @@ case "${ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED:-0}" in
         mkdir -p "$ZELLIJ_CACHE_DIR"
         if [ ! -f "$PERM_FILE" ] || ! grep -qF "$ZJSTATUS_PERM_KEY" "$PERM_FILE"; then
             echo "  ! Seeding Zellij permissions cache for zjstatus"
-            printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n    RunCommands\n}\n' \
+            printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
                 "$ZJSTATUS_PERM_KEY" >> "$PERM_FILE"
         else
             echo "  ✓ Zellij permissions for zjstatus already seeded"
@@ -1153,7 +1143,7 @@ render_template_to_file \
 echo "  ✓ Wrote $ZELLIJ_LAYOUTS_DIR/default.kdl"
 
 echo "    Zellij permissions for bundled plugins are pre-seeded by setup (see script header to skip)."
-echo "    If a prompt still appears after a plugin update or cache reset, focus the status bar and press 'y'."
+echo "    If a prompt still appears after a plugin update or cache reset, focus the plugin and press 'y'."
 
 # ── SSH keepalive defaults ───────────────────────────────────────────
 
@@ -1520,7 +1510,7 @@ echo ""
 echo "  5. Run: p10k configure   (same as the banner above — guided Powerlevel10k wizard;"
 echo "     saves to ~/.p10k.zsh. Re-run setup_zsh.sh to restore the repo template default.)"
 echo ""
-echo "  6. Zellij: plugin permissions are pre-seeded by setup; if prompted, focus the status bar and press 'y' (or use ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 next run to approve manually)."
+echo "  6. Zellij: plugin permissions are pre-seeded by setup; if prompted, focus the plugin and press 'y' (or use ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1 next run to approve manually)."
 echo ""
 if [ "$IS_MACOS" -eq 1 ]; then
     echo "  7. Use Ghostty (installed above) as your main terminal."

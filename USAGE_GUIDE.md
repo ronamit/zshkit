@@ -355,8 +355,8 @@ Managed defaults:
 - built-in default preset
 - mouse mode enabled — scroll and click-to-focus work; `Shift+drag` required for text selection (see [Mouse and Clipboard](#mouse-and-clipboard))
 - `100000` lines of scrollback
-- top `zjstatus` bar showing session + host on the left and metrics on the right
-- managed layout with a top metrics bar and one main shell pane below it
+- top `zjstatus` bar showing the session name and visible tabs
+- managed layout with one minimal top bar and one main shell pane below it
 
 Main session command:
 
@@ -476,10 +476,11 @@ Zellij captures all mouse events so it can handle pane focus, scroll, and border
 
 | Setting | Value |
 |---------|-------|
-| Status bar | Top `zjstatus` plugin fed by `~/.local/bin/zellij-metrics` |
-| Left side | Session name and machine name |
-| Right side | CPU, RAM, GPU when available, and time |
-| Permission handling | Setup pre-seeds plugin permissions for bundled WASM so the status bar works without a prompt. Use `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` with `setup_zsh.sh` if you want to approve manually in Zellij instead |
+| Status bar | Top `zjstatus` plugin showing session name and visible tabs |
+| Left side | Session name |
+| Center | Tabs |
+| Right side | Empty |
+| Permission handling | Setup pre-seeds minimal bundled-plugin permissions. Use `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` with `setup_zsh.sh` if you want to approve manually in Zellij instead |
 | Session restore | Enabled via Zellij serialization settings |
 | Scrollback | `100000` lines |
 
