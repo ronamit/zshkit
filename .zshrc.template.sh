@@ -42,13 +42,17 @@ if [[ -o interactive && -t 1 && -z "${COLORTERM:-}" ]]; then
 fi
 
 # Reset terminal input modes that commonly leak after abrupt app/SSH exits.
+# Pass --leave-alt-screen only after full-screen apps disconnect unexpectedly.
 _zshkit_reset_terminal_input_modes() {
     [[ -o interactive && -t 1 ]] || return 0
+    local leave_alt_screen=0
+    [[ "${1:-}" == "--leave-alt-screen" ]] && leave_alt_screen=1
     # \e[?1049l — exit alternate screen (Zellij/vim/less can leave terminal in alt buffer on crash)
     # \e[?1l  — DECCKM: restore normal cursor keys (prevents raw 29A / OA leakage)
     # \e[?1000l–?1015l — disable all mouse reporting modes
     # \e[?2004l — disable bracketed paste
-    printf '\e[?1049l\e[?1l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
+    (( leave_alt_screen )) && printf '\e[?1049l'
+    printf '\e[?1l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
     # Pop Kitty keyboard protocol stack — covers Kitty and Ghostty (which uses
     # TERM_PROGRAM=ghostty rather than KITTY_WINDOW_ID / TERM=xterm-kitty).
     if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" || "$TERM_PROGRAM" == "ghostty" ]]; then
@@ -490,7 +494,7 @@ sshv() {
     local -a original_args=("$@")
     # Reset local terminal input modes before connecting so stale SSH/app state
     # doesn't leak raw mouse or Kitty/Ghostty keyboard escape sequences into the shell.
-    _zshkit_reset_terminal_input_modes
+    _zshkit_reset_terminal_input_modes --leave-alt-screen
 
     local has_timeout=0 has_alive=0 connect_timeout=15
     local arg
@@ -512,7 +516,7 @@ sshv() {
     command ssh "${ssh_args[@]}"
     local ssh_rc=$?
     local duration=$(( SECONDS - start_time ))
-    _zshkit_reset_terminal_input_modes
+    _zshkit_reset_terminal_input_modes --leave-alt-screen
     (( ssh_rc == 0 )) && return 0
 
     # Non-interactive — just return the exit code.
@@ -537,7 +541,7 @@ sshv() {
         # Suppress echo before the wait + retry so keystrokes don't print as raw escape sequences.
         stty -echo 2>/dev/null
         sleep 1
-        _zshkit_reset_terminal_input_modes
+        _zshkit_reset_terminal_input_modes --leave-alt-screen
 
         # For plain `sshv host` calls (not zjs, which already has `zellij attach
         # session` baked into ssh_args), inject a one-shot smart remote command:
@@ -551,7 +555,7 @@ sshv() {
         command ssh "${_retry_args[@]}"
         ssh_rc=$?
         stty echo icanon 2>/dev/null
-        _zshkit_reset_terminal_input_modes
+        _zshkit_reset_terminal_input_modes --leave-alt-screen
         (( ssh_rc == 0 )) && return 0
     fi
 
@@ -1143,7 +1147,7 @@ zj() {
         local zj_rc=$?
         # Zellij can leave mouse or Kitty/Ghostty keyboard modes enabled after an abrupt
         # exit, which causes raw escape sequences to leak into the shell prompt.
-        _zshkit_reset_terminal_input_modes
+        _zshkit_reset_terminal_input_modes --leave-alt-screen
         return $zj_rc
     fi
 }
@@ -1206,7 +1210,7 @@ EOF
     printf "Connecting to %s (session: %s)…\n" "$host" "$session"
     _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "$remote_cmd"
     local zjs_rc=$?
-    _zshkit_reset_terminal_input_modes
+        _zshkit_reset_terminal_input_modes --leave-alt-screen
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
         printf "zjs: connection failed (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$zjs_rc"
         printf "  Reconnect with: zjs %s %s\n" "$host" "$session"
