@@ -44,10 +44,11 @@ fi
 # Reset terminal input modes that commonly leak after abrupt app/SSH exits.
 _zshkit_reset_terminal_input_modes() {
     [[ -o interactive && -t 1 ]] || return 0
+    # \e[?1049l — exit alternate screen (Zellij/vim/less can leave terminal in alt buffer on crash)
     # \e[?1l  — DECCKM: restore normal cursor keys (prevents raw 29A / OA leakage)
     # \e[?1000l–?1015l — disable all mouse reporting modes
     # \e[?2004l — disable bracketed paste
-    printf '\e[?1l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
+    printf '\e[?1049l\e[?1l\e[?1000l\e[?1002l\e[?1003l\e[?1006l\e[?1015l\e[?2004l'
     # Pop Kitty keyboard protocol stack — covers Kitty and Ghostty (which uses
     # TERM_PROGRAM=ghostty rather than KITTY_WINDOW_ID / TERM=xterm-kitty).
     if [[ -n "${KITTY_WINDOW_ID:-}" || "$TERM" == "xterm-kitty" || "$TERM_PROGRAM" == "ghostty" ]]; then
@@ -1129,31 +1130,13 @@ zj() {
 
     if [[ -n "${ZELLIJ:-}" ]]; then
         # Already inside a Zellij session — CLI-based session switching was removed
-        # in recent Zellij releases, so we use the session-manager plugin instead.
+        # in recent Zellij releases; switching requires the keyboard shortcut.
         _zshkit_zellij_delete_if_exited "$session" || return 1
-        local session_exists=0
-        if zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session"; then
-            session_exists=1
-        else
-            # Pre-create the target session in the background so it's ready to switch to.
+        if ! zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session"; then
             zellij attach --create-background "$session" || return 1
+            echo "zj: session '$session' created."
         fi
-
-        if zellij action launch-or-focus-plugin --floating zellij:session-manager >/dev/null 2>&1; then
-            if (( session_exists )); then
-                echo "zj: session-manager opened. Select '$session' to switch sessions."
-            else
-                echo "zj: created session '$session'. Session-manager opened; select it to switch sessions."
-            fi
-        else
-            # Older Zellij builds don't support launching plugins via the CLI.
-            if (( session_exists )); then
-                echo "zj: session '$session' is available."
-            else
-                echo "zj: created session '$session'."
-            fi
-            echo "zj: inside Zellij, press Ctrl+o, then w, and select '$session' to switch sessions. (Ctrl+x in session-manager disconnects other clients if the screen size looks wrong.)"
-        fi
+        echo "zj: press Ctrl+o → w to open the session switcher, then select '$session'."
     else
         _zshkit_zellij_delete_if_exited "$session" || return 1
         zellij attach --create "$session"
