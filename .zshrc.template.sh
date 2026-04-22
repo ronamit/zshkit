@@ -1090,6 +1090,7 @@ _zshkit_zellij_delete_if_exited() {
         echo "zj: failed to remove exited session '$session'; run 'zellij delete-session --force $session' and retry."
         return 1
     fi
+    return 0
 }
 
 # Zellij session helper
@@ -1107,7 +1108,8 @@ zj() {
     local session
     if [[ $# -eq 0 ]]; then
         local sessions
-        sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
+        # Exclude EXITED sessions — they show up in --short output but aren't usable.
+        sessions=$(zellij list-sessions --no-formatting 2>/dev/null | grep -v "EXITED" | sed 's/ .*//')
         if [[ -z "$sessions" ]]; then
             # Default new session name to current directory name
             session="${PWD##*/}"
@@ -1128,6 +1130,7 @@ zj() {
     if [[ -n "${ZELLIJ:-}" ]]; then
         # Already inside a Zellij session — CLI-based session switching was removed
         # in recent Zellij releases, so we use the session-manager plugin instead.
+        _zshkit_zellij_delete_if_exited "$session" || return 1
         local session_exists=0
         if zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session"; then
             session_exists=1
