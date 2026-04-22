@@ -1081,6 +1081,45 @@ f() { _open_default "."; }
 # Create directory and cd into it
 mkcd() { [[ -z "$1" ]] && { echo "usage: mkcd <dir>"; return 1; }; mkdir -p "$1" && cd "$1"; }
 
+# Return the current boot time as epoch seconds when the platform exposes it.
+_zshkit_boot_epoch() {
+    if [[ -r /proc/1 ]]; then
+        stat -c %Y /proc/1 2>/dev/null && return 0
+    fi
+
+    if [[ "$(uname -s)" == "Darwin" ]] && command -v sysctl &>/dev/null; then
+        sysctl -n kern.boottime 2>/dev/null | sed -n 's/.*sec = \([0-9][0-9]*\).*/\1/p' | head -n 1
+        return 0
+    fi
+
+    return 1
+}
+
+# Delete a Zellij session if its socket file predates the current boot.
+_zshkit_zellij_delete_stale_session() {
+    local session="${1:?session name required}"
+    local sock_dir="/tmp/zellij-$(id -u)"
+    local boot_epoch session_socket session_mtime
+
+    zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session" || return 0
+    [[ -d "$sock_dir" ]] || return 0
+
+    boot_epoch=$(_zshkit_boot_epoch) || return 0
+    session_socket="$sock_dir/$session"
+    [[ -e "$session_socket" ]] || return 0
+
+    session_mtime=$(stat -c %Y "$session_socket" 2>/dev/null || stat -f %m "$session_socket" 2>/dev/null) || return 0
+    (( session_mtime < boot_epoch )) || return 0
+
+    echo "zj: stale pre-reboot session '$session' detected, removing..."
+    if ! zellij delete-session --force "$session" 2>/dev/null; then
+        echo "zj: failed to remove stale session '$session'; run 'zellij delete-session --force $session' and retry."
+        return 1
+    fi
+
+    return 0
+}
+
 # Zellij session helper
 # Usage: zj [session-name]   outside Zellij: attach to or create a named session
 #        zj                  pick from existing sessions, or start "main"
@@ -1141,6 +1180,7 @@ zj() {
             echo "zj: inside Zellij, press Ctrl+o, then w, and select '$session' to switch sessions. (Ctrl+x in session-manager disconnects other clients if the screen size looks wrong.)"
         fi
     else
+        _zshkit_zellij_delete_stale_session "$session" || return 1
         zellij attach --create "$session"
         local zj_rc=$?
         # Zellij can leave mouse or Kitty/Ghostty keyboard modes enabled after an abrupt
@@ -1186,13 +1226,39 @@ zjclean() {
 zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
+    local remote_cmd
 
 
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
+    remote_cmd=$(cat <<EOF
+pkill -x zjs-"$session" 2>/dev/null
+sleep 0.3
+sock_dir="/tmp/zellij-\$(id -u)"
+boot_epoch=""
+if [ -r /proc/1 ]; then
+    boot_epoch=\$(stat -c %Y /proc/1 2>/dev/null)
+elif [ "\$(uname -s)" = "Darwin" ] && command -v sysctl >/dev/null 2>&1; then
+    boot_epoch=\$(sysctl -n kern.boottime 2>/dev/null | sed -n 's/.*sec = \([0-9][0-9]*\).*/\1/p' | head -n 1)
+fi
+if PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session" \
+   && [ -n "\$boot_epoch" ] \
+   && [ -e "\$sock_dir/$session" ]; then
+    session_mtime=\$(stat -c %Y "\$sock_dir/$session" 2>/dev/null || stat -f %m "\$sock_dir/$session" 2>/dev/null)
+    if [ -n "\$session_mtime" ] && [ "\$session_mtime" -lt "\$boot_epoch" ]; then
+        echo "zjs: stale pre-reboot session '$session' detected on remote, removing..."
+        PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij delete-session --force "$session" 2>/dev/null || {
+            echo "zjs: failed to remove stale remote session '$session'."
+            exit 1
+        }
+    fi
+fi
+PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-"$session" zellij attach --create "$session"
+EOF
+)
     printf "Connecting to %s (session: %s)…\n" "$host" "$session"
-    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "pkill -x zjs-\"$session\" 2>/dev/null; sleep 0.3; PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-\"$session\" zellij attach --create \"$session\""
+    _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "$remote_cmd"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
