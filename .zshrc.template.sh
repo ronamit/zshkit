@@ -1352,7 +1352,9 @@ esac
 unset _correct_pref
 setopt INTERACTIVE_COMMENTS # Allow # comments in interactive shell
 setopt GLOB_DOTS            # Include dotfiles in glob patterns
-setopt AUTO_LIST            # Show completion options below prompt on ambiguous matches
+# Keep completion listing explicit so large ambiguous sets do not trigger
+# zsh's interactive "see all possibilities" prompt on their own.
+unsetopt AUTO_LIST
 setopt AUTO_MENU            # Repeated completion keys cycle through matches
 unsetopt MENU_COMPLETE      # Keep list+menu behavior instead of replacing buffer immediately
 
@@ -1443,9 +1445,8 @@ _down_history_or_dirs() {
 zle -N _down_history_or_dirs
 
 _tab_complete_and_autolist() {
-    # Enter the native completion menu. expand-or-complete inserts directly for a
-    # unique match; for multiple matches menu select (configured via zstyle) opens
-    # the interactive grid automatically.
+    # Handle completion explicitly: insert unique matches, otherwise show the
+    # list ourselves without zsh's global AUTO_LIST prompt.
     _auto_list_last_buffer=""
     local _lbuf_before="$LBUFFER"
     if (( $+widgets[expand-or-complete] )); then
@@ -1453,9 +1454,12 @@ _tab_complete_and_autolist() {
     else
         zle .expand-or-complete
     fi
-    # If the buffer didn't change, Tab showed a list rather than auto-inserting.
-    # Arm _auto_list_last_buffer so Down immediately enters the menu.
-    [[ "$LBUFFER" == "$_lbuf_before" ]] && _auto_list_last_buffer="$LBUFFER"
+    # If nothing was inserted, show choices directly and arm Down to enter the menu.
+    if [[ "$LBUFFER" == "$_lbuf_before" ]]; then
+        _auto_list_last_buffer="$LBUFFER"
+        local LISTMAX=0
+        zle list-choices
+    fi
 }
 zle -N _tab_complete_and_autolist
 
@@ -1630,6 +1634,13 @@ _maybe_auto_list_choices() {
 
     # Keep command-position auto-list quiet (avoid external command spam).
     if (( ${#_words} == 1 )) && [[ "$_current" != */* && "$_current" != .* && "$_current" != ~* ]]; then
+        return
+    fi
+
+    # Bare `~` / `~name` can expand into a large named-directory/user set.
+    # For auto-popup mode, fail closed here instead of asking whether to list
+    # everything. Explicit Tab can still request completion on demand.
+    if (( _is_cd_context )) && [[ "$_current" == ~* && "$_current" != */* ]]; then
         return
     fi
 
