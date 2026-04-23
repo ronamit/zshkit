@@ -1510,6 +1510,8 @@ zle -N _tab_accept_or_complete
 # Configurable: 1/on/true/yes enables; 0/off/false/no disables.
 # Default is OFF — safer for pasting multiline commands. Opt in via ~/.zshrc.local.
 : "${ZSH_AUTOLIST_ON_TYPE:=0}"
+# Max directories to auto-list on bare `cd ` — stays quiet when there are too many.
+: "${ZSH_AUTOLIST_CD_EMPTY_MAX:=20}"
 # Minimum characters before auto-list triggers (reduces lag on slow filesystems).
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
@@ -1523,6 +1525,17 @@ typeset -ga _zshkit_path_cmds=(
 )
 # Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
 typeset -gF _zshkit_last_selfinsert_rt=0.0
+
+_cd_empty_arg_few_enough() {
+    local -i _max=${ZSH_AUTOLIST_CD_EMPTY_MAX:-20} _count=0
+    local _d
+    setopt localoptions nullglob
+    for _d in */ .*/; do
+        [[ "$_d" == "./" || "$_d" == "../" ]] && continue
+        (( ++_count > _max )) && return 1
+    done
+    return 0
+}
 
 _maybe_auto_list_choices() {
     # Only while typing at end-of-line; avoid noisy redraws.
@@ -1556,8 +1569,10 @@ _maybe_auto_list_choices() {
     if (( _has_trailing_space )); then
         if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
             if (( ${#_words} == 1 )); then
-                _auto_list_last_buffer="$LBUFFER"
-                zle list-choices
+                if _cd_empty_arg_few_enough; then
+                    _auto_list_last_buffer="$LBUFFER"
+                    zle list-choices
+                fi
                 return
             fi
         fi
