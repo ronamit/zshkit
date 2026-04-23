@@ -1510,9 +1510,6 @@ zle -N _tab_accept_or_complete
 # Configurable: 1/on/true/yes enables; 0/off/false/no disables.
 # Default is OFF — safer for pasting multiline commands. Opt in via ~/.zshrc.local.
 : "${ZSH_AUTOLIST_ON_TYPE:=0}"
-# When typing `cd ` + space with an empty argument, auto-open early only when
-# local directory count is small (keeps this useful but non-spammy).
-: "${ZSH_AUTOLIST_CD_EMPTY_MAX:=20}"
 # Minimum characters before auto-list triggers (reduces lag on slow filesystems).
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
@@ -1526,48 +1523,6 @@ typeset -ga _zshkit_path_cmds=(
 )
 # Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
 typeset -gF _zshkit_last_selfinsert_rt=0.0
-typeset -g _autolist_cd_cache_pwd=""
-typeset -gi _autolist_cd_cache_count=-1
-typeset -gi _autolist_cd_cache_limit=-1
-
-_autolist_invalidate_cd_cache() {
-    _autolist_cd_cache_pwd=""
-    _autolist_cd_cache_count=-1
-    _autolist_cd_cache_limit=-1
-}
-
-_should_autolist_empty_cd_arg() {
-    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-20}"
-    local -i _max=20
-    local -i _count=0
-    local _d
-
-    [[ "$_raw" == <-> ]] && _max=$_raw
-    (( _max < 0 )) && _max=0
-
-    # Reuse count in same directory to avoid repeated glob scans while typing.
-    if [[ "$_autolist_cd_cache_pwd" == "$PWD" && $_autolist_cd_cache_count -ge 0 ]] \
-       && (( _autolist_cd_cache_limit < 0 || _max <= _autolist_cd_cache_limit )); then
-        _count=$_autolist_cd_cache_count
-    else
-        # Count local directory candidates quickly and stop once threshold is passed.
-        setopt localoptions nullglob
-        for _d in * .*; do
-            [[ "$_d" == "." || "$_d" == ".." ]] && continue
-            [[ -d "$_d" ]] || continue
-            (( _count++ ))
-            (( _count > _max )) && break
-        done
-        _autolist_cd_cache_pwd="$PWD"
-        _autolist_cd_cache_count=$_count
-        if (( _count > _max )); then
-            _autolist_cd_cache_limit=$_max
-        else
-            _autolist_cd_cache_limit=-1
-        fi
-    fi
-    (( _count <= _max ))
-}
 
 _maybe_auto_list_choices() {
     # Only while typing at end-of-line; avoid noisy redraws.
@@ -1599,13 +1554,10 @@ _maybe_auto_list_choices() {
 
     # After a space, refresh completions for the next argument position.
     if (( _has_trailing_space )); then
-        # On bare `cd `, only auto-open if candidate set is small.
         if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
             if (( ${#_words} == 1 )); then
-                if _should_autolist_empty_cd_arg; then
-                    _auto_list_last_buffer="$LBUFFER"
-                    zle list-choices
-                fi
+                _auto_list_last_buffer="$LBUFFER"
+                zle list-choices
                 return
             fi
         fi
@@ -1817,8 +1769,6 @@ if (( $+functions[add-zsh-hook] )); then
     add-zsh-hook precmd _reset_history_scroll
     add-zsh-hook -D precmd _reset_terminal_input_modes 2>/dev/null
     add-zsh-hook precmd _reset_terminal_input_modes
-    add-zsh-hook -D chpwd _autolist_invalidate_cd_cache 2>/dev/null
-    add-zsh-hook chpwd _autolist_invalidate_cd_cache
     # Ensure our paste auto-fix stays registered. zsh-autosuggestions overrides
     # bracketed-paste when it loads (via zsh-defer). This precmd hook re-registers
     # our widget before each prompt so the override can't stick.
