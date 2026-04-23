@@ -1490,11 +1490,14 @@ _tab_accept_or_complete() {
     if [[ -n "$POSTDISPLAY" ]]; then
         (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
         # After accepting ghost text, if the result ends in / and the command is
-        # path-oriented, immediately show the next level (no second Tab needed).
+        # path-oriented, immediately open the next level — same as a second Tab press.
         local _cmd="${BUFFER%%[[:space:]]*}"
         if (( ${_zshkit_path_cmds[(Ie)$_cmd]} )) && [[ "$BUFFER" == */ ]]; then
-            _auto_list_last_buffer="$LBUFFER"
-            zle list-choices
+            if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
+                zle _cd_tab_complete
+            else
+                zle _tab_complete_and_autolist
+            fi
         fi
         return 0
     fi
