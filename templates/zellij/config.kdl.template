@@ -31,6 +31,25 @@ advanced_mouse_actions true
 
 __SCROLLBACK_EDITOR_LINE__
 
+// Muted theme: tones down the active-tab highlight from the default bright green
+// to a dim slate-blue. Only the colors used by the built-in tab-bar matter here.
+themes {
+    zshkit {
+        fg 200 200 200
+        bg 22 22 26
+        black 22 22 26
+        red 180 80 80
+        green 72 110 140
+        yellow 190 170 80
+        blue 80 110 180
+        magenta 140 80 160
+        cyan 70 150 160
+        white 210 210 210
+        orange 200 130 70
+    }
+}
+theme "zshkit"
+
 // zellij-attention: adds ⏳/✅ icons to tab names when Claude Code needs input or finishes.
 // Icons clear automatically when you focus the pane.
 load_plugins {
