@@ -476,12 +476,9 @@ Zellij captures all mouse events so it can handle pane focus, scroll, and border
 
 | Setting | Value |
 |---------|-------|
-| Status bar | Top `zjstatus` plugin showing session name and visible tabs |
-| Left side | Session name |
-| Center | Tabs |
-| Right side | Empty |
-| Permission handling | Setup pre-seeds minimal bundled-plugin permissions. Use `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` with `setup_zsh.sh` if you want to approve manually in Zellij instead |
-| Session restore | Enabled via Zellij serialization settings |
+| Status bar | Zellij's built-in `tab-bar` — session name on the left, tabs in the center |
+| Permission handling | Setup pre-seeds `zellij-attention` permissions. Use `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` with `setup_zsh.sh` to approve manually instead |
+| Session restore | Disabled (see [SETUP_DETAILS.md](SETUP_DETAILS.md)) |
 | Scrollback | `100000` lines |
 
 ### Claude Code Integration
@@ -493,7 +490,7 @@ zshkit installs [zellij-attention](https://github.com/KiryuuLight/zellij-attenti
 | ⏳ | Claude is waiting for your input |
 | ✅ | Claude finished its task |
 
-The icon clears automatically when you focus the pane. This works alongside the existing `zjstatus` bar — no tab bar changes needed.
+The icon clears automatically when you focus the pane. It appears in the tab name shown by the built-in `tab-bar` — no extra config needed.
 
 Claude Code hooks in `~/.claude/settings.json` wire up the notifications automatically. When Claude finishes, the terminal tab title also updates to show `✅ claude done`.
 
