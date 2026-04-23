@@ -355,20 +355,20 @@ Managed defaults:
 - built-in default preset
 - mouse mode enabled — scroll and click-to-focus work; `Shift+drag` required for text selection (see [Mouse and Clipboard](#mouse-and-clipboard))
 - `100000` lines of scrollback
-- top `zjstatus` bar showing the session name and visible tabs
+- top bar (Zellij's built-in `tab-bar`) showing the session name and visible tabs
 - managed layout with one minimal top bar and one main shell pane below it
 
 Main session command:
 
-- **`zj` outside Zellij:** picks an active session with `fzf` when available; if none exist, starts one named after the current directory (or the name you pass).
-- **`zj` inside Zellij:** Zellij does not support switching sessions from the CLI like a nested attach, so `zj` opens the **session-manager** flow: it ensures the named session exists in the background, then launches that plugin so you switch there. Nested runs mean “open manager to switch,” not “attach immediately.” If the plugin fails to launch, you get the manual shortcut (`Ctrl+o, w`).
-- Example **`zj work`:** outside Zellij, attach to or create `work`; inside Zellij, same manager flow for the `work` session.
+- **`zj` outside Zellij:** picks an active session with `fzf` when available; if none exist, starts one named after the current directory (or the name you pass). Exited sessions are automatically removed before attaching.
+- **`zj` inside Zellij:** ensures the named session exists (creating it if needed), then prints `Ctrl+o → w` to switch to it — Zellij removed direct CLI session switching so the keyboard shortcut is the only way.
+- Example **`zj work`:** outside Zellij, attach to or create `work`; inside Zellij, ensure `work` exists and print the switch shortcut.
 
 | Command | Does |
 |---------|------|
-| `zj [name]` | Outside Zellij: pick, attach to, or create a session. Inside Zellij: ensure the session exists and open the session manager to switch to it. When starting fresh with no name, defaults to current directory name. |
-| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. |
-| `zjclean` | Delete all sessions and their scrollback/resurrection history — lists each session with its age before confirming |
+| `zj [name]` | Outside Zellij: pick an active session (fzf), attach, or create. Exited sessions are auto-removed first. Inside Zellij: ensure the session exists, then print `Ctrl+o → w` to switch. Defaults to current directory name when no name given. |
+| `zjs host [session]` | SSH into a remote host and attach to (or create) a named Zellij session — requires zshkit installed on the remote. Defaults to session `main`. |
+| `zjclean` | Delete all sessions, scrollback/resurrection history, and plugin cache (`~/.cache/zellij`) — lists sessions with age before confirming |
 | `zellij list-sessions` | List active Zellij sessions |
 | `zellij delete-session <name> --force` | Delete a specific Zellij session by name, killing it first if needed |
 | `zellij delete-all-sessions -f` | Delete every Zellij session, killing running ones first |

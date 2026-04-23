@@ -23,7 +23,7 @@ bash setup_zsh.sh        # interactive — prompts before each install
 bash setup_zsh.sh --yes  # non-interactive — auto-confirms all prompts
 ```
 
-The script resolves the latest versions of Zellij, carapace-bin, zjstatus, and zellij-attention from GitHub at runtime. Pin any of them with env vars if needed: `ZELLIJ_VERSION=v0.44.0 bash setup_zsh.sh`.
+The script resolves the latest versions of Zellij, carapace-bin, and zellij-attention from GitHub at runtime. Pin any of them with env vars if needed: `ZELLIJ_VERSION=v0.44.0 bash setup_zsh.sh`.
 
 On Linux, `--yes` still requires non-interactive `sudo` for package installs and terminfo setup. Prefer interactive runs (enter your password when prompted) over blanket passwordless `sudo` for your user; use a narrow provisioning exception only if you truly need unattended installs.
 

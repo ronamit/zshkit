@@ -26,9 +26,9 @@ ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
 
 ### Security notes
 
-- **Release downloads:** Linux installs of Zellij, carapace-bin, `zjstatus.wasm`, and `zellij-attention.wasm` are fetched over HTTPS from the latest GitHub release. Versions are resolved at runtime via the GitHub API and can be pinned by setting `ZELLIJ_VERSION`, `ZJSTATUS_VERSION`, `ZELLIJ_ATTENTION_VERSION`, or `CARAPACE_VERSION` in your environment before running the script. There is no checksum verification; mitigate supply-chain risk by auditing versions, mirroring artifacts, or installing equivalent packages from your distro.
+- **Release downloads:** Linux installs of Zellij, carapace-bin, and `zellij-attention.wasm` are fetched over HTTPS from the latest GitHub release. Versions are resolved at runtime via the GitHub API and can be pinned by setting `ZELLIJ_VERSION`, `ZELLIJ_ATTENTION_VERSION`, or `CARAPACE_VERSION` in your environment before running the script. There is no checksum verification; mitigate supply-chain risk by auditing versions, mirroring artifacts, or installing equivalent packages from your distro.
 - **curl \| sh:** Oh My Zsh, `uv`, and `navi` still use upstream install scripts over HTTPS (standard trade-off: convenience vs. supply-chain review). Mitigate by auditing scripts before each run or installing those tools via distro packages instead.
-- **Zellij plugin permissions:** The installer pre-writes `~/.cache/zellij/permissions.kdl` for bundled `zjstatus` and `zellij-attention` so the status bar works without an interactive prompt. Set `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` when running `setup_zsh.sh` if you prefer to approve inside Zellij instead.
+- **Zellij plugin permissions:** The installer pre-writes `~/.cache/zellij/permissions.kdl` for `zellij-attention` so it works without an interactive prompt. Set `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` when running `setup_zsh.sh` if you prefer to approve inside Zellij instead.
 - **direnv:** The template enables `direnv` only if the binary exists; new `.envrc` files still require `direnv allow` before they run.
 
 ## What The Setup Script Does
@@ -41,7 +41,7 @@ ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
 | Plugins | zsh-autosuggestions, fast-syntax-highlighting |
 | CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi, sshfs |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
-| Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, and a minimal top `zjstatus` bar |
+| Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, and a top bar showing session name and tabs |
 | Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/ghostty/config` from **`templates/ghostty/`**, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |
 
 On Linux, CLI tools are installed through apt where possible, with some optional items handled best-effort. `uv` is installed via its official curl installer on Linux (not in apt). On macOS, the same toolchain is installed through Homebrew. **Ghostty is installed via snap on Linux and `brew install --cask ghostty` on macOS.**
@@ -69,7 +69,6 @@ The setup writes or manages these locations:
 | `~/.config/ghostty/config` | Managed Ghostty starter config |
 | `~/.config/zellij/config.kdl` | Managed Zellij config |
 | `~/.config/zellij/layouts/default.kdl` | Managed default Zellij layout |
-| `archive/zellij-metrics.sh` | Archived reference for the old metrics-based `zjstatus` bar; not installed by setup |
 | `~/.local/bin/vpn-connect` / `vpn-disconnect` / `vpn-status` | Managed VPN helper commands |
 | Linux: `~/.local/share/zshkit/vpn/` | Managed VPN scripts and credentials file |
 | Linux: `~/.local/state/zshkit/vpn/` | VPN runtime state, temp files, and logs |
@@ -79,7 +78,7 @@ The setup writes or manages these locations:
 | `~/.zshenv` | `skip_global_compinit=1` added to avoid completion conflicts |
 | `~/.bashrc` | Zsh auto-launch fallback block appended (only if not already present) |
 | `~/.terminfo/` | User-local terminfo entries for Ghostty, Kitty, and WezTerm |
-| `~/.cache/zellij/permissions.kdl` | Pre-seeded by setup for bundled plugins; Zellij may extend it when you approve others. Skip pre-seed with `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` (see `setup_zsh.sh` header) |
+| `~/.cache/zellij/permissions.kdl` | Pre-seeded by setup for `zellij-attention`; Zellij may extend it when you approve others. Skip pre-seed with `ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED=1` (see `setup_zsh.sh` header) |
 
 The script preserves `~/.zshrc.local`, backs up existing managed files before overwriting them, and skips `chsh` over SSH so the default shell is only changed when it is safe to do so.
 
