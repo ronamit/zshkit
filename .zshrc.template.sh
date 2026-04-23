@@ -1100,10 +1100,8 @@ _zshkit_zellij_delete_if_exited() {
 
 # Zellij session helper
 # Usage: zj [session-name]   outside Zellij: attach to or create a named session
-#        zj                  pick from existing sessions, or start "main"
-# Inside an existing Zellij session, ensure the target session exists and open
-# the session-manager, because direct CLI session switching is no longer
-# supported in recent Zellij releases.
+#        zj                  pick from existing sessions, or start a new one
+# Inside Zellij: ensures the target session exists, then prints the shortcut to switch.
 zj() {
     if ! command -v zellij &>/dev/null; then
         echo "zj: zellij is not installed. Run setup_zsh.sh first."
@@ -1133,14 +1131,13 @@ zj() {
     fi
 
     if [[ -n "${ZELLIJ:-}" ]]; then
-        # Already inside a Zellij session — CLI-based session switching was removed
-        # in recent Zellij releases; switching requires the keyboard shortcut.
         _zshkit_zellij_delete_if_exited "$session" || return 1
         if ! zellij list-sessions --short --no-formatting 2>/dev/null | grep -Fxq "$session"; then
             zellij attach --create-background "$session" || return 1
-            echo "zj: session '$session' created."
+            echo "zj: session '$session' created. Press Ctrl+o → w to switch to it."
+        else
+            echo "zj: press Ctrl+o → w to switch to '$session'."
         fi
-        echo "zj: press Ctrl+o → w to open the session switcher, then select '$session'."
     else
         _zshkit_zellij_delete_if_exited "$session" || return 1
         zellij attach --create "$session"
@@ -1154,15 +1151,16 @@ zj() {
 
 # Delete all Zellij sessions, scrollback/resurrection data, and plugin cache.
 zjclean() {
-    local sessions active_session
-    sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
+    local all_sessions sessions active_session
+    all_sessions=$(zellij list-sessions --no-formatting 2>/dev/null)
+    sessions=$(printf '%s\n' "$all_sessions" | sed 's/ .*//')
     active_session="${ZELLIJ_SESSION_NAME:-}"
 
     if [[ -z "$sessions" ]]; then
         echo "No Zellij sessions. Clearing cache only."
     else
         echo "Sessions to delete:"
-        zellij list-sessions --no-formatting 2>/dev/null | sed 's/^/  /'
+        printf '%s\n' "$all_sessions" | sed 's/^/  /'
     fi
     if ! read -q "_zjclean_confirm?Delete all sessions, scrollback, and plugin cache? [y/N] "; then
         echo -e "\nAborted."
@@ -1196,7 +1194,6 @@ zjs() {
     local session="${2:-main}"
     local remote_cmd
 
-
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
@@ -1216,7 +1213,7 @@ EOF
     printf "Connecting to %s (session: %s)…\n" "$host" "$session"
     _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "$remote_cmd"
     local zjs_rc=$?
-        _zshkit_reset_terminal_input_modes --leave-alt-screen
+    _zshkit_reset_terminal_input_modes --leave-alt-screen
     if (( zjs_rc != 0 )) && [[ -t 0 && -t 1 ]]; then
         printf "zjs: connection failed (exit %d) — this may be a VPN issue. Try running vpn-connect and retrying.\n" "$zjs_rc"
         printf "  Reconnect with: zjs %s %s\n" "$host" "$session"
