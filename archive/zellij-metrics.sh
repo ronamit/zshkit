@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Archived reference: this script powered the older metrics-heavy zjstatus bar.
+# It is intentionally no longer installed by setup_zsh.sh or used by the
+# default Zellij layout. Keep it only as rollback/reference material.
+
 set -uo pipefail
 
 mode="${1:-metrics}"
