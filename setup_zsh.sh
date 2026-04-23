@@ -41,7 +41,6 @@ fi
 # Pin specific versions with env vars; leave unset to auto-fetch latest from GitHub.
 # e.g. ZELLIJ_VERSION=v0.44.0 bash setup_zsh.sh
 ZELLIJ_VERSION="${ZELLIJ_VERSION:-}"
-ZJSTATUS_VERSION="${ZJSTATUS_VERSION:-}"
 ZELLIJ_ATTENTION_VERSION="${ZELLIJ_ATTENTION_VERSION:-}"
 CARAPACE_VERSION="${CARAPACE_VERSION:-}"
 
@@ -646,11 +645,9 @@ require_noninteractive_sudo_for_yes_mode
 
 step "Resolving latest tool versions from GitHub..."
 [ -z "$ZELLIJ_VERSION" ]           && ZELLIJ_VERSION=$(gh_latest_version "zellij-org/zellij" "v0.44.0")
-[ -z "$ZJSTATUS_VERSION" ]         && ZJSTATUS_VERSION=$(gh_latest_version "dj95/zjstatus" "v0.22.0")
 [ -z "$ZELLIJ_ATTENTION_VERSION" ] && ZELLIJ_ATTENTION_VERSION=$(gh_latest_version "KiryuuLight/zellij-attention" "v0.3.1")
 [ -z "$CARAPACE_VERSION" ]         && CARAPACE_VERSION=$(gh_latest_version "carapace-sh/carapace-bin" "v1.6.4")
 echo "  Zellij:            $ZELLIJ_VERSION"
-echo "  zjstatus:          $ZJSTATUS_VERSION"
 echo "  zellij-attention:  $ZELLIJ_ATTENTION_VERSION"
 echo "  carapace-bin:      $CARAPACE_VERSION"
 
@@ -1065,28 +1062,10 @@ mkdir -p "$ZELLIJ_LAYOUTS_DIR" "$ZELLIJ_PLUGIN_DIR" "$HOME/.local/bin"
 
 backup_file_if_exists "$ZELLIJ_CONFIG_DIR/config.kdl" "$BACKUP_DIR/zellij_config.kdl"
 backup_file_if_exists "$ZELLIJ_LAYOUTS_DIR/default.kdl" "$BACKUP_DIR/zellij_default_layout.kdl"
-backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" "$BACKUP_DIR/zjstatus.wasm"
 backup_file_if_exists "$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm" "$BACKUP_DIR/zellij-attention.wasm"
-
-step "Installing Zellij status plugin (zjstatus)..."
-if [ -s "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm" ] && [ "${ZSHKIT_FORCE_PLUGIN_DOWNLOAD:-0}" != "1" ]; then
-    echo "  ✓ zjstatus already present — skipping download"
-elif confirm_install "Install zjstatus ${ZJSTATUS_VERSION}?"; then
-    _zjstatus_url="https://github.com/dj95/zjstatus/releases/download/${ZJSTATUS_VERSION}/zjstatus.wasm"
-    if download_to_file "$_zjstatus_url" "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"; then
-        echo "  ✓ Installed zjstatus ${ZJSTATUS_VERSION}"
-    else
-        echo "  ✗ Failed to download zjstatus ${ZJSTATUS_VERSION}"
-        rm -f "$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
-        exit 1
-    fi
-fi
 
 ZELLIJ_CACHE_DIR="$HOME/.cache/zellij"
 PERM_FILE="$ZELLIJ_CACHE_DIR/permissions.kdl"
-PLUGIN_ABSOLUTE_PATH="$ZELLIJ_PLUGIN_DIR/zjstatus.wasm"
-ZJSTATUS_PLUGIN_URL="file:$PLUGIN_ABSOLUTE_PATH"
-ZJSTATUS_PERM_KEY="file:$PLUGIN_ABSOLUTE_PATH"
 _ATTENTION_PERM_KEY="file:$ZELLIJ_PLUGIN_DIR/zellij-attention.wasm"
 
 step "Installing Zellij attention plugin (zellij-attention)..."
@@ -1112,13 +1091,6 @@ case "${ZSHKIT_SKIP_ZELLIJ_PERMISSION_SEED:-0}" in
         ;;
     *)
         mkdir -p "$ZELLIJ_CACHE_DIR"
-        if [ ! -f "$PERM_FILE" ] || ! grep -qF "$ZJSTATUS_PERM_KEY" "$PERM_FILE"; then
-            echo "  ! Seeding Zellij permissions cache for zjstatus"
-            printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
-                "$ZJSTATUS_PERM_KEY" >> "$PERM_FILE"
-        else
-            echo "  ✓ Zellij permissions for zjstatus already seeded"
-        fi
         if [ ! -f "$PERM_FILE" ] || ! grep -qF "$_ATTENTION_PERM_KEY" "$PERM_FILE"; then
             echo "  ! Seeding Zellij permissions cache for zellij-attention"
             printf '\n"%s" {\n    ReadApplicationState\n    ChangeApplicationState\n}\n' \
@@ -1138,8 +1110,7 @@ echo "  ✓ Wrote $ZELLIJ_CONFIG_DIR/config.kdl"
 template_must_exist "$ZELLIJ_LAYOUT_TEMPLATE"
 render_template_to_file \
     "$ZELLIJ_LAYOUT_TEMPLATE" \
-    "$ZELLIJ_LAYOUTS_DIR/default.kdl" \
-    "__ZJSTATUS_PLUGIN_URL__" "$ZJSTATUS_PLUGIN_URL"
+    "$ZELLIJ_LAYOUTS_DIR/default.kdl"
 echo "  ✓ Wrote $ZELLIJ_LAYOUTS_DIR/default.kdl"
 
 echo "    Zellij permissions for bundled plugins are pre-seeded by setup (see script header to skip)."
