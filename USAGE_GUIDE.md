@@ -38,7 +38,7 @@ export ZSH_AUTOLIST_ON_TYPE=1
 3. Press `↓` — if the auto-list grid is showing, `↓` enters it directly. After `↑` history search, `↓` returns to newer matches.
 4. Navigate the grid with arrow keys, press `Enter` to insert the selection.
 
-For `cd` (and `pushd`/`popd`): if ghost text ends with `/` (a directory), `Tab` accepts it **and immediately shows the next directory level** — no second `Tab` needed. If you accepted a dir from the grid with `Enter`, one more `Tab` shows the next level.
+**Directory drill-down:** for path-oriented commands (`cd`, `rm`, `cp`, `mv`, `ls`, `vim`, and others), if ghost text ends with `/`, `Tab` accepts it **and immediately opens the next directory level** — no second `Tab` needed. If you accepted a directory from the grid with `Enter`, one more `Tab` drills in.
 
 | Key | Action |
 |-----|--------|

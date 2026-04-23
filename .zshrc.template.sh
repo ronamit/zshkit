@@ -1486,29 +1486,23 @@ _cd_tab_complete() {
 zle -N _cd_tab_complete
 
 _tab_accept_or_complete() {
-    # If autosuggestion ghost text is visible, Tab accepts it fully.
     if [[ -n "$POSTDISPLAY" ]]; then
         (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
-        # After accepting ghost text, if the result ends in / and the command is
-        # path-oriented, immediately open the next level — same as a second Tab press.
+        # Only drill into the next level when a path command accepted a trailing /.
+        # In all other cases the accept alone is the right outcome.
+        [[ "$BUFFER" == */ ]] || return 0
         local _cmd="${BUFFER%%[[:space:]]*}"
-        if (( ${_zshkit_path_cmds[(Ie)$_cmd]} )) && [[ "$BUFFER" == */ ]]; then
-            if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
-                zle _cd_tab_complete
-            else
-                zle _tab_complete_and_autolist
-            fi
-        fi
-        return 0
+        (( ${_zshkit_path_cmds[(Ie)$_cmd]} )) || return 0
+    else
+        local _cmd="${BUFFER%%[[:space:]]*}"
     fi
-    # cd/pushd/popd: deterministic drill-down with / appending.
-    local _cmd="${BUFFER%%[[:space:]]*}"
+    # Shared dispatch: cd/pushd/popd get the drill-down widget (appends / if needed);
+    # all other path commands get the standard completion menu.
     if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
         zle _cd_tab_complete
-        return 0
+    else
+        zle _tab_complete_and_autolist
     fi
-    # No ghost text and not a cd command — enter the completion menu.
-    zle _tab_complete_and_autolist
 }
 zle -N _tab_accept_or_complete
 
@@ -1523,7 +1517,7 @@ zle -N _tab_accept_or_complete
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
 typeset -gi _auto_list_in_paste=0
-# Commands for which a trailing / in the buffer should trigger next-level list-choices.
+# Commands for which accepting a trailing / triggers immediate next-level completion.
 typeset -ga _zshkit_path_cmds=(
     cd pushd popd
     ls cat less more vim nano micro hx nvim
