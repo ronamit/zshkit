@@ -1480,6 +1480,7 @@ _cd_tab_complete() {
     fi
 
     _auto_list_last_buffer=""
+    zle -I
     zle expand-or-complete
     zle list-choices
 }
@@ -1525,16 +1526,51 @@ typeset -ga _zshkit_path_cmds=(
 )
 # Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
 typeset -gF _zshkit_last_selfinsert_rt=0.0
+typeset -g _autolist_cd_cache_pwd=""
+typeset -gi _autolist_cd_cache_count=-1
+typeset -gi _autolist_cd_cache_limit=-1
 
-_cd_empty_arg_few_enough() {
-    local -i _max=${ZSH_AUTOLIST_CD_EMPTY_MAX:-20} _count=0
+_autolist_invalidate_cd_cache() {
+    _autolist_cd_cache_pwd=""
+    _autolist_cd_cache_count=-1
+    _autolist_cd_cache_limit=-1
+}
+
+_should_autolist_empty_cd_arg() {
+    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-20}"
+    local -i _max=20
+    local -i _count=0
     local _d
+
+    [[ "$_raw" == <-> ]] && _max=$_raw
+    (( _max < 0 )) && _max=0
+
+    if [[ "$_autolist_cd_cache_pwd" == "$PWD" && $_autolist_cd_cache_count -ge 0 ]] \
+       && (( _autolist_cd_cache_limit < 0 || _max <= _autolist_cd_cache_limit )); then
+        _count=$_autolist_cd_cache_count
+    else
+        setopt localoptions nullglob
+        for _d in * .*; do
+            [[ "$_d" == "." || "$_d" == ".." ]] && continue
+            [[ -d "$_d" ]] || continue
+            (( ++_count > _max )) && break
+        done
+        _autolist_cd_cache_pwd="$PWD"
+        _autolist_cd_cache_count=$_count
+        if (( _count > _max )); then
+            _autolist_cd_cache_limit=$_max
+        else
+            _autolist_cd_cache_limit=-1
+        fi
+    fi
+
+    (( _count <= _max ))
+}
+
+_zshkit_list_choices_clean() {
     setopt localoptions nullglob
-    for _d in */ .*/; do
-        [[ "$_d" == "./" || "$_d" == "../" ]] && continue
-        (( ++_count > _max )) && return 1
-    done
-    return 0
+    zle -I
+    zle list-choices
 }
 
 _maybe_auto_list_choices() {
@@ -1569,9 +1605,9 @@ _maybe_auto_list_choices() {
     if (( _has_trailing_space )); then
         if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
             if (( ${#_words} == 1 )); then
-                if _cd_empty_arg_few_enough; then
+                if _should_autolist_empty_cd_arg; then
                     _auto_list_last_buffer="$LBUFFER"
-                    zle list-choices
+                    _zshkit_list_choices_clean
                 fi
                 return
             fi
@@ -1584,7 +1620,7 @@ _maybe_auto_list_choices() {
             return
         fi
         _auto_list_last_buffer="$LBUFFER"
-        zle list-choices
+        _zshkit_list_choices_clean
         return
     fi
 
@@ -1607,10 +1643,29 @@ _maybe_auto_list_choices() {
     # Keep it focused to common completion contexts.
     if (( _is_cd_context || _is_ssh_context || (_is_path_like && _is_path_cmd) )); then
         _auto_list_last_buffer="$LBUFFER"
-        zle list-choices
+        _zshkit_list_choices_clean
     fi
 }
 zle -N _maybe_auto_list_choices
+
+_zshkit_capture_widget() {
+    local _src="$1" _dst="$2" _wrapper="$3" _widget="${widgets[$_src]:-}"
+    [[ "$_widget" == "user:${_wrapper}" ]] && return 0
+    case "$_widget" in
+        user:*)
+            zle -N "$_dst" "${_widget#*:}"
+            ;;
+        builtin)
+            zle -A ".$_src" "$_dst"
+            ;;
+        completion:*)
+            zle -A "$_src" "$_dst"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
 
 _self_insert_with_autolist() {
     local _now=$EPOCHREALTIME
@@ -1620,16 +1675,16 @@ _self_insert_with_autolist() {
     _zshkit_last_selfinsert_rt=$_now
 
     (( _auto_list_in_paste || KEYS_QUEUED_COUNT > 0 || _rapid )) && {
-        if (( $+widgets[autosuggest-self-insert] )); then
-            zle autosuggest-self-insert
+        if (( $+widgets[_zshkit_saved_self_insert] )); then
+            zle _zshkit_saved_self_insert
         else
             zle .self-insert
         fi
         return
     }
 
-    if (( $+widgets[autosuggest-self-insert] )); then
-        zle autosuggest-self-insert
+    if (( $+widgets[_zshkit_saved_self_insert] )); then
+        zle _zshkit_saved_self_insert
     else
         zle .self-insert
     fi
@@ -1639,8 +1694,8 @@ _self_insert_with_autolist() {
 zle -N _self_insert_with_autolist
 
 _magic_space_with_autolist() {
-    if (( $+widgets[autosuggest-magic-space] )); then
-        zle autosuggest-magic-space
+    if (( $+widgets[_zshkit_saved_magic_space] )); then
+        zle _zshkit_saved_magic_space
     else
         zle .magic-space
     fi
@@ -1653,8 +1708,9 @@ zle -N _magic_space_with_autolist
 _accept_line_with_autolist_reset() {
     _history_scroll_active=0
     _auto_list_last_buffer=""
-    if (( $+widgets[autosuggest-accept-line] )); then
-        zle autosuggest-accept-line
+    zle -I
+    if (( $+widgets[_zshkit_saved_accept_line] )); then
+        zle _zshkit_saved_accept_line
     else
         zle .accept-line
     fi
@@ -1709,21 +1765,33 @@ _bracketed_paste_with_autofix() {
 zle -N _bracketed_paste_with_autofix
 
 _forward_char_with_autolist() {
-    zle .forward-char
+    if (( $+widgets[_zshkit_saved_forward_char] )); then
+        zle _zshkit_saved_forward_char
+    else
+        zle .forward-char
+    fi
     _auto_list_last_buffer=""
     zle _maybe_auto_list_choices
 }
 zle -N _forward_char_with_autolist
 
 _forward_word_with_autolist() {
-    zle .forward-word
+    if (( $+widgets[_zshkit_saved_forward_word] )); then
+        zle _zshkit_saved_forward_word
+    else
+        zle .forward-word
+    fi
     _auto_list_last_buffer=""
     zle _maybe_auto_list_choices
 }
 zle -N _forward_word_with_autolist
 
 _backward_delete_char_with_autolist() {
-    zle .backward-delete-char
+    if (( $+widgets[_zshkit_saved_backward_delete_char] )); then
+        zle _zshkit_saved_backward_delete_char
+    else
+        zle .backward-delete-char
+    fi
     _history_scroll_active=0
     _auto_list_last_buffer=""
     zle _maybe_auto_list_choices
@@ -1738,6 +1806,12 @@ _autolist_is_enabled() {
 
 _apply_autolist_mode() {
     if _autolist_is_enabled; then
+        _zshkit_capture_widget self-insert _zshkit_saved_self_insert _self_insert_with_autolist
+        _zshkit_capture_widget magic-space _zshkit_saved_magic_space _magic_space_with_autolist
+        _zshkit_capture_widget accept-line _zshkit_saved_accept_line _accept_line_with_autolist_reset
+        _zshkit_capture_widget forward-char _zshkit_saved_forward_char _forward_char_with_autolist
+        _zshkit_capture_widget forward-word _zshkit_saved_forward_word _forward_word_with_autolist
+        _zshkit_capture_widget backward-delete-char _zshkit_saved_backward_delete_char _backward_delete_char_with_autolist
         zle -N self-insert _self_insert_with_autolist
         zle -N magic-space _magic_space_with_autolist
         zle -N accept-line _accept_line_with_autolist_reset
@@ -1746,24 +1820,36 @@ _apply_autolist_mode() {
         zle -N forward-word _forward_word_with_autolist
         zle -N backward-delete-char _backward_delete_char_with_autolist
     else
-        if (( $+widgets[autosuggest-self-insert] )); then
-            zle -A autosuggest-self-insert self-insert
+        if (( $+widgets[_zshkit_saved_self_insert] )); then
+            zle -A _zshkit_saved_self_insert self-insert
         else
             zle -A .self-insert self-insert
         fi
-        if (( $+widgets[autosuggest-magic-space] )); then
-            zle -A autosuggest-magic-space magic-space
+        if (( $+widgets[_zshkit_saved_magic_space] )); then
+            zle -A _zshkit_saved_magic_space magic-space
         else
             zle -A .magic-space magic-space
         fi
-        if (( $+widgets[autosuggest-accept-line] )); then
-            zle -A autosuggest-accept-line accept-line
+        if (( $+widgets[_zshkit_saved_accept_line] )); then
+            zle -A _zshkit_saved_accept_line accept-line
         else
             zle -A .accept-line accept-line
         fi
-        zle -A .forward-char forward-char
-        zle -A .forward-word forward-word
-        zle -A .backward-delete-char backward-delete-char
+        if (( $+widgets[_zshkit_saved_forward_char] )); then
+            zle -A _zshkit_saved_forward_char forward-char
+        else
+            zle -A .forward-char forward-char
+        fi
+        if (( $+widgets[_zshkit_saved_forward_word] )); then
+            zle -A _zshkit_saved_forward_word forward-word
+        else
+            zle -A .forward-word forward-word
+        fi
+        if (( $+widgets[_zshkit_saved_backward_delete_char] )); then
+            zle -A _zshkit_saved_backward_delete_char backward-delete-char
+        else
+            zle -A .backward-delete-char backward-delete-char
+        fi
     fi
     # Always register auto-fix paste handler regardless of autolist mode.
     zle -N bracketed-paste _bracketed_paste_with_autofix
@@ -1784,6 +1870,8 @@ if (( $+functions[add-zsh-hook] )); then
     add-zsh-hook precmd _reset_history_scroll
     add-zsh-hook -D precmd _reset_terminal_input_modes 2>/dev/null
     add-zsh-hook precmd _reset_terminal_input_modes
+    add-zsh-hook -D chpwd _autolist_invalidate_cd_cache 2>/dev/null
+    add-zsh-hook chpwd _autolist_invalidate_cd_cache
     # Ensure our paste auto-fix stays registered. zsh-autosuggestions overrides
     # bracketed-paste when it loads (via zsh-defer). This precmd hook re-registers
     # our widget before each prompt so the override can't stick.
@@ -1908,11 +1996,12 @@ if [[ -r "$_zsh_defer_plugin" ]]; then
     # zsh-defer (by romkatv): source synchronously so the function is available,
     # then defer heavy plugins until after the first prompt renders (~100–150ms saved).
     source "$_zsh_defer_plugin"
-    (( _zsh_autosuggest_loaded )) && zsh-defer source "$_zsh_autosuggest_plugin"
     (( _zsh_highlight_loaded )) && zsh-defer source "$_zsh_highlight_plugin"
+    (( _zsh_autosuggest_loaded )) && zsh-defer source "$_zsh_autosuggest_plugin"
     # Re-bind keys after deferred plugins settle (autosuggestions rebinds widgets on load).
     [[ -o interactive ]] && zsh-defer -c \
-        '(( $+widgets[_tab_accept_or_complete] )) && {
+        '(( $+functions[_zsh_autosuggest_bind_widgets] )) && _zsh_autosuggest_bind_widgets
+        (( $+widgets[_tab_accept_or_complete] )) && {
             bindkey -M emacs "^I" _tab_accept_or_complete
             bindkey -M viins "^I" _tab_accept_or_complete
         }
@@ -1921,14 +2010,19 @@ if [[ -r "$_zsh_defer_plugin" ]]; then
             bindkey -M viins "^ " autosuggest-accept
         }
         # Re-register paste auto-fix: zsh-autosuggestions overrides bracketed-paste on load.
-        (( $+functions[_bracketed_paste_with_autofix] )) && zle -N bracketed-paste _bracketed_paste_with_autofix'
+        (( $+functions[_bracketed_paste_with_autofix] )) && zle -N bracketed-paste _bracketed_paste_with_autofix
+        # Re-apply autolist mode: zsh-autosuggestions rebinds self-insert on load,
+        # which overwrites our _self_insert_with_autolist wrapper.
+        (( $+functions[_apply_autolist_mode] )) && _apply_autolist_mode'
 else
     # zsh-defer not available — fall back to synchronous sourcing.
+    (( _zsh_highlight_loaded )) && source "$_zsh_highlight_plugin"
     if (( _zsh_autosuggest_loaded )); then
         source "$_zsh_autosuggest_plugin"
         (( $+functions[_zsh_autosuggest_bind_widgets] )) && _zsh_autosuggest_bind_widgets
     fi
-    (( _zsh_highlight_loaded )) && source "$_zsh_highlight_plugin"
+    # Re-apply after autosuggestions rebinds self-insert.
+    (( $+functions[_apply_autolist_mode] )) && _apply_autolist_mode
     if [[ -o interactive ]] && (( $+widgets[_tab_accept_or_complete] )); then
         bindkey -M emacs '^I' _tab_accept_or_complete
         bindkey -M viins '^I' _tab_accept_or_complete
