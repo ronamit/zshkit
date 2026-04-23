@@ -1152,32 +1152,38 @@ zj() {
     fi
 }
 
-# Delete all Zellij sessions and their scrollback/resurrection data.
+# Delete all Zellij sessions, scrollback/resurrection data, and plugin cache.
 zjclean() {
     local sessions active_session
     sessions=$(zellij list-sessions --short --no-formatting 2>/dev/null)
     active_session="${ZELLIJ_SESSION_NAME:-}"
 
     if [[ -z "$sessions" ]]; then
-        echo "No Zellij sessions to delete."
-        return 0
+        echo "No Zellij sessions. Clearing cache only."
+    else
+        echo "Sessions to delete:"
+        zellij list-sessions --no-formatting 2>/dev/null | sed 's/^/  /'
     fi
-    echo "Sessions to delete:"
-    zellij list-sessions --no-formatting 2>/dev/null | sed 's/^/  /'
-    if ! read -q "_zjclean_confirm?Delete all sessions and scrollback history? [y/N] "; then
+    if ! read -q "_zjclean_confirm?Delete all sessions, scrollback, and plugin cache? [y/N] "; then
         echo -e "\nAborted."
         return 0
     fi
     echo ""
-    printf '%s\n' "$sessions" | while IFS= read -r s; do
-        if [[ "$s" == "$active_session" ]]; then
-            echo "  ~ $s (skipped: cannot delete active session, detach first)"
-            continue
-        fi
-        zellij delete-session --force "$s" 2>/dev/null \
-            && echo "  ✓ $s" \
-            || echo "  ✗ $s (failed)"
-    done
+    if [[ -n "$sessions" ]]; then
+        printf '%s\n' "$sessions" | while IFS= read -r s; do
+            if [[ "$s" == "$active_session" ]]; then
+                echo "  ~ $s (skipped: cannot delete active session, detach first)"
+                continue
+            fi
+            zellij delete-session --force "$s" 2>/dev/null \
+                && echo "  ✓ $s" \
+                || echo "  ✗ $s (failed)"
+        done
+    fi
+    if [[ -d "${HOME}/.cache/zellij" ]]; then
+        rm -rf "${HOME}/.cache/zellij"
+        echo "  ✓ cache cleared (~/.cache/zellij)"
+    fi
 }
 
 # SSH into a host and attach to (or create) a named Zellij session.
