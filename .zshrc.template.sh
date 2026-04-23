@@ -1481,6 +1481,7 @@ _cd_tab_complete() {
 
     _auto_list_last_buffer=""
     zle expand-or-complete
+    local LISTMAX=0
     zle list-choices
 }
 zle -N _cd_tab_complete
@@ -1495,6 +1496,7 @@ _tab_accept_or_complete() {
         if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]] \
            && [[ "$BUFFER" == */ ]]; then
             _auto_list_last_buffer="$LBUFFER"
+            local LISTMAX=0
             zle list-choices
         fi
         return 0
@@ -1607,6 +1609,7 @@ _maybe_auto_list_choices() {
             if (( ${#_words} == 1 )); then
                 if _should_autolist_empty_cd_arg; then
                     _auto_list_last_buffer="$LBUFFER"
+                    local LISTMAX=0
                     zle list-choices
                 fi
                 return
@@ -1620,6 +1623,7 @@ _maybe_auto_list_choices() {
             return
         fi
         _auto_list_last_buffer="$LBUFFER"
+        local LISTMAX=0
         zle list-choices
         return
     fi
@@ -1643,6 +1647,7 @@ _maybe_auto_list_choices() {
     # Keep it focused to common completion contexts.
     if (( _is_cd_context || _is_ssh_context || (_is_path_like && _is_path_cmd) )); then
         _auto_list_last_buffer="$LBUFFER"
+        local LISTMAX=0
         zle list-choices
     fi
 }
