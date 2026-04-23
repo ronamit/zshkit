@@ -1486,11 +1486,10 @@ _tab_accept_or_complete() {
     # If autosuggestion ghost text is visible, Tab accepts it fully.
     if [[ -n "$POSTDISPLAY" ]]; then
         (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
-        # After accepting ghost text for a cd command, if the result ends in /
-        # immediately show the next level so the user doesn't need a second Tab.
+        # After accepting ghost text, if the result ends in / and the command is
+        # path-oriented, immediately show the next level (no second Tab needed).
         local _cmd="${BUFFER%%[[:space:]]*}"
-        if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]] \
-           && [[ "$BUFFER" == */ ]]; then
+        if (( ${_zshkit_path_cmds[(Ie)$_cmd]} )) && [[ "$BUFFER" == */ ]]; then
             _auto_list_last_buffer="$LBUFFER"
             zle list-choices
         fi
@@ -1518,6 +1517,13 @@ zle -N _tab_accept_or_complete
 : "${ZSH_AUTOLIST_MIN_CHARS:=3}"
 typeset -g _auto_list_last_buffer=""
 typeset -gi _auto_list_in_paste=0
+# Commands for which a trailing / in the buffer should trigger next-level list-choices.
+typeset -ga _zshkit_path_cmds=(
+    cd pushd popd
+    ls cat less more vim nano micro hx nvim
+    rm cp mv mkdir rmdir touch
+    ssh scp rsync
+)
 # Tracks last self-insert time; used to detect rapid programmatic input (e.g. VSCode play button).
 typeset -gF _zshkit_last_selfinsert_rt=0.0
 typeset -g _autolist_cd_cache_pwd=""
@@ -1572,21 +1578,15 @@ _maybe_auto_list_choices() {
     (( CURSOR == ${#BUFFER} )) || return
     [[ "$LBUFFER" == "$_auto_list_last_buffer" ]] && return
 
-    local -a _words _path_popup_cmds
+    local -a _words
     local _current _cmd _is_cd_context=0 _is_ssh_context=0 _has_trailing_space=0
     local -i _is_path_cmd=0 _is_path_like=0
-    _path_popup_cmds=(
-        cd pushd popd
-        ls cat less more vim nano
-        rm cp mv mkdir rmdir touch
-        ssh scp rsync
-    )
     [[ "$LBUFFER" == *[[:space:]] ]] && _has_trailing_space=1
     _words=(${(z)LBUFFER})
     (( ${#_words} )) || return
     _current="${_words[-1]}"
     _cmd="${_words[1]}"
-    (( ${_path_popup_cmds[(Ie)$_cmd]} )) && _is_path_cmd=1
+    (( ${_zshkit_path_cmds[(Ie)$_cmd]} )) && _is_path_cmd=1
 
     # Always allow path completion previews for cd-like commands once an
     # argument has started (e.g., "cd D" should immediately list candidates).
