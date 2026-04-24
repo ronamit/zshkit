@@ -543,14 +543,7 @@ sshv() {
         sleep 1
         _zshkit_reset_terminal_input_modes --leave-alt-screen
 
-        # For plain `sshv host` calls (not zjs, which already has `zellij attach
-        # session` baked into ssh_args), inject a one-shot smart remote command:
-        # attach to the first existing Zellij session or fall back to a login shell.
         local -a _retry_args=("${ssh_args[@]}")
-        if [[ "${_SSHV_NO_HINTS:-}" != 1 ]]; then
-            _retry_args=(-t "${ssh_args[@]}"
-                'sess=$(PATH=$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH zellij list-sessions --short --no-formatting 2>/dev/null | head -1); [[ -n "$sess" ]] && exec zellij attach "$sess" || exec $SHELL -l')
-        fi
 
         command ssh "${_retry_args[@]}"
         ssh_rc=$?
@@ -1198,10 +1191,16 @@ zjs() {
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
     remote_cmd=$(cat <<EOF
-pkill -x zjs-"$session" 2>/dev/null
+pkill -f "zellij attach.*[[:space:]]$session" 2>/dev/null
 sleep 0.3
-_zjs_sessions=\$(PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH timeout 10 zellij list-sessions --no-formatting 2>/dev/null)
-if [[ \$? -eq 124 ]]; then
+if command -v timeout >/dev/null 2>&1; then
+    _zjs_sessions=\$(PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH timeout 10 zellij list-sessions --no-formatting 2>/dev/null)
+    _zjs_rc=\$?
+else
+    _zjs_sessions=\$(PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij list-sessions --no-formatting 2>/dev/null)
+    _zjs_rc=0
+fi
+if [[ \$_zjs_rc -eq 124 ]]; then
     echo "zjs: zellij server is unresponsive on remote — try 'pkill -f zellij' there, then reconnect"
     exit 1
 fi
@@ -1212,7 +1211,7 @@ if echo "\$_zjs_sessions" | grep -q "^$session .*EXITED"; then
         exit 1
     }
 fi
-PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-"$session" zellij attach --create "$session"
+PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec zellij attach --create "$session"
 EOF
 )
     printf "Connecting to %s (session: %s)…\n" "$host" "$session"

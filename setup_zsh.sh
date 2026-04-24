@@ -1127,7 +1127,7 @@ SSH_BLOCK=$(cat << 'EOF'
 Host *
     ServerAliveInterval 30
     ServerAliveCountMax 3
-    TCPKeepAlive yes
+    TCPKeepAlive no
     # Forward COLORTERM so remote apps can use truecolor when supported.
     SendEnv COLORTERM
 # <<< zshkit ssh defaults <<<
