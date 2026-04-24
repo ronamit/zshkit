@@ -1050,9 +1050,9 @@ ff() {
 ftext() {
     local pattern="${1:?usage: ftext PATTERN}"
     if command -v rg &>/dev/null; then
-        rg --smart-case --hidden -g '!.git' "$pattern"
+        rg --smart-case --hidden -g '!.git' -- "$pattern"
     else
-        grep -RIn --exclude-dir=.git -e "$pattern" . 2>/dev/null
+        grep -RIn --exclude-dir=.git -e "$pattern" -- . 2>/dev/null
     fi
 }
 
@@ -1243,7 +1243,7 @@ _zshkit_auto_fetch() {
     [[ -f "$marker" ]] && mtime=$(stat -c %Y "$marker" 2>/dev/null || stat -f %m "$marker" 2>/dev/null || echo 0)
     if (( EPOCHSECONDS - mtime > 60 )); then
         touch "$marker"
-        git -C "$repo" fetch -q --all </dev/null &!
+        git -C "$repo" fetch -q --all &>/dev/null &!
     fi
 }
 add-zsh-hook precmd _zshkit_auto_fetch
@@ -1324,7 +1324,7 @@ ZSH_AUTOSUGGEST_MANUAL_REBIND=1
 # Don't suggest dangerous commands from history.
 ZSH_AUTOSUGGEST_HISTORY_IGNORE='rm -rf *|sudo rm *|:(){ :|:& };:'
 
-# Autosuggestions plugin is sourced at the very end of this file (after syntax-highlighting).
+# Autosuggestions plugin is sourced at the very end of this file (before syntax-highlighting).
 
 # Keep autosuggest acceptance explicit: Ctrl+Space/End/Right (not Tab or Up/Down).
 typeset -ga ZSH_AUTOSUGGEST_ACCEPT_WIDGETS
@@ -1994,19 +1994,20 @@ if command -v carapace &>/dev/null; then
     unset _carapace_cache
 fi
 
-# ── Load syntax-highlighting and autosuggestions (order matters) ─────
-# syntax-highlighting first, then autosuggestions last so it wraps the
-# final widget set. Tab is re-bound after load because autosuggestions
-# rebinds widgets on startup and would otherwise steal ^I.
+# ── Load autosuggestions and syntax-highlighting (order matters) ─────
+# autosuggestions first, then syntax-highlighting last per plugin guidance.
+# Tab is re-bound after load because autosuggestions rebinds widgets on
+# startup and would otherwise steal ^I.
 if [[ -r "$_zsh_defer_plugin" ]]; then
     # zsh-defer (by romkatv): source synchronously so the function is available,
     # then defer heavy plugins until after the first prompt renders (~100–150ms saved).
     source "$_zsh_defer_plugin"
     (( _zsh_autosuggest_loaded )) && zsh-defer source "$_zsh_autosuggest_plugin"
     (( _zsh_highlight_loaded )) && zsh-defer source "$_zsh_highlight_plugin"
-    # Re-bind keys after deferred plugins settle (autosuggestions rebinds widgets on load).
+    # Re-bind keys after deferred plugins settle.
     [[ -o interactive ]] && zsh-defer -c \
-        '(( $+widgets[_tab_accept_or_complete] )) && {
+        '(( $+functions[_zsh_autosuggest_bind_widgets] )) && _zsh_autosuggest_bind_widgets
+        (( $+widgets[_tab_accept_or_complete] )) && {
             bindkey -M emacs "^I" _tab_accept_or_complete
             bindkey -M viins "^I" _tab_accept_or_complete
         }
