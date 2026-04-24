@@ -1718,3 +1718,17 @@ typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 
 (( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
 'builtin' 'unset' 'p10k_config_opts'
+
+# Selective transient prompt: collapse the retired prompt only when Enter was
+# pressed on an empty line. Commands keep their full prompt in scrollback.
+# NOTE: POWERLEVEL9K_TRANSIENT_PROMPT must stay 'off' (set above) for this to
+# work — the p10k configure wizard won't override this behaviour correctly.
+function p10k-on-post-prompt() {
+  if [[ -z "${BUFFER// /}" ]]; then
+    p10k display '*'=hide
+  fi
+}
+
+function p10k-on-pre-prompt() {
+  p10k display '*'=show
+}

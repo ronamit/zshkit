@@ -683,7 +683,7 @@ fi
 
 step "Installing Oh My Zsh..."
 if [ -d "$HOME/.oh-my-zsh" ]; then
-    echo "  ✓ Oh My Zsh already installed"
+    git -C "$HOME/.oh-my-zsh" pull --quiet --ff-only 2>/dev/null && echo "  ✓ Oh My Zsh updated" || echo "  ✓ Oh My Zsh already up to date"
 elif confirm_install "Install Oh My Zsh?"; then
     if sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended; then
         echo "  ✓ Oh My Zsh installed"

@@ -960,21 +960,13 @@ alias pyserver='python -m http.server'
 
 # Auto-activate/deactivate virtualenvs on cd
 _venv_auto_activate() {
-    # 1. Deactivate if we've left the current virtualenv's project directory
+    # 1. Deactivate only if zshkit auto-activated this env (anchor is set).
+    # Manually activated envs have no anchor and are never touched.
     if [[ -n "$VIRTUAL_ENV" ]]; then
         if [[ -n "${_ZSHKIT_VENV_ANCHOR:-}" ]]; then
-            # UV (or similar) env outside the repo: anchored to the directory where we auto-activated
             if [[ "$PWD" != "${_ZSHKIT_VENV_ANCHOR}" && "$PWD" != "${_ZSHKIT_VENV_ANCHOR}"/* ]]; then
                 deactivate 2>/dev/null
                 unset _ZSHKIT_VENV_ANCHOR
-            fi
-        else
-            local project_dir="$VIRTUAL_ENV"
-            [[ "$project_dir" == */.venv ]] && project_dir="${project_dir%/.venv}"
-            [[ "$project_dir" == */venv ]] && project_dir="${project_dir%/venv}"
-            # In-project .venv / venv only; external paths (no suffix) skip auto-deactivate
-            if [[ "$VIRTUAL_ENV" != "$project_dir" && "$PWD" != "$project_dir" && "$PWD" != "$project_dir"/* ]]; then
-                deactivate 2>/dev/null
             fi
         fi
     else
@@ -984,9 +976,9 @@ _venv_auto_activate() {
     # 2. Activate if we are in a directory with a virtualenv (and not already in one)
     if [[ -z "$VIRTUAL_ENV" ]]; then
         if [[ -d .venv ]]; then
-            source .venv/bin/activate 2>/dev/null
+            source .venv/bin/activate 2>/dev/null && _ZSHKIT_VENV_ANCHOR="$PWD"
         elif [[ -d venv ]]; then
-            source venv/bin/activate 2>/dev/null
+            source venv/bin/activate 2>/dev/null && _ZSHKIT_VENV_ANCHOR="$PWD"
         elif [[ -f pyproject.toml && -n "${UV_PROJECT_ENVIRONMENT:-}" && -r "$UV_PROJECT_ENVIRONMENT/bin/activate" ]]; then
             # uv: non-default venv path (see https://docs.astral.sh/uv/concepts/projects/#project-environment-path)
             source "$UV_PROJECT_ENVIRONMENT/bin/activate" 2>/dev/null && _ZSHKIT_VENV_ANCHOR="$PWD"
@@ -1301,6 +1293,7 @@ setopt HIST_FIND_NO_DUPS
 setopt HIST_IGNORE_SPACE
 setopt HIST_SAVE_NO_DUPS
 setopt HIST_VERIFY
+setopt HIST_FCNTL_LOCK
 
 # ── Autosuggestions ──────────────────────────────────────────────────
 
@@ -1348,6 +1341,7 @@ setopt AUTO_CD              # Type a dir name to cd into it (no 'cd' needed)
 setopt AUTO_PUSHD           # cd pushes onto the dir stack (use 'cd -N' to go back)
 setopt PUSHD_IGNORE_DUPS    # No duplicate dirs on the stack
 setopt PUSHD_SILENT         # Don't print dir stack after pushd/popd
+DIRSTACKSIZE=20
 typeset -g _correct_pref="${ZSH_ENABLE_CORRECTION:-0}"
 case "${_correct_pref:l}" in
     1|on|true|yes) setopt CORRECT ;;  # Offer correction for mistyped commands
