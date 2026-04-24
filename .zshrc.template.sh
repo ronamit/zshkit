@@ -1215,7 +1215,7 @@ fi
 PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-"$session" zellij attach --create "$session"
 EOF
 )
-    printf "Connecting to %s (session: %s)… [frozen? Enter then ~. to force-quit]\n" "$host" "$session"
+    printf "Connecting to %s (session: %s)…\n" "$host" "$session"
     _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "$remote_cmd"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes --leave-alt-screen
