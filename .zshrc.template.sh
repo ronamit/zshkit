@@ -1200,7 +1200,12 @@ zjs() {
     remote_cmd=$(cat <<EOF
 pkill -x zjs-"$session" 2>/dev/null
 sleep 0.3
-if PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij list-sessions --no-formatting 2>/dev/null | grep -q "^$session .*EXITED"; then
+_zjs_sessions=\$(PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH timeout 10 zellij list-sessions --no-formatting 2>/dev/null)
+if [[ \$? -eq 124 ]]; then
+    echo "zjs: zellij server is unresponsive on remote — try 'pkill -f zellij' there, then reconnect"
+    exit 1
+fi
+if echo "\$_zjs_sessions" | grep -q "^$session .*EXITED"; then
     echo "zjs: session '$session' has exited on remote, removing..."
     PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH zellij delete-session --force "$session" 2>/dev/null || {
         echo "zjs: failed to remove exited remote session '$session'."
@@ -1210,7 +1215,7 @@ fi
 PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH exec -a zjs-"$session" zellij attach --create "$session"
 EOF
 )
-    printf "Connecting to %s (session: %s)…\n" "$host" "$session"
+    printf "Connecting to %s (session: %s)… [frozen? Enter then ~. to force-quit]\n" "$host" "$session"
     _SSHV_NO_HINTS=1 sshv -o ConnectTimeout=15 -t "$host" "$remote_cmd"
     local zjs_rc=$?
     _zshkit_reset_terminal_input_modes --leave-alt-screen
