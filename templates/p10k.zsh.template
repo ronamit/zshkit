@@ -1688,7 +1688,7 @@
   #   - always:   Trim down prompt when accepting a command line.
   #   - same-dir: Trim down prompt when accepting a command line unless this is the first command
   #               typed after changing current working directory.
-  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=off
+  typeset -g POWERLEVEL9K_TRANSIENT_PROMPT=same-dir
 
   # Instant prompt mode.
   #
@@ -1700,7 +1700,7 @@
   #   - verbose: Enable instant prompt and print a warning when detecting console output during
   #              zsh initialization. Choose this if you've never tried instant prompt, haven't
   #              seen the warning, or if you are unsure what this all means.
-  typeset -g POWERLEVEL9K_INSTANT_PROMPT=off
+  typeset -g POWERLEVEL9K_INSTANT_PROMPT=verbose
 
   # Hot reload allows you to change POWERLEVEL9K options after Powerlevel10k has been initialized.
   # For example, you can type POWERLEVEL9K_BACKGROUND=red and see your prompt turn red. Hot reload
@@ -1719,28 +1719,6 @@ typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 (( ${#p10k_config_opts} )) && setopt ${p10k_config_opts[@]}
 'builtin' 'unset' 'p10k_config_opts'
 
-# Selective transient prompt: collapse the retired prompt only when Enter was
-# pressed on an empty line. Commands keep their full prompt in scrollback.
-# NOTE: POWERLEVEL9K_TRANSIENT_PROMPT must stay 'off' (set above) for this to
-# work — the p10k configure wizard won't override this behaviour correctly.
-#
-# _p10k_initialized=0 guards the first prompt: p10k display inside
-# p10k-on-pre-prompt triggers an early zle reset-prompt that races with the
-# instant-prompt handoff, leaving a stale line at the top of new sessions.
-# Skipping the show() call on the first prompt avoids the race; segments are
-# already in their default visible state so the skip is always safe.
-_p10k_initialized=0
-
-function p10k-on-pre-prompt() {
-  if (( _p10k_initialized )); then
-    p10k display '*'=show
-  else
-    _p10k_initialized=1
-  fi
-}
-
 function p10k-on-post-prompt() {
-  if [[ -z "${BUFFER// /}" ]]; then
-    p10k display '*'=hide
-  fi
+  p10k display 'empty_line'=hide
 }
