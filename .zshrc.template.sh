@@ -754,7 +754,7 @@ rmount() {
     case "$subcmd" in
         ls|list)
             if [[ "$(uname -s)" == "Darwin" ]]; then
-                mount | grep -E "macfuse|sshfs" | grep "$mnt_base" | awk '{print $3 " ← " $1}' | sort
+                mount | grep -E "macfuse|sshfs" | grep "$mnt_base" | sed 's/ (.*$//' | sed 's/\(.*\) on \(.*\)/\2 ← \1/' | sort
             else
                 grep "fuse.sshfs" /proc/mounts 2>/dev/null | awk '{print $2 " ← " $1}' | grep "$mnt_base" | sort
             fi
