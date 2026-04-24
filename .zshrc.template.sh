@@ -200,6 +200,21 @@ zstyle ':completion:*' cache-path "$HOME/.zsh/cache"
 zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
 zstyle ':completion:*:kill:*' command 'ps -u $USER -o pid,%cpu,tty,cputime,cmd'
 
+# Emit Host names from an SSH config file, following Include directives one level deep.
+_zshkit_ssh_config_hosts() {
+    local cfg="${1:-$HOME/.ssh/config}"
+    [[ -r "$cfg" ]] || return
+    awk '/^[Hh]ost /{for(i=2;i<=NF;i++) if($i !~ /[*?!]/) print $i}' "$cfg"
+    local _inc _f
+    while IFS= read -r _inc; do
+        _inc="${_inc/#~/$HOME}"
+        for _f in ${~_inc}(N); do
+            [[ -r "$_f" && "$_f" != "$cfg" ]] || continue
+            awk '/^[Hh]ost /{for(i=2;i<=NF;i++) if($i !~ /[*?!]/) print $i}' "$_f"
+        done
+    done < <(awk '/^[Ii]nclude /{for(i=2;i<=NF;i++) print $i}' "$cfg" 2>/dev/null)
+}
+
 # SSH/SCP: cache hostnames from known_hosts + ssh config to keep startup fast.
 _ssh_cache_file="$HOME/.zsh/cache/ssh_hosts"
 _refresh_ssh_hosts_cache=0
@@ -214,9 +229,7 @@ if (( _refresh_ssh_hosts_cache )); then
                 | sed 's/\[//;s/\]:.*//' \
                 | grep -vE '^(\||#|$)'
         fi
-        if [[ -r ~/.ssh/config ]]; then
-            grep -i '^Host ' ~/.ssh/config | awk '{for(i=2;i<=NF;i++) if($i !~ /[*?]/) print $i}'
-        fi
+        [[ -r ~/.ssh/config ]] && _zshkit_ssh_config_hosts
     } | grep -vE '^\s*$' | sort -u >| "${_ssh_cache_file}.tmp" \
         && command mv -- "${_ssh_cache_file}.tmp" "$_ssh_cache_file"
 fi
@@ -538,17 +551,19 @@ sshv() {
             _dur_str="${duration}s"
         fi
         printf "sshv: connection lost (dropped after %s) — retrying once… (Ctrl+C to cancel)\n" "$_dur_str"
-        # Suppress echo before the wait + retry so keystrokes don't print as raw escape sequences.
-        stty -echo 2>/dev/null
-        sleep 1
-        _zshkit_reset_terminal_input_modes --leave-alt-screen
-
         local -a _retry_args=("${ssh_args[@]}")
-
-        command ssh "${_retry_args[@]}"
-        ssh_rc=$?
-        stty echo icanon 2>/dev/null
-        _zshkit_reset_terminal_input_modes --leave-alt-screen
+        # Suppress echo before the wait + retry so keystrokes don't print as raw escape sequences.
+        # Use always{} so the terminal is restored even if Ctrl+C kills the retry mid-flight.
+        {
+            stty -echo 2>/dev/null
+            sleep 1
+            _zshkit_reset_terminal_input_modes --leave-alt-screen
+            command ssh "${_retry_args[@]}"
+            ssh_rc=$?
+        } always {
+            stty echo icanon 2>/dev/null
+            _zshkit_reset_terminal_input_modes --leave-alt-screen
+        }
         (( ssh_rc == 0 )) && return 0
     fi
 
@@ -869,7 +884,7 @@ rmount() {
 # Tab-completion for rmount: subcommands + SSH hostnames from ~/.ssh/config
 _rmount_hosts() {
     local -a hosts
-    [[ -r ~/.ssh/config ]] && hosts=(${(f)"$(awk '/^[Hh]ost /{for(i=2;i<=NF;i++) if($i !~ /[*?!]/) print $i}' ~/.ssh/config 2>/dev/null)"})
+    [[ -r ~/.ssh/config ]] && hosts=(${(f)"$(_zshkit_ssh_config_hosts)"})
     compadd -a hosts
 }
 _rmount_completion() {
@@ -1183,7 +1198,7 @@ zjs() {
     # Zellij constrains a session to the smallest attached client; lingering SSH
     # processes from a previous connection hold the session at the old (smaller) size.
     remote_cmd=$(cat <<EOF
-pkill -f "zellij attach.*[[:space:]]$session" 2>/dev/null
+pkill -f "^([^ ]*/)?zellij attach.*[[:space:]]${session}$" 2>/dev/null
 sleep 0.3
 if command -v timeout >/dev/null 2>&1; then
     _zjs_sessions=\$(PATH=\$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH timeout 10 zellij list-sessions --no-formatting 2>/dev/null)
