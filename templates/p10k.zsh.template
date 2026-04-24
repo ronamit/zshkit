@@ -1723,12 +1723,24 @@ typeset -g POWERLEVEL9K_CONFIG_FILE=${${(%):-%x}:a}
 # pressed on an empty line. Commands keep their full prompt in scrollback.
 # NOTE: POWERLEVEL9K_TRANSIENT_PROMPT must stay 'off' (set above) for this to
 # work — the p10k configure wizard won't override this behaviour correctly.
+#
+# _p10k_initialized=0 guards the first prompt: p10k display inside
+# p10k-on-pre-prompt triggers an early zle reset-prompt that races with the
+# instant-prompt handoff, leaving a stale line at the top of new sessions.
+# Skipping the show() call on the first prompt avoids the race; segments are
+# already in their default visible state so the skip is always safe.
+_p10k_initialized=0
+
+function p10k-on-pre-prompt() {
+  if (( _p10k_initialized )); then
+    p10k display '*'=show
+  else
+    _p10k_initialized=1
+  fi
+}
+
 function p10k-on-post-prompt() {
   if [[ -z "${BUFFER// /}" ]]; then
     p10k display '*'=hide
   fi
-}
-
-function p10k-on-pre-prompt() {
-  p10k display '*'=show
 }
