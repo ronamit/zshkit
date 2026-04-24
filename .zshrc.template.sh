@@ -1564,8 +1564,8 @@ _autolist_invalidate_cd_cache() {
 }
 
 _should_autolist_empty_cd_arg() {
-    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-20}"
-    local -i _max=20
+    local _raw="${ZSH_AUTOLIST_CD_EMPTY_MAX:-200}"
+    local -i _max=200
     local -i _count=0
     local _d
 
@@ -1577,11 +1577,9 @@ _should_autolist_empty_cd_arg() {
        && (( _autolist_cd_cache_limit < 0 || _max <= _autolist_cd_cache_limit )); then
         _count=$_autolist_cd_cache_count
     else
-        # Count local directory candidates quickly and stop once threshold is passed.
-        setopt localoptions nullglob
-        for _d in * .*; do
-            [[ "$_d" == "." || "$_d" == ".." ]] && continue
-            [[ -d "$_d" ]] || continue
+        # Count all subdirectories including hidden ones.
+        setopt localoptions nullglob globdots
+        for _d in */; do
             (( _count++ ))
             (( _count > _max )) && break
         done
