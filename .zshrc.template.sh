@@ -1476,28 +1476,35 @@ _tab_complete_and_autolist() {
 }
 zle -N _tab_complete_and_autolist
 
+# Expand the last whitespace-separated token in BUFFER and append / if it is a
+# directory.  Returns 0 if a slash was added, 1 otherwise.
+_zshkit_cd_append_slash_if_dir() {
+    local _t="${BUFFER##*[[:space:]]}"
+    [[ -n "$_t" && "$BUFFER" != */ ]] || return 1
+    local _e
+    if   [[ "$_t" == /* ]]; then _e="$_t"
+    elif [[ "$_t" == ~* ]]; then _e="${_t/#\~/$HOME}"
+    else                          _e="$PWD/$_t"
+    fi
+    [[ -d "$_e" ]] || return 1
+    BUFFER="${BUFFER}/"
+    CURSOR=${#BUFFER}
+}
+
 _cd_tab_complete() {
     # Deterministic cd drill-down: append / if dir, then open native menu.
     (( CURSOR == ${#BUFFER} )) || { zle list-choices; return 0; }
 
-    local _tail="${BUFFER##*[[:space:]]}"
-    local _expanded=""
-
-    if [[ "$_tail" == /* ]]; then
-        _expanded="$_tail"
-    elif [[ "$_tail" == ~* ]]; then
-        _expanded="${_tail/#\~/$HOME}"
-    elif [[ -n "$_tail" ]]; then
-        _expanded="$PWD/$_tail"
-    fi
-
-    if [[ -n "$_tail" && "$BUFFER" != */ && -d "$_expanded" ]]; then
-        BUFFER="${BUFFER}/"
-        CURSOR=${#BUFFER}
-    fi
+    # Pre-completion: if the current tail is already a directory, append / now.
+    _zshkit_cd_append_slash_if_dir
 
     _auto_list_last_buffer=""
     zle expand-or-complete
+
+    # Post-completion: completion may have resolved a prefix to a unique directory
+    # (e.g. "re" → "repos").  Append / so the next level shows immediately.
+    _zshkit_cd_append_slash_if_dir
+
     local LISTMAX=0
     zle list-choices
 }
@@ -1507,14 +1514,16 @@ _tab_accept_or_complete() {
     # If autosuggestion ghost text is visible, Tab accepts it fully.
     if [[ -n "$POSTDISPLAY" ]]; then
         (( $+widgets[autosuggest-accept] )) && zle autosuggest-accept
-        # After accepting ghost text for a cd command, if the result ends in /
-        # immediately show the next level so the user doesn't need a second Tab.
+        # After accepting ghost text for a cd command, drill into a directory
+        # (append / if needed) and show the next level immediately.
         local _cmd="${BUFFER%%[[:space:]]*}"
-        if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]] \
-           && [[ "$BUFFER" == */ ]]; then
-            _auto_list_last_buffer="$LBUFFER"
-            local LISTMAX=0
-            zle list-choices
+        if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
+            _zshkit_cd_append_slash_if_dir
+            if [[ "$BUFFER" == */ ]]; then
+                _auto_list_last_buffer=""
+                local LISTMAX=0
+                zle list-choices
+            fi
         fi
         return 0
     fi
@@ -1781,7 +1790,25 @@ _forward_char_with_autolist() {
 zle -N _forward_char_with_autolist
 
 _forward_word_with_autolist() {
+    local _cur_before=$CURSOR
     zle .forward-word
+    # When the autosuggestion plugin calls this widget it combines BUFFER+POSTDISPLAY
+    # into BUFFER first, so BUFFER[1,$CURSOR] is the text that will become the new
+    # buffer after the plugin splits it back.  If that portion ends at an existing
+    # directory (no trailing /), consume or insert a / so the next-level suggestion
+    # appears immediately.
+    if (( CURSOR > _cur_before )); then
+        local _last_word="${BUFFER[1,$CURSOR]##* }"     # last space-separated token
+        local _expanded="${_last_word/#\~/$HOME}"
+        if [[ -n "$_last_word" && -d "$_expanded" && "${_last_word[-1]}" != '/' ]]; then
+            if [[ "${BUFFER[$((CURSOR+1))]}" == '/' ]]; then
+                (( CURSOR++ ))                           # ghost already has /; consume it
+            else
+                BUFFER="${BUFFER[1,$CURSOR]}/${BUFFER[$((CURSOR+1)),-1]}"
+                (( CURSOR++ ))
+            fi
+        fi
+    fi
     _auto_list_last_buffer=""
     zle _maybe_auto_list_choices
 }
