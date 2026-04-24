@@ -1498,13 +1498,15 @@ _cd_tab_complete() {
     # Pre-completion: if the current tail is already a directory, append / now.
     _zshkit_cd_append_slash_if_dir
 
-    _auto_list_last_buffer=""
+    _auto_list_last_buffer=""   # reset so expand-or-complete doesn't re-trigger list
     zle expand-or-complete
 
     # Post-completion: completion may have resolved a prefix to a unique directory
     # (e.g. "re" → "repos").  Append / so the next level shows immediately.
     _zshkit_cd_append_slash_if_dir
 
+    # Set to current buffer so Down arrow can enter the menu.
+    _auto_list_last_buffer="$LBUFFER"
     local LISTMAX=0
     zle list-choices
 }
@@ -1520,7 +1522,7 @@ _tab_accept_or_complete() {
         if [[ "$_cmd" == "cd" || "$_cmd" == "pushd" || "$_cmd" == "popd" ]]; then
             _zshkit_cd_append_slash_if_dir
             if [[ "$BUFFER" == */ ]]; then
-                _auto_list_last_buffer=""
+                _auto_list_last_buffer="$LBUFFER"
                 local LISTMAX=0
                 zle list-choices
             fi
