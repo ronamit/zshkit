@@ -435,7 +435,7 @@ install_ghostty() {
         # Ubuntu: snap is officially listed on ghostty.org and works across Ubuntu versions.
         if command -v snap &>/dev/null; then
             if confirm_install "Install Ghostty (snap)?"; then
-                if ! snap install ghostty --classic; then
+                if ! sudo snap install ghostty --classic; then
                     echo "  ✗ Failed to install Ghostty via snap"
                     exit 1
                 fi
@@ -443,7 +443,7 @@ install_ghostty() {
             fi
         else
             echo "  ⚠ snap not found — install Ghostty manually:"
-            echo "    snap: snap install ghostty --classic"
+            echo "    snap: sudo snap install ghostty --classic"
             echo "    .deb: bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)\""
         fi
     fi

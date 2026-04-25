@@ -45,7 +45,7 @@ See [SETUP_DETAILS.md](SETUP_DETAILS.md) for full install details and customizat
 
 ## Autocomplete and suggestions
 
-Gray suggestion appears as you type. `Tab` accepts the full ghost text instantly, or opens the completion grid if none is showing. Options appear automatically below the prompt as you type — press `↓` to enter the grid.
+Gray suggestion appears as you type. `Tab` accepts the full ghost text instantly, or opens the completion grid if none is showing. Options appear on `Tab` — press `↓` to enter the grid. Live popups while typing can be enabled with `ZSH_AUTOLIST_ON_TYPE=1`.
 
 | Key | Action |
 |-----|--------|
@@ -95,7 +95,7 @@ vm              # SSH in (direct if EC2_SSH_HOST set; via AWS otherwise)
 vm status       # show instance state and IP  (AWS)
 vm start        # start the instance          (AWS)
 vm stop         # stop the instance           (AWS)
-sso             # refresh AWS SSO session
+aws-sso         # refresh AWS SSO session
 ```
 
 Optional — see [SETUP_DETAILS.md](SETUP_DETAILS.md) for configuration.

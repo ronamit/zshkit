@@ -546,7 +546,7 @@ sshv() {
         command -v tput &>/dev/null && tput rmcup 2>/dev/null
         local _dur_str
         if (( duration >= 60 )); then
-            _dur_str="${$(( duration / 60 ))}m $(( duration % 60 ))s"
+            _dur_str="$(( duration / 60 ))m $(( duration % 60 ))s"
         else
             _dur_str="${duration}s"
         fi
@@ -1193,6 +1193,10 @@ zjs() {
     local host="${1:?usage: zjs host [session]}"
     local session="${2:-main}"
     local remote_cmd
+    [[ "$session" =~ ^[A-Za-z0-9._-]+$ ]] || {
+        echo "zjs: session name may only contain letters, numbers, dot, underscore, and dash"
+        return 1
+    }
 
     # Kill stale zjs clients for this session so Zellij resizes to our terminal.
     # Zellij constrains a session to the smallest attached client; lingering SSH
@@ -1569,7 +1573,7 @@ _should_autolist_empty_cd_arg() {
     local -i _count=0
     local _d
 
-    [[ "$_raw" == <-> ]] && _max=$_raw
+    [[ "$_raw" =~ ^[0-9]+$ ]] && _max=$_raw
     (( _max < 0 )) && _max=0
 
     # Reuse count in same directory to avoid repeated glob scans while typing.
@@ -1669,13 +1673,14 @@ _maybe_auto_list_choices() {
     # Don't spam for tiny prefixes or option flags; respect min chars to reduce lag.
     [[ -n "$_current" ]] || return
     local -i _min_chars=3
-    [[ "${ZSH_AUTOLIST_MIN_CHARS:-3}" == <-> ]] && _min_chars=$ZSH_AUTOLIST_MIN_CHARS
+    [[ "${ZSH_AUTOLIST_MIN_CHARS:-3}" =~ ^[0-9]+$ ]] && _min_chars=$ZSH_AUTOLIST_MIN_CHARS
     if (( ! _is_cd_context )); then
         (( ${#_current} >= _min_chars )) || return
         [[ "$_current" == -* ]] && return
     fi
 
-    [[ "$_current" == */* || "$_current" == .* || "$_current" == ~* || "$_current" == <-> ]] && _is_path_like=1
+    [[ "$_current" == */* || "$_current" == .* || "$_current" == ~* ]] && _is_path_like=1
+    [[ "$_current" =~ ^[0-9]+$ ]] && _is_path_like=1
 
     # Keep it focused to common completion contexts.
     if (( _is_cd_context || _is_ssh_context || (_is_path_like && _is_path_cmd) )); then
@@ -1949,7 +1954,7 @@ if [ -d "$HOME/.pyenv" ]; then
     # Override with ZSH_FORCE_PYENV=1 to keep pyenv wrappers enabled.
     typeset -gi _conda_active=0
     [[ -n "${CONDA_PREFIX:-}" ]] && _conda_active=1
-    if [[ "${CONDA_SHLVL:-0}" == <-> ]] && (( CONDA_SHLVL > 0 )); then
+    if [[ "${CONDA_SHLVL:-0}" =~ ^[0-9]+$ ]] && (( CONDA_SHLVL > 0 )); then
         _conda_active=1
     fi
     if (( ! _conda_active )) || [[ "${ZSH_FORCE_PYENV:-0}" == "1" ]]; then

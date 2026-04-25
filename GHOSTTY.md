@@ -13,7 +13,7 @@ brew install --cask ghostty
 **Ubuntu / Linux:**
 
 ```bash
-snap install ghostty --classic
+sudo snap install ghostty --classic
 ```
 
 Alternative (community `.deb` for Ubuntu): `bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"`

@@ -39,7 +39,7 @@ ZELLIJ_VERSION=v0.44.0 CARAPACE_VERSION=v1.6.4 bash setup_zsh.sh
 |----------|-------|
 | Core | zsh, Oh My Zsh, Powerlevel10k |
 | Plugins | zsh-autosuggestions, fast-syntax-highlighting |
-| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, mosh, gh, nvtop, uv, navi, sshfs |
+| CLI tools | fzf, fd, bat, ripgrep (`rg`), tree, Zellij, lsd, zoxide, lazygit, fastfetch, yazi, ncdu, micro, delta, screen, OpenVPN, jq, direnv, gh, nvtop, uv, navi, sshfs |
 | Font | [MesloLGS NF](https://github.com/romkatv/powerlevel10k/tree/master?tab=readme-ov-file#fonts) — recommended by Powerlevel10k (Linux: `~/.local/share/fonts`; macOS: Homebrew cask or `~/Library/Fonts`) |
 | Zellij | Managed config in `~/.config/zellij/` with the built-in default preset, large scrollback, and a top bar showing session name and tabs |
 | Config | Backup and replace `~/.zshrc` from `.zshrc.template.sh`, install `~/.p10k.zsh` from **`templates/p10k.zsh.template`** (tracked Powerlevel10k export, includes 24h clock + status segments), install `~/.config/ghostty/config` from **`templates/ghostty/`**, preserve/create `~/.zshrc.local`, set zsh as default shell when safe, add global git aliases `git sw` / `git swc`, configure `delta`, install terminfo entries for modern terminals (Ghostty, Kitty, WezTerm), add SSH keepalive/COLORTERM block to `~/.ssh/config`, set `skip_global_compinit` in `~/.zshenv`, and add a zsh auto-launch fallback to `~/.bashrc` |
@@ -156,8 +156,8 @@ nano ~/.zshrc.local
 # Edit Ghostty settings
 nano ~/.config/ghostty/config
 
-# Optional: disable live auto-list while typing (on by default)
-echo 'export ZSH_AUTOLIST_ON_TYPE=0' >> ~/.zshrc.local
+# Optional: enable live auto-list while typing
+echo 'export ZSH_AUTOLIST_ON_TYPE=1' >> ~/.zshrc.local
 
 # Optional: open bare `cd ` list only when the directory count is small
 echo 'export ZSH_AUTOLIST_CD_EMPTY_MAX=20' >> ~/.zshrc.local
