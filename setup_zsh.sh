@@ -743,6 +743,8 @@ if [ "$IS_MACOS" -eq 1 ]; then
     add_brew direnv direnv
     # GitHub CLI
     add_brew gh gh
+    # System monitor (CPU, memory, disk, network, processes)
+    add_brew btop btop
     # Python package manager (fast drop-in for pip/venv)
     add_brew uv uv
     # Interactive cheatsheet tool with fzf widget
@@ -836,6 +838,8 @@ add_best_effort_pkg_if_missing_cmd micro micro
 add_pkg_if_missing_cmd jq jq
 add_best_effort_pkg_if_missing_cmd direnv direnv
 add_best_effort_pkg_if_missing_cmd gh gh
+# System monitor (CPU, memory, disk, network, processes)
+add_best_effort_pkg_if_missing_cmd btop btop
 # Interactive GPU process monitor
 add_best_effort_pkg_if_missing_cmd nvtop nvtop
 

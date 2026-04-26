@@ -155,6 +155,7 @@ FZF is configured to use `fd` / `fdfind`, include hidden files, and ignore `.git
 | `vpn-connect` | Start or reconnect the managed VPN session |
 | `vpn-disconnect` | Disconnect the managed VPN session |
 | `vpn-status` | Show VPN process, interface, and recent log status |
+| `btop` | Interactive system monitor — CPU, memory, disk, network, and processes in one view |
 | `nvtop` | Interactive GPU process monitor (like `htop` for GPUs) |
 | `jq FILTER [FILE]` | Process and pretty-print JSON (`jq .` to pretty-print, `jq '.key'` to extract) |
 | `gh` | GitHub CLI — create PRs, view issues, watch CI runs (`gh pr create`, `gh run view`) |
