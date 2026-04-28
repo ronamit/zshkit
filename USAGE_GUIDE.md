@@ -495,6 +495,23 @@ The icon clears automatically when you focus the pane. It appears in the tab nam
 
 Claude Code hooks in `~/.claude/settings.json` wire up the notifications automatically. When Claude finishes, the terminal tab title also updates to show `✅ claude done`.
 
+## YouTube Downloader (ytdl)
+
+`ytdl` downloads YouTube (or any yt-dlp-supported) video at the highest available quality and merges it into a single mp4. It lives in [`ytdlp/`](ytdlp/) and is installed separately from the main shell setup.
+
+```bash
+bash ytdlp/setup_ytdlp.sh   # one-time install: yt-dlp, ffmpeg, ytdl wrapper → ~/bin
+```
+
+| Command | Does |
+|---------|------|
+| `ytdl URL` | Download best quality video + audio as mp4 |
+| `ytdl -a URL` | Audio only (mp3) |
+| `ytdl -o DIR URL` | Save to a specific directory |
+| `ytdl -p URL` | Preview available formats without downloading |
+
+See [ytdlp/README.md](ytdlp/README.md) for full details.
+
 ## References
 
 - [README.md](README.md)

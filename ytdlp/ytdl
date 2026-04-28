@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Download YouTube (or any yt-dlp-supported) video at the highest available quality.
+set -euo pipefail
+
+usage() {
+    cat <<EOF
+Usage: ytdl [OPTIONS] URL [URL...]
+
+Download videos at highest quality (video + audio merged into mp4).
+
+Options:
+  -a          Audio only (best quality, saved as mp3)
+  -o DIR      Output directory (default: current directory)
+  -p          Show available formats and exit (preview)
+  -h          Show this help
+
+Examples:
+  ytdl https://youtu.be/dQw4w9WgXcQ
+  ytdl -a https://youtu.be/dQw4w9WgXcQ
+  ytdl -o ~/Videos https://youtu.be/dQw4w9WgXcQ
+EOF
+}
+
+if ! command -v yt-dlp &>/dev/null; then
+    echo "Error: yt-dlp is not installed." >&2
+    echo "Install it with: pip install yt-dlp  OR  brew install yt-dlp" >&2
+    exit 1
+fi
+
+AUDIO_ONLY=false
+OUTPUT_DIR="."
+PREVIEW=false
+
+while getopts ":ao:ph" opt; do
+    case $opt in
+        a) AUDIO_ONLY=true ;;
+        o) OUTPUT_DIR="$OPTARG" ;;
+        p) PREVIEW=true ;;
+        h) usage; exit 0 ;;
+        :) echo "Error: -$OPTARG requires an argument." >&2; exit 1 ;;
+        \?) echo "Error: unknown option -$OPTARG" >&2; usage; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
+mkdir -p "$OUTPUT_DIR"
+
+for URL in "$@"; do
+    if $PREVIEW; then
+        yt-dlp -F "$URL"
+        continue
+    fi
+
+    if $AUDIO_ONLY; then
+        yt-dlp \
+            --format "bestaudio" \
+            --extract-audio \
+            --audio-format mp3 \
+            --audio-quality 0 \
+            --output "$OUTPUT_DIR/%(title)s.%(ext)s" \
+            --embed-thumbnail \
+            --add-metadata \
+            "$URL"
+    else
+        yt-dlp \
+            --format "bestvideo+bestaudio/best" \
+            --merge-output-format mp4 \
+            --output "$OUTPUT_DIR/%(title)s.%(ext)s" \
+            --embed-thumbnail \
+            --add-metadata \
+            "$URL"
+    fi
+done

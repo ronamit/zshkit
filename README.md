@@ -168,3 +168,4 @@ Re-running `setup_zsh.sh` is safe — it skips already-installed components and 
 - [USAGE_GUIDE.md](USAGE_GUIDE.md) — all aliases, keybindings, Zellij, fzf, VPN, EC2
 - [GHOSTTY.md](GHOSTTY.md) — Ghostty keybindings, tabs, splits, search, and config reference
 - [AGENTS.md](AGENTS.md) — notes for AI coding agents
+- [ytdlp/README.md](ytdlp/README.md) — `ytdl` CLI for downloading YouTube videos at highest quality
