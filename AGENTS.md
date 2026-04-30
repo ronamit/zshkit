@@ -120,13 +120,19 @@ Before editing: confirm scope, inspect the relevant files, identify the existing
 
 - Change only what is necessary. Do not touch unrelated code.
 - Follow existing patterns before introducing new ones.
-- Keep names simple and obvious.
+- Optimize for readability first: future readers should be able to understand the main flow without reconstructing intent from scattered details.
+- Use clear, specific names for variables, functions, classes, files, constants, and tests. Prefer domain terms over generic names like `data`, `value`, `item`, `result`, `temp`, `flag`, `obj`, or `manager` unless the scope is tiny and obvious.
+- Name booleans as predicates, such as `has_prior_report`, `is_valid_row`, or `should_skip_patient`, so conditions read naturally.
+- Avoid abbreviations unless they are standard in the codebase or domain. Do not use one-letter names except for conventional, very small scopes such as `x`, `y`, or loop indexes in simple numeric code.
+- Break up dense code blocks. Use small helper functions when a block has a distinct purpose, repeated logic, or multiple levels of branching.
+- Add short comments before non-obvious code blocks to explain the block purpose, assumptions, invariants, or edge cases. Comments should help a reader understand why this block exists or what outcome it is producing, not narrate every line.
+- Prefer clear names and simple structure over compensating with comments. If a comment is needed to explain confusing code, first try to make the code clearer.
+- Do not leave stale, misleading, commented-out, or redundant comments. Update comments when behavior changes.
 - Extract small helpers for repeated conversion or normalization logic.
-- Centralize repeated keys, labels, status strings, and magic numbers as named constants.
+- Centralize repeated keys, labels, status strings, and magic numbers as named constants with names that explain their role.
 - Prefer typed models (`pydantic`, `dataclass`, `TypedDict`) over untyped dicts for non-trivial structured data.
-- Comments explain *why*, not *what*. Prefer clear naming over comments.
-- Group related code. Keep interfaces small and focused.
-- Do not introduce abstractions unless they remove real duplication or reduce meaningful bug risk.
+- Group related code so the high-level flow is easy to scan. Keep interfaces small and focused.
+- Do not introduce abstractions unless they remove real duplication, clarify the flow, or reduce meaningful bug risk.
 - Refactors must be behavior-preserving and local to the task. No broad cleanup unless asked.
 - If you encounter unexpected complexity mid-task, stop and describe what you found before continuing. Do not silently restructure the approach.
 
@@ -135,6 +141,8 @@ Before editing: confirm scope, inspect the relevant files, identify the existing
 ## Python
 
 - Annotate all function signatures (parameters and return type).
+- Use descriptive Python identifiers. Prefer `study_to_prior_report_count` over `d`, `counts`, or `tmp` when the value has domain meaning.
+- Keep functions readable from top to bottom: parse inputs, validate or normalize, compute, then output. Separate these phases with helper functions or short comments when the function is long enough to need landmarks.
 - Use `X | None` over `Optional[X]`; `X | Y` over `Union[X, Y]` (Python 3.10+).
 - Use `TypedDict`, `dataclass`, or `pydantic.BaseModel` for structured data at boundaries.
 - Use keyword arguments when calling a function with more than one argument, unless meaning is unambiguous from the name (e.g. `range(10)`).
